@@ -24,93 +24,122 @@ export default function LoginPage() {
   const [state, action, isPending] = useActionState(signIn, null)
 
   return (
-    <div className="min-h-screen sand-gradient flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 ocean-gradient rounded-full flex items-center justify-center">
-              <Waves className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-deep-ocean">
-              WELLNESS<span className="text-coral">&</span>SEA
-            </span>
-          </Link>
-          <h1 className="text-2xl font-bold text-deep-ocean mt-4">התחברות</h1>
-          <p className="text-sm text-gray-500 mt-1">ברוכה הבאה חזרה</p>
+    <div className="min-h-screen flex" style={{ background: '#faf5ee' }}>
+      {/* Left panel — brand (hidden on mobile) */}
+      <div className="hidden lg:flex flex-col justify-between w-2/5 ocean-gradient p-12 relative overflow-hidden">
+        <div className="absolute" style={{ width: 400, height: 400, background: 'rgba(92,140,110,0.18)', borderRadius: '50%', filter: 'blur(80px)', top: -100, left: -100 }} />
+        <Link href="/" className="flex items-center gap-2.5 relative z-10">
+          <div className="w-10 h-10 bg-white/15 rounded-full flex items-center justify-center">
+            <Waves className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-bold text-xl text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+            WELLNESS<span style={{ color: '#e8b870' }}>&amp;</span>SEA
+          </span>
+        </Link>
+        <div className="relative z-10">
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#e8b870' }}>ברוכה הבאה</p>
+          <h2 className="font-black text-white text-3xl leading-tight mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+            שיעורי יוגה<br />על קו הים
+          </h2>
+          <p className="text-white/65 text-sm leading-relaxed">
+            הצטרפי לאלפי מדריכות שכבר מחברות עם חללים יוקרתיים על קו החוף.
+          </p>
         </div>
+        <div className="relative z-10 text-white/40 text-xs">© 2026 WELLNESS&amp;SEA</div>
+      </div>
 
-        <Card className="p-6 border-0 shadow-xl">
-          <form action={action} className="space-y-4">
-            {state?.error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 text-right">
-                {state.error}
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <div className="w-10 h-10 ocean-gradient rounded-full flex items-center justify-center">
+                <Waves className="w-5 h-5 text-white" />
               </div>
-            )}
-
-            <div>
-              <Label htmlFor="email" className="text-sm">אימייל</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="name@example.com"
-                className="text-right mt-1"
-                required
-                disabled={isPending}
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Link href="/auth/forgot-password" className="text-xs text-ocean hover:underline">
-                  שכחת סיסמה?
-                </Link>
-                <Label htmlFor="password" className="text-sm">סיסמה</Label>
-              </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="הסיסמה שלך"
-                className="mt-1"
-                required
-                disabled={isPending}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-ocean hover:bg-deep-ocean text-white h-11"
-              disabled={isPending}
-            >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'התחברות'}
-            </Button>
-          </form>
-
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-400">או</span>
-            </div>
+              <span className="font-bold text-xl text-deep-ocean" style={{ fontFamily: "'Playfair Display', serif" }}>
+                WELLNESS<span className="text-coral">&amp;</span>SEA
+              </span>
+            </Link>
           </div>
 
-          <form action={signInWithGoogle}>
-            <Button variant="outline" className="w-full" type="submit" disabled={isPending}>
-              <GoogleIcon />
-              התחברות עם Google
-            </Button>
-          </form>
-        </Card>
+          <h1 className="text-2xl font-black text-deep-ocean mb-1">התחברות</h1>
+          <p className="text-sm text-gray-400 mb-7">ברוכה הבאה חזרה</p>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          אין לך חשבון?{' '}
-          <Link href="/auth/signup" className="text-ocean font-medium hover:underline">
-            הצטרפות חינמית
-          </Link>
-        </p>
+          <Card className="p-6 border-0" style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}>
+            <form action={action} className="space-y-4">
+              {state?.error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 text-right">
+                  {state.error}
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-ocean">אימייל</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  className="text-right mt-1.5"
+                  style={{ background: '#faf5ee', border: '1.5px solid #f0e6d3', borderRadius: 10 }}
+                  required
+                  disabled={isPending}
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Link href="/auth/forgot-password" className="text-xs text-ocean hover:underline">
+                    שכחת סיסמה?
+                  </Link>
+                  <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-ocean">סיסמה</Label>
+                </div>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="הסיסמה שלך"
+                  style={{ background: '#faf5ee', border: '1.5px solid #f0e6d3', borderRadius: 10 }}
+                  required
+                  disabled={isPending}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-ocean hover:bg-deep-ocean text-white font-semibold rounded-full"
+                style={{ height: 44 }}
+                disabled={isPending}
+              >
+                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'התחברות'}
+              </Button>
+            </form>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full" style={{ borderTop: '1px solid #f0e6d3' }} />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 text-gray-400" style={{ background: 'white' }}>או</span>
+              </div>
+            </div>
+
+            <form action={signInWithGoogle}>
+              <Button variant="outline" className="w-full font-medium" style={{ borderRadius: 50, borderColor: '#f0e6d3' }} type="submit" disabled={isPending}>
+                <GoogleIcon />
+                התחברות עם Google
+              </Button>
+            </form>
+          </Card>
+
+          <p className="text-center text-sm text-gray-500 mt-5">
+            אין לך חשבון?{' '}
+            <Link href="/auth/signup" className="text-ocean font-semibold hover:underline">
+              הצטרפות חינמית
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )

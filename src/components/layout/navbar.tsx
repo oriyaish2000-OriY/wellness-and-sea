@@ -14,28 +14,28 @@ export async function Navbar() {
   const dashboardUrl = role === 'host' ? '/host-dashboard' : '/instructor-dashboard'
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-50 glass-card border-b border-white/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <nav className="fixed top-0 right-0 left-0 z-50 glass-card border-b border-teal\/8" style={{ height: '68px' }}>
+      <div className="max-w-7xl mx-auto px-6 h-full">
+        <div className="flex items-center justify-between h-full">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 ocean-gradient rounded-full flex items-center justify-center">
+          <Link href="/" className="flex items-center gap-2.5 text-decoration-none">
+            <div className="w-9 h-9 ocean-gradient rounded-full flex items-center justify-center flex-shrink-0">
               <Waves className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-lg text-deep-ocean">
-              WELLNESS<span className="text-coral">&</span>SEA
+            <span className="text-deep-ocean font-bold text-lg" style={{ fontFamily: "'Playfair Display', serif", letterSpacing: '0.3px' }}>
+              WELLNESS<span className="text-coral">&amp;</span>SEA
             </span>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/venues" className="text-sm text-gray-600 hover:text-ocean transition-colors">
+          <div className="hidden md:flex items-center gap-7">
+            <Link href="/venues" className="text-sm font-medium text-gray-600 hover:text-ocean transition-colors">
               חיפוש חללים
             </Link>
-            <Link href="/how-it-works" className="text-sm text-gray-600 hover:text-ocean transition-colors">
+            <Link href="/how-it-works" className="text-sm font-medium text-gray-600 hover:text-ocean transition-colors">
               איך זה עובד
             </Link>
-            <Link href="/host" className="text-sm text-gray-600 hover:text-ocean transition-colors">
+            <Link href="/host" className="text-sm font-medium text-gray-600 hover:text-ocean transition-colors">
               להשכיר חלל
             </Link>
           </div>
@@ -47,10 +47,10 @@ export async function Navbar() {
             />
           ) : (
             <div className="hidden md:flex items-center gap-3">
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" className="text-deep-ocean hover:text-ocean" asChild>
                 <Link href="/auth/login">התחברות</Link>
               </Button>
-              <Button size="sm" className="bg-ocean hover:bg-deep-ocean text-white" asChild>
+              <Button size="sm" className="bg-ocean hover:bg-deep-ocean text-white rounded-full px-5" asChild>
                 <Link href="/auth/signup">הצטרפות חינמית</Link>
               </Button>
             </div>

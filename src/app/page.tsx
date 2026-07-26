@@ -65,36 +65,37 @@ export default async function HomePage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        <div className="absolute inset-0 ocean-gradient opacity-95" />
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
-        />
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ paddingTop: '68px' }}>
+        <div className="absolute inset-0 ocean-gradient" />
+        {/* Orb blobs */}
+        <div className="absolute" style={{ width: 500, height: 500, background: 'rgba(92,140,110,0.18)', borderRadius: '50%', filter: 'blur(80px)', top: -100, left: -100 }} />
+        <div className="absolute" style={{ width: 400, height: 400, background: 'rgba(200,148,74,0.12)', borderRadius: '50%', filter: 'blur(80px)', bottom: -50, right: -50 }} />
+        {/* Stripe texture */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: 'repeating-linear-gradient(15deg, transparent, transparent 20px, rgba(255,255,255,0.4) 20px, rgba(255,255,255,0.4) 22px)',
+        }} />
 
-        <div className="relative max-w-7xl mx-auto px-4 py-24 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur text-white rounded-full px-4 py-2 text-sm mb-6">
-            <Waves className="w-4 h-4" />
-            <span>הפלטפורמה הראשונה מסוגה בישראל</span>
+        <div className="relative z-10 max-w-3xl mx-auto px-6 py-16 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur border border-white/20 text-white rounded-full px-5 py-2 text-sm mb-7 font-medium">
+            <span style={{ width: 7, height: 7, background: '#e8b870', borderRadius: '50%', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+            הפלטפורמה הראשונה מסוגה בישראל
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+          <h1 className="font-black text-white mb-5 leading-tight" style={{ fontSize: 'clamp(38px, 6vw, 68px)', letterSpacing: '-1px', fontFamily: "'Heebo', sans-serif" }}>
             שעות מתות הן
             <br />
-            <span className="text-golden">הכנסה פסיבית</span>
+            <span style={{ color: '#e8b870' }}>הכנסה פסיבית</span>
             <br />
             שמחכה לך
           </h1>
 
-          <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-white/75 mb-10 leading-relaxed mx-auto" style={{ fontSize: 'clamp(16px, 2vw, 19px)', maxWidth: 580, lineHeight: 1.7 }}>
             WELLNESS&amp;SEA מחברת בין מסעדות חוף למדריכי יוגה ופילאטיס.
             השכר את החלל שלך בשעות הבוקר וצור הכנסה חדשה.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-coral hover:bg-coral/90 text-white text-lg px-8 h-14" asChild>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Button size="lg" className="bg-golden hover:bg-gold-light text-white text-base px-9 h-13 rounded-full font-semibold" style={{ paddingTop: 16, paddingBottom: 16 }} asChild>
               <Link href="/venues">
                 מצא חלל ליוגה
                 <ArrowLeft className="mr-2 w-5 h-5" />
@@ -102,59 +103,58 @@ export default async function HomePage() {
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-ocean text-lg px-8 h-14 bg-white/10"
+              className="border border-white/30 text-white bg-white/15 hover:bg-white/25 text-base px-9 h-13 rounded-full font-semibold"
+              style={{ paddingTop: 16, paddingBottom: 16 }}
               asChild
             >
               <Link href="/host">השכר את המסעדה שלך</Link>
             </Button>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-8 mt-16">
+          <div className="flex flex-wrap justify-center gap-12">
             {[
               { value: '120+', label: 'חללים ברשת' },
               { value: '300+', label: 'מדריכים רשומים' },
               { value: '₪2,400', label: 'הכנסה ממוצעת לחודש' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-white">{stat.value}</div>
-                <div className="text-white/60 text-sm mt-1">{stat.label}</div>
+                <div className="font-black text-white" style={{ fontSize: 30 }}>{stat.value}</div>
+                <div className="text-white/60 text-xs mt-1">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Wave divider */}
+      <div style={{ lineHeight: 0, background: '#faf5ee' }}>
+        <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
+          <path d="M0,60 C360,0 1080,60 1440,0 L1440,60 Z" fill="#0a4a4a" />
+        </svg>
+      </div>
+
       {/* How it works */}
       <section className="py-20 bg-cream">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-deep-ocean mb-4">איך זה עובד?</h2>
-            <p className="text-gray-600 max-w-xl mx-auto">שלושה שלבים פשוטים לחלל מושלם</p>
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-sage mb-3 block">תהליך פשוט</span>
+            <h2 className="font-black text-deep-ocean mb-3" style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontFamily: "'Playfair Display', serif" }}>איך זה עובד?</h2>
+            <p className="text-gray-500 max-w-md mx-auto leading-relaxed">שלושה שלבים פשוטים לחלל מושלם על קו החוף</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              {
-                icon: '🔍',
-                title: 'מצאי את החלל',
-                desc: 'חפשי לפי מיקום, שעות, קיבולת ותנאים – מיזוג, הצללה, נוף לים',
-              },
-              {
-                icon: '📅',
-                title: 'הזמיני בקלות',
-                desc: 'בחרי שעה, שלחי פרטי השיעור ושלמי בצורה מאובטחת',
-              },
-              {
-                icon: '🧘',
-                title: 'העבירי את השיעור',
-                desc: 'הגיעי לחלל מוכן, העבירי שיעור מרהיב, קבלי חוויה יוקרתית',
-              },
-            ].map((step, i) => (
-              <Card key={i} className="p-6 text-center border-0 shadow-md hover:shadow-lg transition-shadow">
-                <div className="text-4xl mb-4">{step.icon}</div>
-                <h3 className="font-semibold text-lg text-deep-ocean mb-2">{step.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{step.desc}</p>
+              { step: '1', icon: '🔍', title: 'מצאי את החלל', desc: 'חפשי לפי מיקום, שעות, קיבולת ותנאים – מיזוג, הצללה, נוף לים' },
+              { step: '2', icon: '📅', title: 'הזמיני בקלות', desc: 'בחרי שעה, שלחי פרטי השיעור ושלמי בצורה מאובטחת' },
+              { step: '3', icon: '🧘', title: 'העבירי את השיעור', desc: 'הגיעי לחלל מוכן, העבירי שיעור מרהיב, קבלי חוויה יוקרתית' },
+            ].map((step) => (
+              <Card key={step.step} className="p-8 text-center border-0 relative overflow-hidden transition-all duration-300 hover:-translate-y-1" style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}>
+                <div className="absolute" style={{ top: -10, right: -10, fontSize: 80, fontWeight: 900, color: '#f0e6d3', lineHeight: 1, fontFamily: "'Playfair Display', serif", pointerEvents: 'none' }}>{step.step}</div>
+                <div className="relative z-10">
+                  <div className="w-16 h-16 ocean-gradient rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5">{step.icon}</div>
+                  <h3 className="font-bold text-lg text-deep-ocean mb-2">{step.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{step.desc}</p>
+                </div>
               </Card>
             ))}
           </div>
@@ -162,23 +162,19 @@ export default async function HomePage() {
       </section>
 
       {/* Brand differentiators */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-deep-ocean mb-2">למה WELLNESS&SEA?</h2>
-            <p className="text-gray-500 text-sm">הבידול שלנו – לא רק חלל, אלא חוויה שלמה</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <section className="py-16 bg-deep-ocean">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { icon: '🌊', title: 'נוף לים', desc: 'כל החללים על קו החוף' },
-              { icon: '☕', title: 'בונוסים ייחודיים', desc: 'קפה, ארוחות, הנחות' },
-              { icon: '🏖️', title: 'גישה לחוף', desc: 'המשיכי את השיעור בחול' },
-              { icon: '🛡️', title: 'מאומת ובטוח', desc: 'כל מקום נבדק אישית' },
+              { icon: '🌊', value: '120+', label: 'חללים על קו החוף' },
+              { icon: '🧘', value: '300+', label: 'מדריכים רשומים' },
+              { icon: '⭐', value: '4.9', label: 'דירוג ממוצע' },
+              { icon: '💰', value: '₪2,400', label: 'הכנסה ממוצעת לחודש' },
             ].map(item => (
-              <div key={item.title} className="text-center p-4">
-                <div className="text-3xl mb-2">{item.icon}</div>
-                <div className="font-semibold text-deep-ocean text-sm mb-1">{item.title}</div>
-                <div className="text-gray-500 text-xs">{item.desc}</div>
+              <div key={item.label} className="text-center">
+                <div className="text-4xl mb-2">{item.icon}</div>
+                <div className="font-black text-white text-2xl">{item.value}</div>
+                <div className="text-white/60 text-xs mt-1">{item.label}</div>
               </div>
             ))}
           </div>
@@ -210,20 +206,46 @@ export default async function HomePage() {
       <WellnessWorldInsights />
 
       {/* For Hosts CTA */}
-      <section className="py-20 bg-sand">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="ocean-gradient rounded-3xl p-10 md:p-16 text-center relative overflow-hidden">
-            <TrendingUp className="w-12 h-12 text-golden mx-auto mb-4" />
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              יש לך מסעדה עם נוף לים?
-            </h2>
-            <p className="text-white/80 text-lg max-w-xl mx-auto mb-8">
-              הפוך את שעות הבוקר הריקות להכנסה של אלפי שקלים בחודש.
-              בלי עלויות נוספות, בלי כוח אדם נוסף.
-            </p>
-            <Button size="lg" className="bg-golden hover:bg-golden/90 text-white text-lg px-10 h-14" asChild>
-              <Link href="/host">רשם את המקום שלך – חינם</Link>
-            </Button>
+      <section className="py-20 bg-cream">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="ocean-gradient rounded-3xl p-10 md:p-16 relative overflow-hidden" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }}>
+            <div className="absolute" style={{ top: -60, left: -60, width: 300, height: 300, background: 'rgba(92,140,110,0.2)', borderRadius: '50%', filter: 'blur(60px)' }} />
+            <div className="relative z-10">
+              <p className="text-xs font-bold uppercase tracking-widest text-gold-light mb-4">לבעלי מסעדות</p>
+              <h2 className="font-black text-white mb-4 leading-tight" style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontFamily: "'Playfair Display', serif" }}>
+                יש לך מסעדה עם נוף לים?
+              </h2>
+              <p className="text-white/75 text-base leading-relaxed mb-7">
+                הפוך את שעות הבוקר הריקות להכנסה של אלפי שקלים בחודש.
+                בלי עלויות נוספות, בלי כוח אדם נוסף.
+              </p>
+              <ul className="space-y-2.5 mb-8">
+                {['הכנסה פסיבית בשעות הבוקר', 'קהל יוקרתי ומכבד', 'ניהול הזמנות מלא במערכת'].map(item => (
+                  <li key={item} className="flex items-center gap-2.5 text-white/85 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-sage flex items-center justify-center text-white text-xs font-bold flex-shrink-0">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Button size="lg" className="bg-golden hover:bg-gold-light text-white rounded-full px-9 font-semibold" asChild>
+                <Link href="/host">רשם את המקום שלך – חינם</Link>
+              </Button>
+            </div>
+            <div className="relative z-10 hidden md:flex flex-col gap-5">
+              {[
+                { icon: '💰', value: '₪2,400', label: 'הכנסה ממוצעת לחודש' },
+                { icon: '📅', value: '8-12', label: 'הזמנות בחודש הראשון' },
+                { icon: '⭐', value: '4.9★', label: 'שביעות רצון מדריכים' },
+              ].map(stat => (
+                <div key={stat.label} className="flex items-center gap-4 rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                  <span className="text-3xl">{stat.icon}</span>
+                  <div>
+                    <div className="font-black text-white text-xl">{stat.value}</div>
+                    <div className="text-white/60 text-xs">{stat.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
