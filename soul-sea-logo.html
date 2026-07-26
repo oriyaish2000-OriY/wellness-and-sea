@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>SOUL&SEA — Brand Identity Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Heebo', sans-serif; background: #fff; direction: rtl; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+:root {
+  --teal:       #0a4a4a;
+  --teal-mid:   #0d6e6e;
+  --teal-light: #1a9090;
+  --sage:       #5c8c6e;
+  --gold:       #c8944a;
+  --gold-light: #e8b870;
+  --sand:       #f0e6d3;
+  --sand-light: #faf5ee;
+  --coral:      #e07a5f;
+  --dark:       #1a2a2a;
+}
+
+.page {
+  width: 210mm; min-height: 297mm;
+  margin: 0 auto; background: var(--sand-light);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* ══ HEADER ══ */
+.brand-header {
+  background: linear-gradient(145deg, #0a4a4a 0%, #0d6e6e 50%, #1a9090 100%);
+  padding: 52px 52px 60px;
+  position: relative; overflow: hidden;
+}
+.brand-header::before {
+  content: '';
+  position: absolute; bottom: -40px; right: -40px;
+  width: 240px; height: 240px; border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+.brand-header::after {
+  content: '';
+  position: absolute; top: -60px; left: 40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(92,140,110,.15);
+}
+
+.logo-lockup {
+  display: flex; align-items: center; gap: 20px; margin-bottom: 36px;
+  position: relative; z-index: 1;
+}
+.logo-icon-wrap {
+  position: relative;
+}
+.logo-icon-bg {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.25);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.logo-icon-inner {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Soul & Sea SVG mark */
+.logo-wordmark { display: flex; flex-direction: column; gap: 2px; }
+.logo-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 46px; font-weight: 700;
+  color: #ffffff; letter-spacing: 1px; line-height: 1;
+}
+.logo-name .amp { color: #e8b870; }
+.logo-name .sea { font-style: italic; }
+.logo-tagline-he {
+  font-family: 'Heebo', sans-serif; font-size: 15px;
+  font-weight: 300; color: rgba(255,255,255,.65);
+  letter-spacing: 1px; direction: rtl;
+}
+
+.header-tagline-block { position: relative; z-index: 1; }
+.tagline-en {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-style: italic; font-weight: 300;
+  color: rgba(255,255,255,.5); letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+.tagline-he-large {
+  font-family: 'Heebo', sans-serif;
+  font-size: 36px; font-weight: 800;
+  color: #ffffff; line-height: 1.2;
+}
+.tagline-he-large span { color: var(--gold-light); }
+
+/* ══ LOGO VARIATIONS ══ */
+.section { padding: 40px 52px; }
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 3px; color: var(--teal-mid); margin-bottom: 28px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--sand); }
+
+.logo-variations { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.logo-var {
+  border-radius: 14px; padding: 28px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.logo-var-label { font-size: 11px; color: var(--gray, #888); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Variation: Primary (dark bg) */
+.var-primary { background: var(--teal); }
+.var-light { background: var(--sand-light); border: 1.5px solid var(--sand); }
+.var-mono { background: var(--dark); }
+
+.logo-sm { display: flex; align-items: center; gap: 10px; }
+.logo-sm-icon {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-sm-icon.on-dark { background: rgba(255,255,255,.15); }
+.logo-sm-icon.on-light { background: linear-gradient(145deg,#0a4a4a,#1a9090); }
+.logo-sm-icon.on-mono { background: rgba(255,255,255,.1); }
+.logo-sm-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 700; letter-spacing: 0.5px;
+}
+.logo-sm-text.white { color: #fff; }
+.logo-sm-text.dark { color: var(--teal); }
+
+/* Icon only */
+.icon-only {
+  width: 70px; height: 70px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto;
+}
+.icon-only.teal { background: linear-gradient(145deg,#0a4a4a,#1a9090); }
+.icon-only.gold { background: linear-gradient(135deg,#c8944a,#e8b870); }
+.icon-only.white { background: white; }
+
+/* ══ COLORS ══ */
+.colors-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 12px; }
+.color-swatch {
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+}
+.color-block { height: 70px; }
+.color-info { padding: 8px 10px; background: white; }
+.color-name { font-size: 11px; font-weight: 700; color: var(--dark); }
+.color-hex { font-size: 10px; color: #888; font-family: monospace; }
+.color-role { font-size: 9px; color: #aaa; margin-top: 2px; }
+
+/* ══ TYPOGRAPHY ══ */
+.type-specimens { display: flex; flex-direction: column; gap: 20px; }
+.type-row { display: grid; grid-template-columns: 120px 1fr; gap: 20px; align-items: baseline; }
+.type-meta { font-size: 10px; color: #aaa; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; line-height: 1.6; }
+
+/* ══ ICON ANATOMY ══ */
+.icon-anatomy {
+  display: flex; align-items: center; justify-content: center;
+  gap: 48px; padding: 32px;
+}
+.anatomy-item { text-align: center; }
+.anatomy-desc { font-size: 11px; color: var(--gray, #888); margin-top: 10px; font-weight: 600; }
+
+/* ══ USAGE RULES ══ */
+.do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.do-card { background: rgba(92,140,110,.06); border: 1.5px solid rgba(92,140,110,.2); border-radius: 12px; padding: 18px; }
+.dont-card { background: rgba(224,122,95,.06); border: 1.5px solid rgba(224,122,95,.2); border-radius: 12px; padding: 18px; }
+.do-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #5c8c6e; margin-bottom: 10px; }
+.dont-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #e07a5f; margin-bottom: 10px; }
+.rule-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.rule-list li { font-size: 12px; color: var(--dark); display: flex; align-items: flex-start; gap: 6px; }
+
+/* ══ FOOTER ══ */
+.brand-footer {
+  margin-top: auto; background: var(--teal);
+  padding: 20px 52px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: white; }
+.footer-meta { font-size: 11px; color: rgba(255,255,255,.4); }
+
+/* Print only */
+@media print {
+  .page { width: 210mm; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══ HEADER / HERO ══ -->
+  <div class="brand-header">
+    <div class="logo-lockup">
+      <!-- Logo Icon -->
+      <div class="logo-icon-bg">
+        <div class="logo-icon-inner">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <!-- Wave layers -->
+            <path d="M4 22 Q9 18 14 22 Q19 26 24 22 Q29 18 34 22" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M4 26 Q9 22 14 26 Q19 30 24 26 Q29 22 34 26" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <!-- Sun / soul -->
+            <circle cx="18" cy="13" r="6" fill="rgba(232,184,112,0.9)"/>
+            <circle cx="18" cy="13" r="3.5" fill="rgba(255,255,255,0.85)"/>
+            <!-- Sun rays -->
+            <line x1="18" y1="5" x2="18" y2="3" stroke="rgba(232,184,112,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="24.2" y1="6.8" x2="25.5" y2="5.5" stroke="rgba(232,184,112,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="26" y1="13" x2="28" y2="13" stroke="rgba(232,184,112,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="11.8" y1="6.8" x2="10.5" y2="5.5" stroke="rgba(232,184,112,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="10" y1="13" x2="8" y2="13" stroke="rgba(232,184,112,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Wordmark -->
+      <div class="logo-wordmark">
+        <div class="logo-name">SOUL<span class="amp">&</span><span class="sea">SEA</span></div>
+        <div class="logo-tagline-he">מרחב לגוף ולנשמה</div>
+      </div>
+    </div>
+
+    <div class="header-tagline-block">
+      <div class="tagline-en">where the soul meets the sea</div>
+      <div class="tagline-he-large">מקום שבו הנשמה<br><span>פוגשת את הים</span></div>
+    </div>
+  </div>
+
+  <!-- ══ LOGO VARIATIONS ══ -->
+  <div class="section">
+    <div class="section-label">01 — Logo Variations</div>
+    <div class="logo-variations">
+      <!-- On Dark -->
+      <div class="logo-var var-primary">
+        <div class="logo-sm">
+          <div class="logo-sm-icon on-dark">
+            <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+              <path d="M4 22 Q9 18 14 22 Q19 26 24 22 Q29 18 34 22" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <circle cx="18" cy="13" r="6" fill="rgba(232,184,112,0.9)"/>
+              <circle cx="18" cy="13" r="3.5" fill="rgba(255,255,255,0.85)"/>
+            </svg>
+          </div>
+          <span class="logo-sm-text white">SOUL<span style="color:#e8b870">&</span>SEA</span>
+        </div>
+        <div class="logo-var-label" style="color:rgba(255,255,255,.4)">Primary — Dark</div>
+      </div>
+
+      <!-- On Light -->
+      <div class="logo-var var-light">
+        <div class="logo-sm">
+          <div class="logo-sm-icon on-light">
+            <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+              <path d="M4 22 Q9 18 14 22 Q19 26 24 22 Q29 18 34 22" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <circle cx="18" cy="13" r="6" fill="rgba(232,184,112,0.9)"/>
+              <circle cx="18" cy="13" r="3.5" fill="rgba(255,255,255,0.85)"/>
+            </svg>
+          </div>
+          <span class="logo-sm-text dark">SOUL<span style="color:#e07a5f">&</span>SEA</span>
+        </div>
+        <div class="logo-var-label" style="color:#aaa">Secondary — Light</div>
+      </div>
+
+      <!-- Monochrome -->
+      <div class="logo-var var-mono">
+        <div class="logo-sm">
+          <div class="logo-sm-icon on-mono">
+            <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+              <path d="M4 22 Q9 18 14 22 Q19 26 24 22 Q29 18 34 22" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <circle cx="18" cy="13" r="6" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="18" cy="13" r="3.5" fill="rgba(255,255,255,0.9)"/>
+            </svg>
+          </div>
+          <span class="logo-sm-text white">SOUL<span style="color:rgba(255,255,255,.4)">&</span>SEA</span>
+        </div>
+        <div class="logo-var-label" style="color:rgba(255,255,255,.3)">Mono — Dark BG</div>
+      </div>
+    </div>
+
+    <!-- Icon only row -->
+    <div style="display:flex;gap:20px;margin-top:20px;align-items:center">
+      <div class="icon-only teal">
+        <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+          <path d="M4 22 Q9 18 14 22 Q19 26 24 22 Q29 18 34 22" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="18" cy="13" r="6" fill="rgba(232,184,112,0.9)"/>
+          <circle cx="18" cy="13" r="3.5" fill="rgba(255,255,255,0.85)"/>
+        </svg>
+      </div>
+      <div class="icon-only gold">
+        <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+          <path d="M4 22 Q9 18 14 22 Q19 26 24 22 Q29 18 34 22" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="18" cy="13" r="7" fill="rgba(255,255,255,0.9)"/>
+          <circle cx="18" cy="13" r="3.5" fill="#c8944a"/>
+        </svg>
+      </div>
+      <div class="icon-only white" style="border:1.5px solid var(--sand)">
+        <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+          <path d="M4 22 Q9 18 14 22 Q19 26 24 22 Q29 18 34 22" stroke="#0a4a4a" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <circle cx="18" cy="13" r="6" fill="#c8944a"/>
+          <circle cx="18" cy="13" r="3.5" fill="#fff"/>
+        </svg>
+      </div>
+      <div style="font-size:12px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:1px">← Icon Only — App Icon / Favicon / Stamp</div>
+    </div>
+  </div>
+
+  <!-- ══ COLOR SYSTEM ══ -->
+  <div class="section" style="padding-top:0">
+    <div class="section-label">02 — Color System</div>
+    <div class="colors-grid">
+      <div class="color-swatch">
+        <div class="color-block" style="background:#0a4a4a"></div>
+        <div class="color-info">
+          <div class="color-name">Deep Teal</div>
+          <div class="color-hex">#0A4A4A</div>
+          <div class="color-role">Primary</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-block" style="background:#0d6e6e"></div>
+        <div class="color-info">
+          <div class="color-name">Teal Mid</div>
+          <div class="color-hex">#0D6E6E</div>
+          <div class="color-role">Secondary</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-block" style="background:#5c8c6e"></div>
+        <div class="color-info">
+          <div class="color-name">Sage</div>
+          <div class="color-hex">#5C8C6E</div>
+          <div class="color-role">Nature / CSR</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-block" style="background:#c8944a"></div>
+        <div class="color-info">
+          <div class="color-name">Gold</div>
+          <div class="color-hex">#C8944A</div>
+          <div class="color-role">CTA / Soul</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-block" style="background:#e07a5f"></div>
+        <div class="color-info">
+          <div class="color-name">Coral</div>
+          <div class="color-hex">#E07A5F</div>
+          <div class="color-role">Accent / &</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-block" style="background:#f0e6d3"></div>
+        <div class="color-info">
+          <div class="color-name">Sand</div>
+          <div class="color-hex">#F0E6D3</div>
+          <div class="color-role">Background</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-block" style="background:#1a2a2a"></div>
+        <div class="color-info">
+          <div class="color-name">Deep Night</div>
+          <div class="color-hex">#1A2A2A</div>
+          <div class="color-role">Text</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TYPOGRAPHY ══ -->
+  <div class="section" style="padding-top:0">
+    <div class="section-label">03 — Typography</div>
+    <div class="type-specimens">
+      <div class="type-row">
+        <div class="type-meta">Display<br>Playfair Display<br>Italic 700</div>
+        <div style="font-family:'Playfair Display',serif;font-size:38px;font-weight:700;font-style:italic;color:var(--teal);line-height:1">
+          Soul meets Sea
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Headline<br>Playfair Display<br>Regular 400</div>
+        <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:400;color:var(--teal);line-height:1.2">
+          מקום שבו הנשמה פוגשת את הים
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Body<br>Heebo<br>Regular 400</div>
+        <div style="font-family:'Heebo',sans-serif;font-size:16px;font-weight:400;color:#555;line-height:1.7">
+          SOUL&SEA מחברת בין מדריכות יוגה לחללים מרהיבים על קו החוף. חוויה שלא ניתן ליצור בסטודיו.
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Label<br>Heebo<br>Bold 700<br>Uppercase</div>
+        <div style="font-family:'Heebo',sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--sage)">
+          WELLNESS · NATURE · SEA · COMMUNITY
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DO / DON'T ══ -->
+  <div class="section" style="padding-top:0">
+    <div class="section-label">04 — Usage Rules</div>
+    <div class="do-dont">
+      <div class="do-card">
+        <div class="do-title">✓ עשה</div>
+        <ul class="rule-list">
+          <li><span>✓</span> השתמש רק ב-2 גרסאות הלוגו המאושרות (dark / light)</li>
+          <li><span>✓</span> שמור על מרחק נקי שווה להגובה של ה-icon</li>
+          <li><span>✓</span> SOUL&SEA תמיד באותיות גדולות</li>
+          <li><span>✓</span> ה-& תמיד בצבע Coral (#E07A5F) או Gold על dark</li>
+          <li><span>✓</span> הלוגו על רקעי Teal, Sand, White בלבד</li>
+        </ul>
+      </div>
+      <div class="dont-card">
+        <div class="dont-title">✗ אל תעשה</div>
+        <ul class="rule-list">
+          <li><span>✗</span> אל תמתח, תסובב, או תשנה פרופורציות הלוגו</li>
+          <li><span>✗</span> אל תשתמש על רקע צבעוני שאינו ממותג</li>
+          <li><span>✗</span> אל תפריד icon מ-wordmark (אלא icon-only מאושר)</li>
+          <li><span>✗</span> אל תשנה צבעי המותג ב-HEX</li>
+          <li><span>✗</span> אל תוסיף אפקט Stroke / Shadow / Glow ללוגו</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <div class="brand-footer">
+    <div class="footer-logo">SOUL<span style="color:#e07a5f">&</span>SEA</div>
+    <div class="footer-meta">Brand Identity System v1.0 · 2026 · Confidential</div>
+  </div>
+
+</div>
+
+<script>
+// Auto print prompt on load
+window.onload = () => {
+  document.title = 'SOUL&SEA Brand Identity — להדפסה כ-PDF';
+};
+</script>
+</body>
+</html>

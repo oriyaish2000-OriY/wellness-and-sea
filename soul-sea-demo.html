@@ -1,0 +1,2662 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOUL&SEA — מרחב לגוף ולנשמה</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   SOUL&SEA — Brand Tokens
+═══════════════════════════════════════ */
+:root {
+  --teal:        #0a4a4a;
+  --teal-mid:    #0d6e6e;
+  --teal-light:  #1a9090;
+  --sage:        #5c8c6e;
+  --sage-light:  #a8c5b0;
+  --gold:        #c8944a;
+  --gold-light:  #e8b870;
+  --sand:        #f0e6d3;
+  --sand-light:  #faf5ee;
+  --bamboo:      #d4c5a9;
+  --coral:       #e07a5f;
+  --coral-light: #f0a090;
+  --dark:        #1a2a2a;
+  --gray:        #6b7c7c;
+  --gray-light:  #b0bfbf;
+  --white:       #ffffff;
+
+  --gradient-hero: linear-gradient(145deg, #0a4a4a 0%, #0d6e6e 45%, #1a9090 100%);
+  --gradient-sand: linear-gradient(180deg, #faf5ee 0%, #f0e6d3 100%);
+  --gradient-gold: linear-gradient(135deg, #c8944a, #e8b870);
+  --shadow-card:  0 4px 24px rgba(10,74,74,0.10);
+  --shadow-hover: 0 8px 40px rgba(10,74,74,0.18);
+  --radius:       16px;
+  --radius-sm:    10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--sand-light);
+  color: var(--dark);
+  direction: rtl;
+  text-align: right;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══ SCREENS ═══ */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ═══ COMPONENTS ═══ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 12px 24px; border-radius: 50px;
+  font-family: 'Heebo', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; border: none; transition: all .22s ease;
+  text-decoration: none; white-space: nowrap;
+}
+.btn-primary { background: var(--gold); color: var(--white); }
+.btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(200,148,74,.35); }
+.btn-teal { background: var(--teal); color: var(--white); }
+.btn-teal:hover { background: var(--teal-mid); transform: translateY(-1px); }
+.btn-outline { background: transparent; color: var(--teal); border: 2px solid var(--teal); }
+.btn-outline:hover { background: var(--teal); color: var(--white); }
+.btn-white { background: var(--white); color: var(--teal); }
+.btn-white:hover { background: var(--sand); }
+.btn-ghost { background: rgba(255,255,255,.15); color: var(--white); border: 1.5px solid rgba(255,255,255,.3); }
+.btn-ghost:hover { background: rgba(255,255,255,.25); }
+.btn-coral { background: var(--coral); color: var(--white); }
+.btn-coral:hover { background: var(--coral-light); }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-lg { padding: 16px 36px; font-size: 17px; }
+
+/* ═══ NAVBAR ═══ */
+.navbar {
+  position: fixed; top: 0; right: 0; left: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 68px;
+  background: rgba(250,245,238,.92); backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(10,74,74,.08);
+  transition: all .3s;
+}
+.navbar.transparent {
+  background: transparent;
+  border-color: transparent;
+}
+.navbar-logo {
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; text-decoration: none;
+}
+.navbar-logo-icon {
+  width: 38px; height: 38px;
+  background: var(--gradient-hero);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.navbar-logo-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 19px; font-weight: 700;
+  color: var(--teal);
+  letter-spacing: 0.5px;
+}
+.navbar-logo-text span { color: var(--coral); }
+.navbar-links { display: flex; align-items: center; gap: 28px; }
+.navbar-links a {
+  font-size: 14px; font-weight: 500; color: var(--gray);
+  text-decoration: none; cursor: pointer; transition: color .2s;
+}
+.navbar-links a:hover { color: var(--teal); }
+.navbar-actions { display: flex; align-items: center; gap: 12px; }
+
+/* ═══ HERO ═══ */
+.hero {
+  min-height: 100vh;
+  background: var(--gradient-hero);
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  padding-top: 68px;
+}
+.hero-bg-waves {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 200px; opacity: .12;
+}
+.hero-bamboo-pattern {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 45%; opacity: .06;
+  background-image: repeating-linear-gradient(
+    15deg, transparent, transparent 20px,
+    rgba(255,255,255,.4) 20px, rgba(255,255,255,.4) 22px
+  );
+}
+.hero-orb {
+  position: absolute; border-radius: 50%; filter: blur(80px);
+  pointer-events: none;
+}
+.hero-orb-1 { width: 500px; height: 500px; background: rgba(92,140,110,.2); top: -100px; left: -100px; }
+.hero-orb-2 { width: 400px; height: 400px; background: rgba(200,148,74,.12); bottom: -50px; right: -50px; }
+
+.hero-content {
+  position: relative; z-index: 2;
+  text-align: center; max-width: 780px; padding: 40px 24px;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.15); backdrop-filter: blur(8px);
+  color: rgba(255,255,255,.9); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 50px; padding: 8px 20px; font-size: 13px; font-weight: 500;
+  margin-bottom: 28px;
+}
+.hero-badge-dot {
+  width: 7px; height: 7px; background: var(--gold-light);
+  border-radius: 50%; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+
+.hero-title {
+  font-size: clamp(38px, 6vw, 68px);
+  font-weight: 900; color: var(--white);
+  line-height: 1.1; margin-bottom: 20px;
+  letter-spacing: -1px;
+}
+.hero-title-accent { color: var(--gold-light); display: block; }
+.hero-subtitle {
+  font-size: clamp(16px, 2vw, 19px); color: rgba(255,255,255,.75);
+  line-height: 1.7; margin-bottom: 40px; max-width: 580px; margin-inline: auto;
+}
+.hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 60px; }
+
+.hero-search {
+  background: var(--white); border-radius: 20px;
+  padding: 8px 8px 8px 16px;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  max-width: 600px; margin: 0 auto 60px;
+}
+.hero-search-fields { flex: 1; display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr; gap: 0; }
+.hero-search-divider { width: 1px; background: var(--bamboo); margin: 8px 0; }
+.hero-search-field {
+  padding: 10px 16px; cursor: pointer; border-radius: 12px;
+  transition: background .2s;
+}
+.hero-search-field:hover { background: var(--sand-light); }
+.hero-search-field label { display: block; font-size: 11px; font-weight: 700; color: var(--teal); margin-bottom: 2px; }
+.hero-search-field span { font-size: 13px; color: var(--gray); }
+
+.hero-stats {
+  display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
+}
+.hero-stat { text-align: center; }
+.hero-stat-value { font-size: 30px; font-weight: 800; color: var(--white); }
+.hero-stat-label { font-size: 12px; color: rgba(255,255,255,.6); margin-top: 2px; }
+
+/* ═══ WAVE DIVIDER ═══ */
+.wave-divider { line-height: 0; }
+.wave-divider svg { display: block; width: 100%; }
+
+/* ═══ SECTIONS ═══ */
+.section { padding: 80px 24px; }
+.section-sm { padding: 50px 24px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.section-header { text-align: center; margin-bottom: 52px; }
+.section-eyebrow {
+  display: inline-block; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2px;
+  color: var(--sage); margin-bottom: 14px;
+}
+.section-title { font-size: clamp(28px, 4vw, 40px); font-weight: 800; color: var(--teal); line-height: 1.2; }
+.section-subtitle { font-size: 16px; color: var(--gray); margin-top: 12px; max-width: 520px; margin-inline: auto; line-height: 1.7; }
+
+/* ═══ HOW IT WORKS ═══ */
+.how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 32px; }
+.how-card {
+  background: var(--white); border-radius: var(--radius);
+  padding: 36px 28px; text-align: center;
+  box-shadow: var(--shadow-card);
+  position: relative; overflow: hidden;
+  transition: transform .25s, box-shadow .25s;
+}
+.how-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.how-card::before {
+  content: attr(data-step);
+  position: absolute; top: -10px; right: -10px;
+  font-size: 80px; font-weight: 900;
+  color: var(--sand); line-height: 1;
+  font-family: 'Playfair Display', serif;
+}
+.how-icon {
+  width: 70px; height: 70px; margin: 0 auto 20px;
+  background: var(--gradient-hero); border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+}
+.how-title { font-size: 18px; font-weight: 700; color: var(--teal); margin-bottom: 10px; }
+.how-desc { font-size: 14px; color: var(--gray); line-height: 1.7; }
+
+/* ═══ VENUE CARDS ═══ */
+.venues-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; }
+.venue-card {
+  background: var(--white); border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow-card);
+  transition: transform .25s, box-shadow .25s; cursor: pointer;
+}
+.venue-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+.venue-card-image {
+  height: 220px; position: relative;
+  background: var(--gradient-hero); overflow: hidden;
+}
+.venue-card-image-inner {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 60px; opacity: .3;
+}
+.venue-card-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(10,74,74,.6) 0%, transparent 60%);
+}
+.venue-card-badge {
+  position: absolute; top: 14px; right: 14px;
+  background: var(--gold); color: var(--white);
+  padding: 5px 12px; border-radius: 50px;
+  font-size: 11px; font-weight: 700;
+}
+.venue-card-heart {
+  position: absolute; top: 14px; left: 14px;
+  width: 34px; height: 34px; background: rgba(255,255,255,.9);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer; transition: transform .2s;
+}
+.venue-card-heart:hover { transform: scale(1.15); }
+.venue-card-rating {
+  position: absolute; bottom: 12px; left: 14px;
+  display: flex; align-items: center; gap: 4px;
+  color: var(--white); font-size: 13px; font-weight: 600;
+}
+.venue-card-body { padding: 18px 18px 20px; }
+.venue-card-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+.venue-card-location { font-size: 12px; color: var(--gray); display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+.venue-card-desc { font-size: 13px; color: var(--gray); line-height: 1.6; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.venue-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.venue-tag { background: rgba(10,74,74,.07); color: var(--teal-mid); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 50px; }
+.venue-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--sand); }
+.venue-card-price { font-size: 20px; font-weight: 800; color: var(--teal); }
+.venue-card-price span { font-size: 12px; font-weight: 400; color: var(--gray); }
+.venue-card-capacity { font-size: 12px; color: var(--gray); display: flex; align-items: center; gap: 4px; }
+
+/* ═══ TRUST SECTION ═══ */
+.trust-section { background: var(--teal); padding: 60px 24px; }
+.trust-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 32px; text-align: center; }
+.trust-item-icon { font-size: 36px; margin-bottom: 12px; }
+.trust-item-value { font-size: 32px; font-weight: 900; color: var(--white); }
+.trust-item-label { font-size: 13px; color: rgba(255,255,255,.6); margin-top: 4px; }
+
+/* ═══ FOR HOSTS SECTION ═══ */
+.host-cta {
+  background: var(--gradient-hero);
+  border-radius: 28px; padding: 60px 50px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 60px; align-items: center;
+  position: relative; overflow: hidden;
+}
+.host-cta::before {
+  content: '';
+  position: absolute; top: -60px; left: -60px;
+  width: 300px; height: 300px;
+  background: rgba(92,140,110,.2); border-radius: 50%; filter: blur(60px);
+}
+.host-cta-eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--gold-light); margin-bottom: 16px; }
+.host-cta-title { font-size: clamp(26px, 3.5vw, 40px); font-weight: 900; color: var(--white); line-height: 1.15; margin-bottom: 16px; }
+.host-cta-text { font-size: 15px; color: rgba(255,255,255,.75); line-height: 1.7; margin-bottom: 28px; }
+.host-cta-checks { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.host-cta-checks li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: rgba(255,255,255,.85); }
+.host-cta-checks li::before { content: '✓'; width: 22px; height: 22px; background: var(--sage); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--white); flex-shrink: 0; }
+.host-cta-stats { display: flex; flex-direction: column; gap: 20px; position: relative; z-index: 1; }
+.host-stat-card {
+  background: rgba(255,255,255,.12); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.2); border-radius: 16px;
+  padding: 22px 24px; display: flex; align-items: center; gap: 18px;
+}
+.host-stat-icon { font-size: 32px; }
+.host-stat-value { font-size: 28px; font-weight: 900; color: var(--white); }
+.host-stat-desc { font-size: 12px; color: rgba(255,255,255,.6); }
+
+/* ═══ TESTIMONIALS ═══ */
+.testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+.testimonial-card {
+  background: var(--white); border-radius: var(--radius);
+  padding: 28px; box-shadow: var(--shadow-card);
+}
+.testimonial-stars { color: var(--gold); font-size: 14px; margin-bottom: 12px; }
+.testimonial-text { font-size: 14px; color: var(--gray); line-height: 1.8; margin-bottom: 18px; font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--gradient-hero); display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.testimonial-name { font-size: 14px; font-weight: 700; color: var(--dark); }
+.testimonial-role { font-size: 12px; color: var(--gray); }
+
+/* ═══ VENUES PAGE ═══ */
+.venues-page-header { background: var(--gradient-hero); padding: 100px 24px 48px; }
+.venues-search-bar {
+  max-width: 800px; margin: 0 auto;
+  background: var(--white); border-radius: var(--radius);
+  padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.15);
+}
+.venues-search-input {
+  flex: 1; border: none; outline: none; font-family: 'Heebo', sans-serif;
+  font-size: 15px; background: transparent; direction: rtl;
+}
+.venues-filter-chips { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+.filter-chip {
+  background: rgba(255,255,255,.15); color: var(--white);
+  border: 1.5px solid rgba(255,255,255,.3); border-radius: 50px;
+  padding: 7px 18px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .2s;
+}
+.filter-chip:hover, .filter-chip.active {
+  background: var(--white); color: var(--teal); border-color: var(--white);
+}
+.venues-page-body { padding: 40px 24px; }
+.venues-page-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.venues-count { font-size: 14px; color: var(--gray); }
+.venues-sort { font-size: 13px; color: var(--teal); font-weight: 600; cursor: pointer; }
+
+/* ═══ VENUE DETAIL PAGE ═══ */
+.venue-detail-hero { position: relative; height: 460px; overflow: hidden; }
+.venue-detail-hero-bg {
+  width: 100%; height: 100%;
+  background: var(--gradient-hero);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 100px; opacity: .25;
+}
+.venue-detail-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(10,74,74,.7) 0%, transparent 50%);
+}
+.venue-detail-nav {
+  position: absolute; top: 24px; right: 24px; left: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.venue-detail-photos-hint {
+  position: absolute; bottom: 24px; left: 24px;
+  background: rgba(255,255,255,.9); border-radius: 10px;
+  padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--teal);
+  cursor: pointer;
+}
+.venue-detail-rating-badge {
+  position: absolute; bottom: 24px; right: 24px;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.9); border-radius: 10px;
+  padding: 8px 16px; font-size: 14px; font-weight: 700; color: var(--dark);
+}
+.venue-detail-body { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+.venue-detail-grid { display: grid; grid-template-columns: 1fr 400px; gap: 48px; }
+.venue-detail-title { font-size: 30px; font-weight: 800; color: var(--teal); margin-bottom: 8px; }
+.venue-detail-location { font-size: 14px; color: var(--gray); display: flex; align-items: center; gap: 6px; margin-bottom: 24px; }
+.venue-detail-host {
+  display: flex; align-items: center; gap: 14px;
+  padding: 20px 0; border-top: 1px solid var(--sand); border-bottom: 1px solid var(--sand); margin-bottom: 28px;
+}
+.venue-detail-host-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--gradient-hero); display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.venue-detail-host-name { font-size: 15px; font-weight: 700; color: var(--dark); }
+.venue-detail-host-info { font-size: 13px; color: var(--gray); }
+.venue-detail-host-badge {
+  margin-right: auto; background: var(--sage-light); color: var(--teal);
+  padding: 6px 14px; border-radius: 50px; font-size: 12px; font-weight: 700;
+}
+.venue-detail-section { margin-bottom: 32px; }
+.venue-detail-section h3 { font-size: 18px; font-weight: 700; color: var(--teal); margin-bottom: 14px; }
+.venue-detail-section p { font-size: 15px; color: var(--gray); line-height: 1.8; }
+.amenities-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.amenity-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  font-size: 14px; color: var(--dark);
+}
+.amenity-item.has { background: rgba(92,140,110,.08); }
+.amenity-item.missing { opacity: .35; text-decoration: line-through; }
+.amenity-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--sage-light); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+
+/* ═══ BOOKING WIDGET ═══ */
+.booking-widget {
+  position: sticky; top: 88px;
+  background: var(--white); border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(10,74,74,.15);
+  overflow: hidden;
+}
+.booking-widget-header {
+  background: var(--gradient-hero); padding: 20px 24px; text-align: center;
+}
+.booking-widget-price { font-size: 32px; font-weight: 900; color: var(--white); }
+.booking-widget-price span { font-size: 15px; font-weight: 400; opacity: .7; }
+.booking-widget-body { padding: 24px; }
+.booking-field { margin-bottom: 16px; }
+.booking-field label { display: block; font-size: 12px; font-weight: 700; color: var(--teal); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+.booking-input {
+  width: 100%; padding: 12px 16px; border: 1.5px solid var(--sand);
+  border-radius: var(--radius-sm); font-family: 'Heebo', sans-serif;
+  font-size: 14px; background: var(--sand-light); direction: rtl;
+  outline: none; transition: border-color .2s;
+}
+.booking-input:focus { border-color: var(--teal-mid); }
+.time-slots { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+.time-slot {
+  padding: 9px; border: 1.5px solid var(--sand); border-radius: var(--radius-sm);
+  text-align: center; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all .18s; color: var(--dark);
+}
+.time-slot:hover { border-color: var(--teal-mid); color: var(--teal); }
+.time-slot.selected { background: var(--teal); color: var(--white); border-color: var(--teal); }
+.time-slot.disabled { opacity: .3; cursor: not-allowed; text-decoration: line-through; }
+.booking-summary {
+  background: var(--sand-light); border-radius: var(--radius-sm);
+  padding: 16px; margin-bottom: 16px;
+}
+.booking-summary-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--gray); margin-bottom: 8px; }
+.booking-summary-row.total { font-size: 15px; font-weight: 700; color: var(--dark); padding-top: 10px; border-top: 1px solid var(--bamboo); margin-bottom: 0; }
+.booking-trust { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 12px; color: var(--gray); margin-top: 12px; }
+
+/* ═══ RULES BOX ═══ */
+.rules-box { background: rgba(10,74,74,.04); border: 1px solid rgba(10,74,74,.1); border-radius: var(--radius-sm); padding: 18px 20px; }
+.rules-box h4 { font-size: 13px; font-weight: 700; color: var(--teal); margin-bottom: 10px; }
+.rules-box li { font-size: 12px; color: var(--gray); margin-bottom: 6px; line-height: 1.6; }
+
+/* ═══ BONUS CARD ═══ */
+.bonus-card {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(200,148,74,.08); border: 1.5px solid rgba(200,148,74,.25);
+  border-radius: var(--radius-sm); padding: 16px 20px; margin-bottom: 24px;
+}
+.bonus-icon { font-size: 24px; }
+.bonus-label { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+.bonus-text { font-size: 14px; color: var(--dark); }
+
+/* ═══ DASHBOARD ═══ */
+.dashboard-layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; padding-top: 68px; }
+.dashboard-sidebar {
+  background: var(--teal); padding: 32px 0;
+  position: sticky; top: 68px; height: calc(100vh - 68px);
+  overflow-y: auto;
+}
+.dashboard-sidebar-logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 24px; }
+.sidebar-nav { display: flex; flex-direction: column; }
+.sidebar-nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 24px; color: rgba(255,255,255,.65);
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: all .2s; text-decoration: none;
+}
+.sidebar-nav-item:hover, .sidebar-nav-item.active { color: var(--white); background: rgba(255,255,255,.1); }
+.sidebar-nav-item.active { border-right: 3px solid var(--gold); }
+.sidebar-nav-icon { font-size: 18px; }
+.dashboard-main { padding: 36px 40px; background: var(--sand-light); }
+.dashboard-header { margin-bottom: 32px; }
+.dashboard-title { font-size: 26px; font-weight: 800; color: var(--teal); }
+.dashboard-subtitle { font-size: 14px; color: var(--gray); margin-top: 4px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 36px; }
+.stat-card {
+  background: var(--white); border-radius: var(--radius);
+  padding: 22px 20px; box-shadow: var(--shadow-card);
+}
+.stat-card-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; margin-bottom: 14px;
+}
+.stat-card-icon.teal { background: rgba(10,74,74,.08); }
+.stat-card-icon.gold { background: rgba(200,148,74,.1); }
+.stat-card-icon.sage { background: rgba(92,140,110,.1); }
+.stat-card-icon.coral { background: rgba(224,122,95,.1); }
+.stat-value { font-size: 26px; font-weight: 800; color: var(--dark); }
+.stat-label { font-size: 12px; color: var(--gray); margin-top: 4px; }
+.stat-change { font-size: 11px; font-weight: 600; color: var(--sage); margin-top: 8px; }
+.table-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
+.table-card-header { padding: 20px 24px; border-bottom: 1px solid var(--sand); display: flex; align-items: center; justify-content: space-between; }
+.table-card-title { font-size: 16px; font-weight: 700; color: var(--teal); }
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-light); padding: 12px 24px; text-align: right; background: var(--sand-light); border-bottom: 1px solid var(--sand); }
+td { padding: 14px 24px; font-size: 13px; color: var(--dark); border-bottom: 1px solid var(--sand); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--sand-light); }
+.status-badge { padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; }
+.status-confirmed { background: rgba(92,140,110,.12); color: var(--sage); }
+.status-pending { background: rgba(200,148,74,.12); color: var(--gold); }
+.status-cancelled { background: rgba(224,122,95,.12); color: var(--coral); }
+
+/* ═══ CSR / VALUES SECTION ═══ */
+.values-section { background: var(--teal); padding: 80px 24px; }
+.values-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; margin-top: 50px; }
+.value-card {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius); padding: 32px 28px;
+  transition: transform .25s;
+}
+.value-card:hover { transform: translateY(-4px); }
+.value-icon { font-size: 40px; margin-bottom: 16px; }
+.value-title { font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 10px; }
+.value-text { font-size: 14px; color: rgba(255,255,255,.65); line-height: 1.7; }
+
+/* ═══ FOOTER ═══ */
+.footer { background: var(--dark); padding: 60px 24px 32px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 40px; }
+.footer-brand-desc { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.8; margin-top: 14px; }
+.footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,.4); margin-bottom: 18px; }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer-links a { font-size: 13px; color: rgba(255,255,255,.55); text-decoration: none; cursor: pointer; transition: color .2s; }
+.footer-links a:hover { color: var(--white); }
+.footer-bottom { padding-top: 24px; border-top: 1px solid rgba(255,255,255,.08); display: flex; justify-content: space-between; align-items: center; }
+.footer-copy { font-size: 12px; color: rgba(255,255,255,.3); }
+.footer-csr { font-size: 12px; color: var(--sage-light); display: flex; align-items: center; gap: 6px; }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 900px) {
+  .how-grid, .venues-grid, .testimonials-grid { grid-template-columns: 1fr 1fr; }
+  .trust-grid { grid-template-columns: repeat(2,1fr); }
+  .host-cta { grid-template-columns: 1fr; }
+  .venue-detail-grid { grid-template-columns: 1fr; }
+  .dashboard-layout { grid-template-columns: 1fr; }
+  .dashboard-sidebar { position: relative; height: auto; display: flex; flex-wrap: wrap; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .values-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .how-grid, .venues-grid, .testimonials-grid { grid-template-columns: 1fr; }
+  .trust-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .navbar-links { display: none; }
+  .hero-search { display: none; }
+}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeInUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+.animate-in { animation: fadeInUp .5s ease forwards; }
+.fade-up { opacity:0; transform:translateY(28px); transition: opacity .6s ease, transform .6s ease; }
+.fade-up.visible { opacity:1; transform:none; }
+.fade-up:nth-child(2) { transition-delay:.1s; }
+.fade-up:nth-child(3) { transition-delay:.2s; }
+
+/* ═══ MOBILE MENU ═══ */
+.mobile-hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:8px; border:none; background:transparent; }
+.mobile-hamburger span { width:22px; height:2px; background:var(--teal); border-radius:2px; display:block; }
+#mobile-menu {
+  display:none; position:fixed; inset:0; top:68px; background:var(--white);
+  z-index:999; padding:32px 24px; flex-direction:column; gap:20px;
+}
+#mobile-menu.open { display:flex; }
+#mobile-menu a { font-size:20px; font-weight:600; color:var(--teal); padding:12px 0; border-bottom:1px solid var(--sand); cursor:pointer; }
+@media(max-width:768px) {
+  .mobile-hamburger { display:flex; }
+  .navbar-links, .navbar-actions { display:none !important; }
+}
+
+/* ═══ INLINE CALENDAR ═══ */
+.cal-widget { border:1.5px solid var(--sand); border-radius:var(--radius-sm); overflow:hidden; }
+.cal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--sand-light); }
+.cal-nav { background:none; border:none; cursor:pointer; font-size:18px; color:var(--teal); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.cal-nav:hover { background:var(--sand); }
+.cal-month-label { font-size:14px; font-weight:700; color:var(--teal); }
+.cal-days-header { display:grid; grid-template-columns:repeat(7,1fr); background:var(--sand); }
+.cal-day-name { text-align:center; padding:8px 4px; font-size:10px; font-weight:700; color:var(--gray); text-transform:uppercase; }
+.cal-days-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:8px; gap:3px; }
+.cal-day { padding:8px 4px; text-align:center; font-size:13px; border-radius:8px; cursor:pointer; font-weight:500; }
+.cal-day.avail:hover { background:rgba(10,74,74,.08); color:var(--teal); }
+.cal-day.selected { background:var(--teal); color:var(--white); font-weight:700; }
+.cal-day.booked { background:rgba(224,122,95,.1); color:var(--coral-light); cursor:not-allowed; text-decoration:line-through; }
+.cal-day.past { color:var(--gray-light); cursor:not-allowed; }
+.cal-legend { display:flex; gap:16px; padding:8px 16px 12px; font-size:11px; color:var(--gray); }
+.cal-legend-item { display:flex; align-items:center; gap:5px; }
+.cal-legend-dot { width:10px; height:10px; border-radius:50%; }
+
+/* ═══ PHOTO GRID ═══ */
+.photo-grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:240px 200px; gap:4px; border-radius:var(--radius); overflow:hidden; cursor:pointer; position:relative; }
+.photo-grid-main { grid-row:1/3; position:relative; }
+.photo-grid-main .photo-bg { height:100%; }
+.photo-grid-side { position:relative; }
+.photo-bg { width:100%; display:flex; align-items:center; justify-content:center; font-size:48px; color:rgba(255,255,255,.25); }
+.photo-grid-overlay-btn {
+  position:absolute; bottom:14px; left:14px;
+  background:rgba(255,255,255,.92); border-radius:10px; padding:8px 16px;
+  font-size:12px; font-weight:700; color:var(--dark); cursor:pointer; border:none;
+  display:flex; align-items:center; gap:6px;
+}
+
+/* ═══ LIGHTBOX ═══ */
+#lightbox {
+  display:none; position:fixed; inset:0; z-index:2000;
+  background:rgba(0,0,0,.92); flex-direction:column; align-items:center; justify-content:center;
+}
+.lightbox-main-img {
+  width:min(860px,90vw); height:min(520px,55vh);
+  border-radius:14px; margin-bottom:16px;
+  display:flex; align-items:center; justify-content:center; font-size:80px;
+}
+.lightbox-thumbs { display:flex; gap:10px; }
+.lightbox-thumb {
+  width:80px; height:56px; border-radius:8px; cursor:pointer;
+  border:2px solid transparent; display:flex; align-items:center; justify-content:center; font-size:24px;
+  transition:border-color .2s;
+}
+.lightbox-thumb.active { border-color:var(--gold); }
+.lightbox-close { position:absolute; top:20px; right:20px; background:rgba(255,255,255,.12); border:none; color:white; font-size:22px; width:44px; height:44px; border-radius:50%; cursor:pointer; }
+.lightbox-arrows { position:absolute; top:50%; left:0; right:0; display:flex; justify-content:space-between; padding:0 20px; pointer-events:none; }
+.lightbox-arrow { pointer-events:all; background:rgba(255,255,255,.15); border:none; color:white; font-size:22px; width:48px; height:48px; border-radius:50%; cursor:pointer; }
+
+/* ═══ MAP VIEW ═══ */
+.map-toggle { display:flex; gap:0; background:var(--white); border:1.5px solid var(--sand); border-radius:10px; overflow:hidden; }
+.map-toggle-btn { padding:8px 18px; font-size:13px; font-weight:600; background:none; border:none; cursor:pointer; color:var(--gray); }
+.map-toggle-btn.active { background:var(--teal); color:var(--white); }
+#map-view { display:none; border-radius:var(--radius); overflow:hidden; background:var(--sand); height:480px; position:relative; }
+.map-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; }
+.map-pin { position:absolute; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+.map-pin-bubble { background:var(--teal); color:white; padding:5px 10px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; box-shadow:0 4px 12px rgba(10,74,74,.3); }
+.map-pin-bubble::after { content:''; width:0; height:0; border:6px solid transparent; border-top:6px solid var(--teal); position:absolute; top:100%; left:50%; transform:translateX(-50%); }
+.map-pin:hover .map-pin-bubble { background:var(--gold); }
+
+/* ═══ VENUE CARD PHOTO HOVER ═══ */
+.venue-card-photos { position:relative; overflow:hidden; }
+.venue-card-photo { position:absolute; inset:0; transition:opacity .4s; }
+.venue-card-photo:not(:first-child) { opacity:0; }
+.venue-card:hover .venue-card-photo:nth-child(1) { opacity:0; }
+.venue-card:hover .venue-card-photo:nth-child(2) { opacity:1; }
+.photo-dots { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); display:flex; gap:4px; }
+.photo-dot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.5); }
+.photo-dot.active { background:white; }
+
+/* ═══ URGENCY SIGNAL ═══ */
+.urgency-tag { font-size:11px; color:var(--coral); font-weight:700; display:flex; align-items:center; gap:4px; }
+.urgency-dot { width:6px; height:6px; border-radius:50%; background:var(--coral); animation:pulse 1.5s infinite; }
+
+/* ═══ AUTH SCREENS ═══ */
+.auth-layout { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
+.auth-left { background:var(--gradient-hero); display:flex; align-items:center; justify-content:center; padding:60px; position:relative; overflow:hidden; }
+.auth-left::before { content:''; position:absolute; bottom:-80px; right:-80px; width:350px; height:350px; border-radius:50%; background:rgba(92,140,110,.15); }
+.auth-right { background:var(--sand-light); display:flex; align-items:center; justify-content:center; padding:60px; }
+.auth-form-wrap { width:100%; max-width:400px; }
+.auth-form-title { font-family:'Playfair Display',serif; font-size:30px; font-weight:700; color:var(--teal); margin-bottom:6px; }
+.auth-form-subtitle { font-size:14px; color:var(--gray); margin-bottom:32px; }
+.form-field { margin-bottom:18px; }
+.form-label { font-size:12px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:6px; }
+.form-input { width:100%; padding:13px 16px; border:1.5px solid var(--sand); border-radius:var(--radius-sm); font-family:'Heebo',sans-serif; font-size:15px; background:var(--white); direction:rtl; outline:none; transition:border-color .2s; }
+.form-input:focus { border-color:var(--teal-mid); box-shadow:0 0 0 3px rgba(10,74,74,.07); }
+.form-divider { display:flex; align-items:center; gap:14px; margin:20px 0; color:var(--gray); font-size:12px; }
+.form-divider::before,.form-divider::after { content:''; flex:1; height:1px; background:var(--sand); }
+.google-btn { width:100%; padding:13px; border:1.5px solid var(--sand); border-radius:var(--radius-sm); background:var(--white); font-family:'Heebo',sans-serif; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; color:var(--dark); }
+.google-btn:hover { background:var(--sand-light); }
+
+/* Role Picker */
+.role-picker { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:28px; }
+.role-card { border:2px solid var(--sand); border-radius:var(--radius); padding:22px 16px; text-align:center; cursor:pointer; transition:all .2s; background:var(--white); }
+.role-card:hover { border-color:var(--teal-mid); }
+.role-card.selected { border-color:var(--teal); background:rgba(10,74,74,.04); }
+.role-card-icon { font-size:32px; margin-bottom:10px; }
+.role-card-title { font-size:15px; font-weight:700; color:var(--teal); }
+.role-card-desc { font-size:11px; color:var(--gray); margin-top:4px; line-height:1.5; }
+
+/* ═══ BOOKING CONFIRM ═══ */
+.confirm-layout { max-width:720px; margin:0 auto; padding:100px 24px 60px; }
+.confirm-steps { display:flex; align-items:center; gap:0; margin-bottom:40px; }
+.confirm-step { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+.confirm-step-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; }
+.confirm-step.done .confirm-step-num { background:var(--sage); color:white; }
+.confirm-step.active .confirm-step-num { background:var(--teal); color:white; }
+.confirm-step.pending .confirm-step-num { background:var(--sand); color:var(--gray); }
+.confirm-step.done { color:var(--sage); }
+.confirm-step.active { color:var(--teal); }
+.confirm-step.pending { color:var(--gray-light); }
+.confirm-step-line { flex:1; height:2px; background:var(--sand); margin:0 8px; }
+.confirm-step-line.done { background:var(--sage); }
+.confirm-card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-card); padding:28px; margin-bottom:20px; }
+.confirm-card-title { font-size:16px; font-weight:700; color:var(--teal); margin-bottom:16px; }
+
+/* ═══ ADD VENUE WIZARD ═══ */
+.wizard-layout { max-width:800px; margin:0 auto; padding:100px 24px 60px; }
+.wizard-nav { display:flex; align-items:center; gap:0; margin-bottom:40px; }
+.wizard-nav-item { display:flex; align-items:center; gap:10px; font-size:13px; flex:1; }
+.wizard-nav-step { width:32px; height:32px; border-radius:50%; border:2px solid var(--sand); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--gray); background:var(--white); }
+.wizard-nav-item.active .wizard-nav-step { border-color:var(--teal); color:var(--teal); background:rgba(10,74,74,.06); }
+.wizard-nav-item.done .wizard-nav-step { border-color:var(--sage); background:var(--sage); color:white; }
+.wizard-nav-label { font-size:12px; font-weight:600; color:var(--gray); }
+.wizard-nav-item.active .wizard-nav-label { color:var(--teal); }
+.wizard-nav-line { flex:none; width:40px; height:2px; background:var(--sand); margin:0 4px; }
+.wizard-nav-line.done { background:var(--sage); }
+.wizard-step { display:none; }
+.wizard-step.active { display:block; }
+.wizard-card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-card); padding:32px; }
+.wizard-card-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--teal); margin-bottom:6px; }
+.wizard-card-subtitle { font-size:14px; color:var(--gray); margin-bottom:28px; }
+.amenity-toggle-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+.amenity-toggle { border:1.5px solid var(--sand); border-radius:var(--radius-sm); padding:14px 12px; text-align:center; cursor:pointer; transition:all .18s; background:var(--white); }
+.amenity-toggle:hover { border-color:var(--teal-mid); }
+.amenity-toggle.on { border-color:var(--teal); background:rgba(10,74,74,.06); }
+.amenity-toggle-icon { font-size:22px; margin-bottom:4px; }
+.amenity-toggle-label { font-size:12px; font-weight:600; color:var(--teal); }
+.upload-zone { border:2px dashed var(--bamboo); border-radius:var(--radius); padding:40px; text-align:center; cursor:pointer; background:var(--sand-light); transition:border-color .2s; }
+.upload-zone:hover { border-color:var(--teal-mid); }
+.upload-zone-icon { font-size:40px; margin-bottom:12px; }
+.upload-zone-text { font-size:15px; font-weight:600; color:var(--teal); }
+.upload-zone-hint { font-size:12px; color:var(--gray); margin-top:6px; }
+
+/* ═══ VENUE PHOTO GRADIENTS (Israeli cities) ═══ */
+.venue-photo-nahariya { background:linear-gradient(145deg,#0d3b5e 0%,#1a6b9a 50%,#2a9ad4 100%); }
+.venue-photo-haifa { background:linear-gradient(145deg,#2d1b4e 0%,#6a3d8f 50%,#c88fd4 100%); }
+.venue-photo-telaviv { background:linear-gradient(145deg,#0a4a4a 0%,#0d6e6e 50%,#e8b870 100%); }
+.venue-photo-herzliya { background:linear-gradient(145deg,#0a2a5e 0%,#1a5a9a 50%,#5ab5e8 100%); }
+.venue-photo-netanya { background:linear-gradient(145deg,#1a3a6e 0%,#2a6aae 50%,#7ab8d8 100%); }
+.venue-photo-ashdod { background:linear-gradient(145deg,#4a2a0a 0%,#8a5a2a 50%,#e8a870 100%); }
+.venue-photo-eilat { background:linear-gradient(145deg,#0a3a3a 0%,#0a7a7a 50%,#40d4c0 100%); }
+
+/* ═══ PHOTO SWAP CARDS ═══ */
+.venue-card-photos { position:relative; height:220px; overflow:hidden; }
+.venue-card-photo-layer {
+  position:absolute; inset:0; transition:opacity .5s ease;
+  display:flex; align-items:center; justify-content:center; font-size:60px; color:rgba(255,255,255,.25);
+}
+.venue-card-photo-layer:nth-child(n+2) { opacity:0; }
+.venue-card:hover .venue-card-photo-layer:nth-child(1) { opacity:0; }
+.venue-card:hover .venue-card-photo-layer:nth-child(2) { opacity:1; }
+.venue-card-photo-dots { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); display:flex; gap:5px; z-index:3; }
+.venue-card-photo-dot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.5); transition:.3s; }
+.venue-card:hover .venue-card-photo-dot:nth-child(2) { background:white; transform:scale(1.3); }
+.venue-card-photo-dot:first-child { background:white; }
+.venue-card:hover .venue-card-photo-dot:first-child { background:rgba(255,255,255,.5); }
+
+/* ═══ DISCOVERY SECTIONS ═══ */
+.discovery-strip { padding:0 0 8px; overflow-x:auto; display:flex; gap:14px; scrollbar-width:none; }
+.discovery-strip::-webkit-scrollbar { display:none; }
+.discovery-pill {
+  flex-shrink:0; padding:10px 20px; border-radius:50px; cursor:pointer;
+  font-size:13px; font-weight:600; border:1.5px solid var(--sand);
+  background:var(--white); color:var(--dark); transition:all .2s; white-space:nowrap;
+}
+.discovery-pill:hover, .discovery-pill.active { background:var(--teal); color:var(--white); border-color:var(--teal); }
+.available-now-badge { background:var(--sage); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:50px; margin-right:6px; }
+.hot-badge { background:var(--coral); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:50px; margin-right:6px; }
+.new-badge { background:var(--gold); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:50px; margin-right:6px; }
+.for-you-badge { background:var(--sage-light); color:var(--teal); font-size:10px; font-weight:700; padding:2px 8px; border-radius:50px; margin-right:6px; }
+
+.location-bar {
+  display:flex; align-items:center; gap:10px; padding:12px 18px;
+  background:var(--white); border:1.5px solid var(--sand); border-radius:50px;
+  font-size:13px; color:var(--teal); font-weight:600; cursor:pointer; margin-bottom:20px;
+  max-width:320px; box-shadow:var(--shadow-card); transition:box-shadow .2s;
+}
+.location-bar:hover { box-shadow:var(--shadow-hover); }
+.location-dot { width:10px; height:10px; border-radius:50%; background:var(--coral); animation:pulse 2s infinite; flex-shrink:0; }
+
+/* ═══ HORIZONTAL SCROLL CARDS ═══ */
+.h-scroll { overflow-x:auto; display:flex; gap:20px; padding-bottom:8px; scrollbar-width:none; }
+.h-scroll::-webkit-scrollbar { display:none; }
+.h-scroll .venue-card { flex-shrink:0; width:280px; }
+.section-row { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:20px; }
+.section-row-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--teal); }
+.section-row-link { font-size:13px; font-weight:600; color:var(--teal-mid); cursor:pointer; }
+
+/* ═══ AI SEARCH PANEL ═══ */
+.ai-search-panel {
+  background:var(--white); border-radius:var(--radius); box-shadow:0 16px 50px rgba(10,74,74,.15);
+  border:1.5px solid rgba(10,74,74,.08); overflow:hidden; max-width:640px; margin:0 auto 40px;
+}
+.ai-search-header { background:var(--gradient-hero); padding:16px 20px; display:flex; align-items:center; gap:12px; }
+.ai-avatar { width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.ai-search-title { font-size:15px; font-weight:700; color:white; }
+.ai-search-subtitle { font-size:11px; color:rgba(255,255,255,.65); }
+.ai-chat-area { padding:20px; max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+.ai-msg { max-width:85%; padding:12px 16px; border-radius:16px; font-size:13px; line-height:1.6; }
+.ai-msg.bot { background:var(--sand-light); color:var(--dark); border-bottom-right-radius:4px; align-self:flex-end; }
+.ai-msg.user { background:var(--teal); color:white; border-bottom-left-radius:4px; align-self:flex-start; }
+.ai-suggestions { display:flex; gap:8px; flex-wrap:wrap; padding:0 20px 12px; }
+.ai-suggestion { padding:7px 14px; background:var(--sand-light); border:1.5px solid var(--sand); border-radius:50px; font-size:12px; font-weight:600; color:var(--teal); cursor:pointer; transition:all .2s; }
+.ai-suggestion:hover { background:var(--teal); color:white; border-color:var(--teal); }
+.ai-search-input-row { display:flex; gap:0; border-top:1.5px solid var(--sand); }
+.ai-search-input { flex:1; padding:14px 18px; border:none; outline:none; font-family:'Heebo',sans-serif; font-size:14px; direction:rtl; background:transparent; }
+.ai-send-btn { padding:14px 20px; background:var(--teal); color:white; border:none; cursor:pointer; font-size:18px; transition:background .2s; }
+.ai-send-btn:hover { background:var(--teal-mid); }
+.ai-result-card { display:flex; gap:12px; padding:14px; background:var(--sand-light); border-radius:12px; align-items:center; margin:0 20px 16px; cursor:pointer; transition:box-shadow .2s; }
+.ai-result-card:hover { box-shadow:var(--shadow-card); }
+.ai-result-thumb { width:60px; height:48px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px; }
+
+/* ═══ HISTORY / MONTHLY SUMMARY ═══ */
+.history-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
+.month-selector { display:flex; gap:0; background:var(--white); border:1.5px solid var(--sand); border-radius:10px; overflow:hidden; }
+.month-btn { padding:7px 16px; font-size:12px; font-weight:600; background:none; border:none; cursor:pointer; color:var(--gray); }
+.month-btn.active { background:var(--teal); color:white; }
+.summary-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+.summary-card { background:var(--white); border-radius:var(--radius-sm); padding:18px; box-shadow:var(--shadow-card); }
+.summary-card-val { font-size:24px; font-weight:800; color:var(--dark); }
+.summary-card-lbl { font-size:12px; color:var(--gray); margin-top:4px; }
+.summary-card-delta { font-size:11px; font-weight:700; margin-top:8px; }
+.delta-up { color:var(--sage); }
+.delta-down { color:var(--coral); }
+.monthly-chart-wrap { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-card); padding:24px; margin-bottom:28px; }
+.bar-chart { display:flex; align-items:flex-end; gap:8px; height:120px; }
+.bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.bar-fill { width:100%; border-radius:4px 4px 0 0; min-height:4px; transition:height .4s; }
+.bar-label { font-size:10px; color:var(--gray); }
+.bar-value { font-size:10px; font-weight:700; color:var(--teal); }
+.history-filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.history-filter-btn { padding:7px 16px; border:1.5px solid var(--sand); border-radius:50px; font-size:12px; font-weight:600; cursor:pointer; background:var(--white); color:var(--gray); }
+.history-filter-btn.active { background:var(--teal); color:white; border-color:var(--teal); }
+
+/* ═══ INSTRUCTOR PROFILE ═══ */
+.profile-hero { background:var(--gradient-hero); padding:100px 24px 60px; text-align:center; position:relative; overflow:hidden; }
+.profile-avatar-big { width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,.2); border:4px solid rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center; font-size:44px; margin:0 auto 16px; }
+.profile-name { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; color:white; margin-bottom:8px; }
+.profile-subtitle { font-size:14px; color:rgba(255,255,255,.7); margin-bottom:16px; }
+.profile-badges { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.profile-badge { padding:6px 16px; border-radius:50px; font-size:12px; font-weight:700; background:rgba(255,255,255,.15); color:white; border:1px solid rgba(255,255,255,.25); }
+.profile-body { max-width:900px; margin:0 auto; padding:36px 24px; }
+.profile-grid { display:grid; grid-template-columns:1fr 300px; gap:32px; }
+.cert-card { background:var(--white); border-radius:var(--radius-sm); padding:16px; box-shadow:var(--shadow-card); display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+.cert-icon { font-size:24px; flex-shrink:0; }
+.cert-name { font-size:14px; font-weight:700; color:var(--dark); }
+.cert-issuer { font-size:12px; color:var(--gray); }
+.cert-status { margin-right:auto; font-size:11px; font-weight:700; color:var(--sage); background:rgba(92,140,110,.1); padding:4px 10px; border-radius:50px; }
+.specialty-tags { display:flex; flex-wrap:wrap; gap:8px; }
+.specialty-tag { padding:8px 16px; border-radius:50px; background:rgba(10,74,74,.07); color:var(--teal); font-size:13px; font-weight:600; }
+
+/* ═══ ADVANCED SEARCH ═══ */
+.advanced-search-panel { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-hover); padding:28px; max-width:700px; margin:0 auto 32px; }
+.advanced-search-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--teal); margin-bottom:20px; }
+.search-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.range-slider { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--sand); outline:none; }
+.range-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--teal); cursor:pointer; box-shadow:0 2px 6px rgba(10,74,74,.3); }
+
+/* ═══ INSTRUCTOR FEATURES ═══ */
+.profile-completion { background:var(--gradient-gold); border-radius:var(--radius); padding:20px 24px; margin-bottom:24px; display:flex; align-items:center; gap:16px; }
+.completion-bar-wrap { flex:1; }
+.completion-bar-bg { height:6px; background:rgba(255,255,255,.3); border-radius:3px; overflow:hidden; }
+.completion-bar-fill { height:100%; background:white; border-radius:3px; width:65%; }
+
+/* ═══ HOST TRANSPARENCY ═══ */
+.dual-transparency { background:var(--sand-light); border-radius:var(--radius-sm); padding:16px 20px; border:1px solid var(--sand); }
+.dual-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:4px 0; }
+.dual-row.instructor { color:var(--teal); }
+.dual-row.host { color:var(--sage); }
+.dual-row.platform { color:var(--gray); font-size:11px; }
+.dual-divider { height:1px; background:var(--sand); margin:8px 0; }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     NAVBAR (global)
+═══════════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+  <div class="navbar-logo" onclick="showScreen('home')">
+    <div class="navbar-logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+        <path d="M2 12c3-6 7-8 10-8s7 2 10 8c-3 6-7 8-10 8s-7-2-10-8z"/>
+        <path d="M2 16c2 2 5 3 10 3s8-1 10-3"/>
+      </svg>
+    </div>
+    <span class="navbar-logo-text">SOUL<span>&</span>SEA</span>
+  </div>
+
+  <div class="navbar-links">
+    <a onclick="showScreen('venues')">חיפוש חללים</a>
+    <a onclick="showScreen('home')">איך זה עובד</a>
+    <a onclick="showScreen('home')">להשכיר חלל</a>
+    <a onclick="showScreen('home')">הקהילה שלנו</a>
+  </div>
+
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm" onclick="showScreen('auth-login')">התחברות</button>
+    <button class="btn btn-teal btn-sm" onclick="showScreen('auth-signup')">הצטרפות חינמית</button>
+  </div>
+  <div class="mobile-hamburger" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 1 — LANDING
+═══════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-bamboo-pattern"></div>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        הפלטפורמה הראשונה מסוגה בישראל
+      </div>
+
+      <h1 class="hero-title">
+        מקום שבו הנשמה
+        <span class="hero-title-accent">פוגשת את הים</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        SOUL&SEA מחברת בין מדריכות יוגה ופילאטיס לחללים מרהיבים על קו החוף.
+        חוויה שלא ניתן ליצור בסטודיו.
+      </p>
+
+      <!-- Search Bar (Airbnb style) -->
+      <div class="hero-search">
+        <div class="hero-search-fields">
+          <div class="hero-search-field">
+            <label>מיקום</label>
+            <span>תל אביב, הרצליה...</span>
+          </div>
+          <div class="hero-search-divider"></div>
+          <div class="hero-search-field">
+            <label>תאריך</label>
+            <span>בחרי תאריך</span>
+          </div>
+          <div class="hero-search-divider"></div>
+          <div class="hero-search-field">
+            <label>קיבולת</label>
+            <span>כמה משתתפים?</span>
+          </div>
+        </div>
+        <button class="btn btn-teal" onclick="showScreen('venues')" style="flex-shrink:0">
+          🔍 חיפוש
+        </button>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-value">120+</div>
+          <div class="hero-stat-label">חללים פעילים</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">340+</div>
+          <div class="hero-stat-label">מדריכות רשומות</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">₪2,800</div>
+          <div class="hero-stat-label">הכנסה חודשית ממוצעת לחלל</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">4.9★</div>
+          <div class="hero-stat-label">דירוג ממוצע</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave bottom -->
+    <svg style="position:absolute;bottom:0;left:0;right:0;width:100%" viewBox="0 0 1440 80" preserveAspectRatio="none">
+      <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#faf5ee"/>
+    </svg>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" style="background:var(--sand-light)">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">🌿 כיצד זה עובד</div>
+        <h2 class="section-title">שלושה צעדים לחוויה מושלמת</h2>
+        <p class="section-subtitle">מהחיפוש ועד לשיעור — הכל ב-SOUL&SEA</p>
+      </div>
+
+      <div class="how-grid">
+        <div class="how-card" data-step="01">
+          <div class="how-icon">🔍</div>
+          <div class="how-title">גלי את החלל שלך</div>
+          <div class="how-desc">סננ​י לפי מיקום, קיבולת, תנאים ונוף. כל חלל מוצג עם תמונות אמיתיות, תאריכים פנויים ומה כלול.</div>
+        </div>
+        <div class="how-card" data-step="02">
+          <div class="how-icon">📅</div>
+          <div class="how-title">הזמיני בשניות</div>
+          <div class="how-desc">בחרי שעה, שלחי פרטי השיעור ושלמי בצורה מאובטחת. אישור מיידי ברוב החללים.</div>
+        </div>
+        <div class="how-card" data-step="03">
+          <div class="how-icon">🧘</div>
+          <div class="how-title">עברי שיעור מרהיב</div>
+          <div class="how-desc">הגיעי לחלל מוכן לחלוטין. הים ברקע, שקט, אוויר נקי — חוויה שהמשתתפות לא ישכחו.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED VENUES -->
+  <section class="section" style="background:var(--white)">
+    <div class="container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:36px">
+        <div>
+          <div class="section-eyebrow">🌊 חללים נבחרים</div>
+          <h2 class="section-title" style="margin:0">מקומות שנשמה אוהבת</h2>
+        </div>
+        <button class="btn btn-outline" onclick="showScreen('venues')">כל החללים ←</button>
+      </div>
+
+      <div class="venues-grid">
+        <!-- Card 1 -->
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#0a4a4a,#1a9090)">
+            <div class="venue-card-image-inner">🌊</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">⭐ סופר-מארח</div>
+            <div class="venue-card-heart">🤍</div>
+            <div class="venue-card-rating">★ 4.98 <span style="opacity:.7">(47)</span></div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">דק ים רוטשילד — תל אביב</div>
+            <div class="venue-card-location">📍 רוטשילד 120, תל אביב</div>
+            <div class="venue-card-desc">דק עץ מרהיב מול הים בלב תל אביב. מרחב פתוח ומוצל עם נוף פנורמי לים התיכון. מתאים ל-20 מתאמנות.</div>
+            <div class="venue-card-tags">
+              <span class="venue-tag">🌊 נוף לים</span>
+              <span class="venue-tag">⛱️ הצללה</span>
+              <span class="venue-tag">🔊 מערכת שמע</span>
+              <span class="venue-tag">📶 Wi-Fi</span>
+            </div>
+            <div class="urgency-tag" style="margin-bottom:8px"><div class="urgency-dot"></div> הוזמן 4 פעמים השבוע</div>
+          <div class="venue-card-footer">
+              <div class="venue-card-price">₪280 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 20 | 80 מ"ר</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#1a4a2a,#2d8a5a)">
+            <div class="venue-card-image-inner">🌿</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">🌿 ידידותי לסביבה</div>
+            <div class="venue-card-heart">🤍</div>
+            <div class="venue-card-rating">★ 4.96 <span style="opacity:.7">(31)</span></div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">גלריה ימית — בר חוף גורדון</div>
+            <div class="venue-card-location">📍 שדרות נורדאו 1, תל אביב</div>
+            <div class="venue-card-desc">חלל ממוזג ומרווח בבר יוקרתי. רצפת פרקט, תאורה טבעית ומערכת שמע מקצועית. מושלם לפילאטיס.</div>
+            <div class="venue-card-tags">
+              <span class="venue-tag">❄️ מיזוג</span>
+              <span class="venue-tag">🌊 נוף לים</span>
+              <span class="venue-tag">🚿 מקלחת</span>
+              <span class="venue-tag">🅿️ חניה</span>
+            </div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪350 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 25 | 100 מ"ר</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#2a1a4a,#6a4a9a)">
+            <div class="venue-card-image-inner">🌅</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">✨ פרמיום</div>
+            <div class="venue-card-heart">❤️</div>
+            <div class="venue-card-rating">★ 5.0 <span style="opacity:.7">(18)</span></div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">מרפסת הילטון — שקיעה</div>
+            <div class="venue-card-location">📍 גאורג' 205, תל אביב</div>
+            <div class="venue-card-desc">מרפסת מפוארת עם נוף ישיר לחוף הים. מרחב אינטימי ל-15 מתאמנות עם שמשיות ענקיות.</div>
+            <div class="venue-card-tags">
+              <span class="venue-tag">🌊 חזית ים</span>
+              <span class="venue-tag">⛱️ שמשיות</span>
+              <span class="venue-tag">🚿 מקלחת</span>
+              <span class="venue-tag">🅿️ חניה</span>
+            </div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪420 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 15 | 60 מ"ר</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST NUMBERS (Wise-style transparency) -->
+  <div class="trust-section">
+    <div class="container">
+      <div class="trust-grid">
+        <div>
+          <div class="trust-item-icon">🏖️</div>
+          <div class="trust-item-value">120+</div>
+          <div class="trust-item-label">חללים מאומתים בחוף</div>
+        </div>
+        <div>
+          <div class="trust-item-icon">🧘</div>
+          <div class="trust-item-value">340+</div>
+          <div class="trust-item-label">מדריכות מוסמכות</div>
+        </div>
+        <div>
+          <div class="trust-item-icon">📅</div>
+          <div class="trust-item-value">4,200+</div>
+          <div class="trust-item-label">שיעורים הועברו</div>
+        </div>
+        <div>
+          <div class="trust-item-icon">🛡️</div>
+          <div class="trust-item-value">100%</div>
+          <div class="trust-item-label">תשלום מאובטח + ביטוח</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOR HOSTS CTA -->
+  <section class="section" style="background:var(--sand-light)">
+    <div class="container">
+      <div class="host-cta">
+        <div style="position:relative;z-index:1">
+          <div class="host-cta-eyebrow">למסעדות ובתי קפה על החוף</div>
+          <h2 class="host-cta-title">שעות בוקר ריקות = הכנסה פסיבית</h2>
+          <p class="host-cta-text">
+            לפני שהפלייס שלך מתמלא בצהריים — הוא יכול להרוויח בבוקר.
+            ללא עובדים נוספים, ללא שינוי פעילות.
+          </p>
+          <ul class="host-cta-checks">
+            <li>הרשמה חינמית, ועדה בתוך 48 שעות</li>
+            <li>אתה קובע את השעות, המחיר והתנאים</li>
+            <li>SOUL&SEA מטפלת בתשלום, ביטוח ותיאום</li>
+            <li>ממוצע ₪2,800 / חודש לחלל פעיל</li>
+          </ul>
+          <button class="btn btn-primary btn-lg" onclick="showScreen('host-dashboard')">
+            רשם את המקום שלך — חינם →
+          </button>
+        </div>
+        <div class="host-cta-stats">
+          <div class="host-stat-card">
+            <div class="host-stat-icon">☕</div>
+            <div>
+              <div class="host-stat-value">₪2,800</div>
+              <div class="host-stat-desc">הכנסה חודשית ממוצעת</div>
+            </div>
+          </div>
+          <div class="host-stat-card">
+            <div class="host-stat-icon">📅</div>
+            <div>
+              <div class="host-stat-value">3-4</div>
+              <div class="host-stat-desc">שיעורים ממוצע בשבוע</div>
+            </div>
+          </div>
+          <div class="host-stat-card">
+            <div class="host-stat-icon">⏱️</div>
+            <div>
+              <div class="host-stat-value">07:00-12:00</div>
+              <div class="host-stat-desc">שעות בוקר — לפני שעות השיא</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BRAND VALUES / CSR (from Ch. 18 — Social Responsibility Marketing) -->
+  <div class="values-section">
+    <div class="container">
+      <div class="section-header" style="margin-bottom:0">
+        <div class="section-eyebrow" style="color:var(--gold-light)">🌿 הערכים שלנו</div>
+        <h2 class="section-title" style="color:var(--white)">לא רק עסק — תנועה</h2>
+        <p class="section-subtitle" style="color:rgba(255,255,255,.6)">SOUL&SEA מחוייבת לחיבור בין בני אדם, טבע, ובריאות</p>
+      </div>
+      <div class="values-grid">
+        <div class="value-card">
+          <div class="value-icon">🌊</div>
+          <div class="value-title">חיבור לים</div>
+          <div class="value-text">אנחנו מאמינים שהים הוא מרחב ריפוי. כל שיעור שנעשה מול הים הוא תרגול עמוק יותר מבכל סטודיו.</div>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">♻️</div>
+          <div class="value-title">קיימות וטבע</div>
+          <div class="value-text">10% מהכנסות הפלטפורמה מועברות לניקוי חופים ושמירת הסביבה החופית בישראל.</div>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">🤝</div>
+          <div class="value-title">קהילה אמיתית</div>
+          <div class="value-text">אנחנו בונים רשת של מדריכות ומארחות שמחזקות זו את זו. SOUL&SEA היא פלטפורמה — אבל גם משפחה.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TESTIMONIALS -->
+  <section class="section" style="background:var(--sand-light)">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">💬 הקהילה מדברת</div>
+        <h2 class="section-title">חוות דעת אמיתיות</h2>
+      </div>
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <div class="testimonial-text">"חווית שיעור בחזית ים שלא ניתן לשכפל בסטודיו. המשתתפות שלי פשוט אוהבות את זה. ההזמנה פשוטה, התשלום מיידי."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">🧘</div>
+            <div>
+              <div class="testimonial-name">מיכל ברנר</div>
+              <div class="testimonial-role">מדריכת יוגה, תל אביב • 38 שיעורים</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <div class="testimonial-text">"הפלטפורמה שינתה לנו את הבוקר. שעות שהיו מתות בין 7 ל-12 עכשיו מניבות לנו ₪3,200 בחודש. ולא עשינו כלום."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">☕</div>
+            <div>
+              <div class="testimonial-name">אורן שמיר</div>
+              <div class="testimonial-role">בעלים, קפה ים — תל אביב</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <div class="testimonial-text">"כל פרט מחושב — מהרגע שחיפשתי חלל ועד לאישור. ה-AI עזר לי למצוא בדיוק את מה שרציתי בשניות."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">🏋️</div>
+            <div>
+              <div class="testimonial-name">שירי לוי</div>
+              <div class="testimonial-role">מדריכת פילאטיס, הרצליה • 12 שיעורים</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="navbar-logo" style="margin-bottom:12px">
+            <div class="navbar-logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M2 12c3-6 7-8 10-8s7 2 10 8c-3 6-7 8-10 8s-7-2-10-8z"/><path d="M2 16c2 2 5 3 10 3s8-1 10-3"/></svg></div>
+            <span style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:white">SOUL<span style="color:var(--coral)">&</span>SEA</span>
+          </div>
+          <div class="footer-brand-desc">הפלטפורמה שמחברת נשמות לים. מרקטפלייס B2B לחללי יוגה ופילאטיס בחזית הים.</div>
+        </div>
+        <div>
+          <div class="footer-col-title">למדריכות</div>
+          <ul class="footer-links">
+            <li><a>חיפוש חללים</a></li>
+            <li><a>מועדפים שלי</a></li>
+            <li><a>ההזמנות שלי</a></li>
+            <li><a>הפרופיל שלי</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">למארחות</div>
+          <ul class="footer-links">
+            <li><a>רשם את החלל</a></li>
+            <li><a>ניהול הזמנות</a></li>
+            <li><a>תמחור</a></li>
+            <li><a>מדריך למארח</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">חברה</div>
+          <ul class="footer-links">
+            <li><a>אודות</a></li>
+            <li><a>בלוג</a></li>
+            <li><a>ניקוי חופים 🌊</a></li>
+            <li><a>יצירת קשר</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-copy">© 2026 SOUL&SEA. כל הזכויות שמורות.</div>
+        <div class="footer-csr">♻️ 10% מהרווחים לשמירת החופים</div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 2 — VENUES LIST
+═══════════════════════════════════════ -->
+<div id="screen-venues" class="screen">
+  <div class="venues-page-header">
+    <div class="container" style="text-align:center;padding-top:32px">
+      <h1 style="font-size:36px;font-weight:900;color:white;margin-bottom:8px">מצאי את החלל שלך</h1>
+      <p style="color:rgba(255,255,255,.7);margin-bottom:28px">חללים מאומתים בחזית הים ברחבי ישראל</p>
+      <div class="venues-search-bar">
+        <span style="font-size:20px">🔍</span>
+        <input class="venues-search-input" placeholder="חיפוש לפי מיקום, שם מקום...">
+        <button class="btn btn-teal btn-sm">חיפוש</button>
+      </div>
+      <div class="venues-filter-chips">
+        <div class="filter-chip active">הכל</div>
+        <div class="filter-chip">🌊 נוף לים</div>
+        <div class="filter-chip">❄️ מיזוג</div>
+        <div class="filter-chip">🚿 מקלחת</div>
+        <div class="filter-chip">🅿️ חניה</div>
+        <div class="filter-chip">⛱️ הצללה</div>
+        <div class="filter-chip">🔊 מערכת שמע</div>
+        <div class="filter-chip">☀️ אור טבעי</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="venues-page-body">
+    <div class="container">
+      <div class="venues-page-meta">
+        <div class="venues-count">נמצאו 12 חללים • תל אביב</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="venues-sort">מיון: מומלצים ↕</div>
+          <div class="map-toggle">
+            <button class="map-toggle-btn active" id="toggle-grid" onclick="toggleMapView('grid')">☰ רשימה</button>
+            <button class="map-toggle-btn" id="toggle-map" onclick="toggleMapView('map')">🗺 מפה</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAP VIEW -->
+      <div id="map-view">
+        <div class="map-placeholder" style="background:linear-gradient(145deg,#e8f4f0 0%,#d4eae0 100%)">
+          <div style="font-size:48px">🗺️</div>
+          <div style="font-size:16px;font-weight:700;color:var(--teal)">מפת חללים — קו החוף</div>
+          <div style="font-size:13px;color:var(--gray)">מנהריה ועד אילת</div>
+          <!-- Fake pins -->
+          <div class="map-pin" style="top:20%;left:45%" onclick="showScreen('venue-detail')"><div class="map-pin-bubble">₪280 · ת"א</div></div>
+          <div class="map-pin" style="top:35%;left:40%" onclick="showScreen('venue-detail')"><div class="map-pin-bubble">₪350 · ת"א</div></div>
+          <div class="map-pin" style="top:50%;left:35%" onclick="showScreen('venue-detail')"><div class="map-pin-bubble">₪420 · הרצליה</div></div>
+          <div class="map-pin" style="top:15%;left:55%" onclick="showScreen('venue-detail')"><div class="map-pin-bubble">₪260 · נתניה</div></div>
+          <div class="map-pin" style="top:70%;left:42%" onclick="showScreen('venue-detail')"><div class="map-pin-bubble">₪490 · אשדוד</div></div>
+          <div class="map-pin" style="top:10%;left:50%" onclick="showScreen('venue-detail')"><div class="map-pin-bubble">₪320 · חיפה</div></div>
+        </div>
+      </div>
+
+      <!-- GRID VIEW -->
+      <div id="grid-view"><div class="venues-grid">
+        <!-- 6 cards -->
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#0a4a4a,#1a9090)">
+            <div class="venue-card-image-inner">🌊</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">⭐ סופר-מארח</div>
+            <div class="venue-card-heart">🤍</div>
+            <div class="venue-card-rating">★ 4.98</div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">דק ים רוטשילד</div>
+            <div class="venue-card-location">📍 תל אביב</div>
+            <div class="venue-card-desc">דק עץ מרהיב מול הים בלב תל אביב. מרחב פתוח ומוצל עם נוף פנורמי.</div>
+            <div class="venue-card-tags"><span class="venue-tag">🌊 נוף לים</span><span class="venue-tag">⛱️ הצללה</span></div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪280 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 20</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#1a4a2a,#2d8a5a)">
+            <div class="venue-card-image-inner">🌿</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">🌿 ירוק</div>
+            <div class="venue-card-heart">🤍</div>
+            <div class="venue-card-rating">★ 4.96</div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">גלריה ימית גורדון</div>
+            <div class="venue-card-location">📍 תל אביב</div>
+            <div class="venue-card-desc">חלל ממוזג ומרווח בבר יוקרתי. רצפת פרקט ומערכת שמע מקצועית.</div>
+            <div class="venue-card-tags"><span class="venue-tag">❄️ מיזוג</span><span class="venue-tag">🚿 מקלחת</span></div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪350 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 25</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#2a1a4a,#6a4a9a)">
+            <div class="venue-card-image-inner">🌅</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">✨ פרמיום</div>
+            <div class="venue-card-heart">❤️</div>
+            <div class="venue-card-rating">★ 5.0</div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">מרפסת הילטון</div>
+            <div class="venue-card-location">📍 תל אביב</div>
+            <div class="venue-card-desc">מרפסת מפוארת עם נוף ישיר לחוף הים. מרחב אינטימי ל-15 מתאמנות.</div>
+            <div class="venue-card-tags"><span class="venue-tag">🌊 חזית ים</span><span class="venue-tag">⛱️ שמשיות</span></div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪420 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 15</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#4a2a0a,#9a6a2a)">
+            <div class="venue-card-image-inner">☀️</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">🆕 חדש</div>
+            <div class="venue-card-heart">🤍</div>
+            <div class="venue-card-rating">★ 4.9</div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">טרס חוף הרצליה</div>
+            <div class="venue-card-location">📍 הרצליה פיתוח</div>
+            <div class="venue-card-desc">טרס גג יוקרתי מעל ים הרצליה. נוף 360° ומתקני ספא זמינים.</div>
+            <div class="venue-card-tags"><span class="venue-tag">🌊 נוף 360°</span><span class="venue-tag">🛁 ספא</span></div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪490 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 30</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#0a2a4a,#2a6a9a)">
+            <div class="venue-card-image-inner">🏄</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">⭐ מוביל</div>
+            <div class="venue-card-heart">🤍</div>
+            <div class="venue-card-rating">★ 4.94</div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">גג ים נתניה</div>
+            <div class="venue-card-location">📍 נתניה</div>
+            <div class="venue-card-desc">גג ייחודי עם נוף לים מרהיב. חלל מודרני עם כל הציוד הדרוש.</div>
+            <div class="venue-card-tags"><span class="venue-tag">🌊 נוף לים</span><span class="venue-tag">📶 Wi-Fi</span></div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪260 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 18</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="venue-card" onclick="showScreen('venue-detail')">
+          <div class="venue-card-image" style="background:linear-gradient(145deg,#3a0a2a,#8a2a6a)">
+            <div class="venue-card-image-inner">🌸</div>
+            <div class="venue-card-gradient"></div>
+            <div class="venue-card-badge">💆 ספא&ווילנס</div>
+            <div class="venue-card-heart">🤍</div>
+            <div class="venue-card-rating">★ 4.97</div>
+          </div>
+          <div class="venue-card-body">
+            <div class="venue-card-title">מרכז ווילנס ים המלח</div>
+            <div class="venue-card-location">📍 עין בוקק</div>
+            <div class="venue-card-desc">חלל מדיטציה ייחודי מול ים המלח. אנרגיה מרפאה ונוף עוצר נשימה.</div>
+            <div class="venue-card-tags"><span class="venue-tag">🧘 מדיטציה</span><span class="venue-tag">💆 ספא</span></div>
+            <div class="venue-card-footer">
+              <div class="venue-card-price">₪380 <span>/ שעה</span></div>
+              <div class="venue-card-capacity">👥 עד 12</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+      </div><!-- end grid-view -->
+  </div><!-- end venues-page-body -->
+
+  <footer class="footer" style="padding:32px 24px">
+    <div class="container" style="text-align:center">
+      <div class="footer-copy" style="margin-bottom:12px">© 2026 SOUL&SEA</div>
+      <button class="btn btn-outline btn-sm" onclick="showScreen('home')" style="color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.2)">← חזרה לדף הבית</button>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 3 — VENUE DETAIL
+═══════════════════════════════════════ -->
+<div id="screen-venue-detail" class="screen">
+  <!-- PHOTO GRID (Airbnb style) -->
+  <div class="container" style="padding-top:88px;padding-bottom:0">
+    <div class="photo-grid" onclick="openLightbox(0)">
+      <div class="photo-grid-main">
+        <div class="photo-bg venue-photo-telaviv" style="height:440px;font-size:80px">🌊</div>
+      </div>
+      <div class="photo-grid-side" style="overflow:hidden">
+        <div class="photo-bg venue-photo-haifa" style="height:220px;font-size:50px">🌿</div>
+      </div>
+      <div class="photo-grid-side" style="overflow:hidden">
+        <div class="photo-bg venue-photo-herzliya" style="height:220px;font-size:50px">🏄</div>
+      </div>
+      <button class="photo-grid-overlay-btn">📷 כל 12 התמונות</button>
+    </div>
+  </div>
+
+  <div class="venue-detail-hero" style="height:0;min-height:0;padding:0;margin:0">
+    <div class="venue-detail-hero-bg" style="display:none">🌊</div>
+    <div class="venue-detail-overlay" style="display:none"></div>
+    <div class="venue-detail-nav">
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('venues')">← חזרה לחיפוש</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-sm">🤍 שמירה</button>
+        <button class="btn btn-ghost btn-sm">📤 שיתוף</button>
+      </div>
+    </div>
+    <div class="venue-detail-photos-hint">📷 צפייה בכל 12 התמונות</div>
+    <div class="venue-detail-rating-badge">★ 4.98 · <span style="text-decoration:underline;cursor:pointer">47 ביקורות</span></div>
+  </div>
+
+  <div class="venue-detail-body">
+    <div class="venue-detail-grid">
+      <!-- Main content -->
+      <div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+          <h1 class="venue-detail-title">דק ים רוטשילד — תל אביב</h1>
+          <div style="background:var(--gold);color:white;padding:5px 14px;border-radius:50px;font-size:11px;font-weight:700;white-space:nowrap;margin-right:16px">⭐ סופר-מארח</div>
+        </div>
+        <div class="venue-detail-location">📍 רוטשילד 120, תל אביב · 80 מ"ר · עד 20 משתתפות</div>
+
+        <!-- Bonus offer -->
+        <div class="bonus-card">
+          <div class="bonus-icon">🎁</div>
+          <div>
+            <div class="bonus-label">בונוס בלעדי לקבוצתך</div>
+            <div class="bonus-text">קפה בוקר + מיץ טרי חינמי לכל המשתתפות</div>
+          </div>
+        </div>
+
+        <!-- Key specs -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px">
+          <div style="background:var(--white);border-radius:var(--radius-sm);padding:16px;text-align:center;box-shadow:var(--shadow-card)">
+            <div style="font-size:22px;margin-bottom:6px">👥</div>
+            <div style="font-size:11px;color:var(--gray)">קיבולת מקס.</div>
+            <div style="font-size:15px;font-weight:700;color:var(--teal)">20 משתתפות</div>
+          </div>
+          <div style="background:var(--white);border-radius:var(--radius-sm);padding:16px;text-align:center;box-shadow:var(--shadow-card)">
+            <div style="font-size:22px;margin-bottom:6px">⏱️</div>
+            <div style="font-size:11px;color:var(--gray)">מינימום שעות</div>
+            <div style="font-size:15px;font-weight:700;color:var(--teal)">שעה וחצי</div>
+          </div>
+          <div style="background:var(--white);border-radius:var(--radius-sm);padding:16px;text-align:center;box-shadow:var(--shadow-card)">
+            <div style="font-size:22px;margin-bottom:6px">📐</div>
+            <div style="font-size:11px;color:var(--gray)">גודל החלל</div>
+            <div style="font-size:15px;font-weight:700;color:var(--teal)">80 מ"ר</div>
+          </div>
+        </div>
+
+        <!-- Host info -->
+        <div class="venue-detail-host">
+          <div class="venue-detail-host-avatar">☕</div>
+          <div>
+            <div class="venue-detail-host-name">קפה רוטשילד — אורן שמיר</div>
+            <div class="venue-detail-host-info">מארח מאז 2024 · 47 שיעורים עברו כאן</div>
+          </div>
+          <div class="venue-detail-host-badge">✓ מאומת SOUL&SEA</div>
+        </div>
+
+        <!-- Description -->
+        <div class="venue-detail-section">
+          <h3>על המקום</h3>
+          <p>דק עץ מרהיב מול הים בלב תל אביב. מרחב פתוח ומוצל עם נוף פנורמי לים התיכון. המקום מתאים ל-20 מתאמנות ומספק חוויית שיעור שלא תשכח. המסעדה מציעה קפה בוקר חינמי לכל קבוצה, והמארח ילווה אתכן לאורך כל הדרך.</p>
+          <br>
+          <p>הדק נמצא ברחוב רוטשילד 120, עם גישה נוחה בתחבורה ציבורית ורכב. החניה הקרובה ביותר ב-5 דקות הליכה.</p>
+        </div>
+
+        <!-- Amenities -->
+        <div class="venue-detail-section">
+          <h3>מה כלול?</h3>
+          <div class="amenities-grid">
+            <div class="amenity-item has"><div class="amenity-icon">🌊</div> נוף לים</div>
+            <div class="amenity-item has"><div class="amenity-icon">⛱️</div> הצללה</div>
+            <div class="amenity-item has"><div class="amenity-icon">🚽</div> שירותים</div>
+            <div class="amenity-item has"><div class="amenity-icon">🔊</div> מערכת שמע</div>
+            <div class="amenity-item has"><div class="amenity-icon">📶</div> Wi-Fi</div>
+            <div class="amenity-item has"><div class="amenity-icon">☀️</div> אור טבעי</div>
+            <div class="amenity-item has"><div class="amenity-icon">🔌</div> שקעי חשמל</div>
+            <div class="amenity-item missing"><div class="amenity-icon">❄️</div> מיזוג אוויר</div>
+            <div class="amenity-item missing"><div class="amenity-icon">🚿</div> מקלחת</div>
+            <div class="amenity-item missing"><div class="amenity-icon">🅿️</div> חניה</div>
+          </div>
+        </div>
+
+        <!-- Rules -->
+        <div class="venue-detail-section">
+          <h3>חשוב לדעת</h3>
+          <div class="rules-box">
+            <h4>כללי SOUL&SEA לשיעורים</h4>
+            <ul style="list-style:none;padding:0">
+              <li>• כל מדריך חייבת להציג ביטוח אחריות מקצועית בתוקף</li>
+              <li>• נדרשת הצהרת בריאות חתומה מכל משתתפת לפני האימון</li>
+              <li>• יש לפנות את החלל 15 דקות לפני סיום הזמנתך</li>
+              <li>• ביטול עד 24 שעות לפני — החזר מלא. אחרי כן — 50%</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Reviews snippet -->
+        <div class="venue-detail-section">
+          <h3>ביקורות (47)</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div style="background:var(--white);border-radius:var(--radius-sm);padding:18px;box-shadow:var(--shadow-card)">
+              <div style="font-size:12px;color:var(--gold);margin-bottom:8px">★★★★★</div>
+              <div style="font-size:13px;color:var(--gray);line-height:1.7;font-style:italic">"חוויה מדהימה. הים ברקע שינה לגמרי את האנרגיה של השיעור."</div>
+              <div style="margin-top:12px;font-size:12px;font-weight:700;color:var(--dark)">רות כהן · מרץ 2026</div>
+            </div>
+            <div style="background:var(--white);border-radius:var(--radius-sm);padding:18px;box-shadow:var(--shadow-card)">
+              <div style="font-size:12px;color:var(--gold);margin-bottom:8px">★★★★★</div>
+              <div style="font-size:13px;color:var(--gray);line-height:1.7;font-style:italic">"אורן המארח הכין הכל מראש. הקפה היה טרי ומחכה לנו. מאה פעוט!"</div>
+              <div style="margin-top:12px;font-size:12px;font-weight:700;color:var(--dark)">מיכל לוי · פברואר 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Booking Widget -->
+      <div>
+        <div class="booking-widget">
+          <div class="booking-widget-header">
+            <div class="booking-widget-price">₪280 <span>/ שעה</span></div>
+            <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px">מינ' 1.5 שעות · אישור מיידי</div>
+          </div>
+          <div class="booking-widget-body">
+            <!-- Inline calendar -->
+            <div class="booking-field">
+              <label>תאריך השיעור</label>
+              <div class="cal-widget">
+                <div class="cal-header">
+                  <button class="cal-nav" onclick="calPrev()">›</button>
+                  <span class="cal-month-label" id="cal-month">יולי 2026</span>
+                  <button class="cal-nav" onclick="calNext()">‹</button>
+                </div>
+                <div class="cal-days-header">
+                  <div class="cal-day-name">א</div><div class="cal-day-name">ב</div>
+                  <div class="cal-day-name">ג</div><div class="cal-day-name">ד</div>
+                  <div class="cal-day-name">ה</div><div class="cal-day-name">ו</div>
+                  <div class="cal-day-name">ש</div>
+                </div>
+                <div class="cal-days-grid" id="cal-days"></div>
+                <div class="cal-legend">
+                  <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--teal)"></div> פנוי</div>
+                  <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--coral-light)"></div> תפוס</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="booking-field" id="slots-section" style="display:none">
+              <div style="font-size:11px;color:var(--teal);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">שעות פנויות — <span id="selected-date-label"></span></div>
+            </div>
+            <div class="booking-field" id="slots-section2" style="display:none">
+              <label>שעות פנויות</label>
+              <div class="time-slots">
+                <div class="time-slot" onclick="selectSlot(this,'07:00–08:30')">07:00 – 08:30</div>
+                <div class="time-slot" onclick="selectSlot(this,'08:30–10:00')">08:30 – 10:00</div>
+                <div class="time-slot disabled">10:00 – 11:30</div>
+                <div class="time-slot" onclick="selectSlot(this,'11:30–13:00')">11:30 – 13:00</div>
+              </div>
+            </div>
+
+            <div class="booking-summary" id="booking-summary" style="display:none">
+              <div class="booking-summary-row"><span>שכ"ד חלל (1.5 שעות)</span><span>₪420</span></div>
+              <div class="booking-summary-row"><span>דמי שירות SOUL&SEA</span><span>₪35</span></div>
+              <div class="booking-summary-row total"><span>סה"כ לתשלום</span><span>₪455</span></div>
+            </div>
+
+            <button class="btn btn-coral" id="book-btn" style="width:100%;font-size:16px;padding:15px" disabled onclick="showScreen('booking-confirm')">
+              בחרי תאריך ושעה
+            </button>
+            <div class="booking-trust">🔒 תשלום מאובטח · לא חויבת עדיין</div>
+          </div>
+        </div>
+
+        <!-- Transparent pricing (Wise-style) -->
+        <div style="background:var(--white);border-radius:var(--radius);padding:20px;margin-top:20px;box-shadow:var(--shadow-card)">
+          <div style="font-size:13px;font-weight:700;color:var(--teal);margin-bottom:14px">💡 שקיפות מלאה בתמחור</div>
+          <div style="font-size:12px;color:var(--gray);line-height:1.8">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>מחיר לשעה</span><span style="font-weight:600;color:var(--dark)">₪280</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>דמי שירות (8.3%)</span><span style="font-weight:600;color:var(--dark)">₪35</span></div>
+            <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--sand);font-weight:700;color:var(--dark)"><span>סה"כ ל-1.5 שעות</span><span>₪455</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 4 — INSTRUCTOR DASHBOARD
+═══════════════════════════════════════ -->
+<div id="screen-instructor-dashboard" class="screen">
+  <div class="dashboard-layout">
+    <div class="dashboard-sidebar">
+      <div class="dashboard-sidebar-logo">
+        <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:white">SOUL<span style="color:var(--coral)">&</span>SEA</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px">פאנל מדריכה</div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="sidebar-nav-item active"><span class="sidebar-nav-icon">🏠</span> סקירה כללית</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">📅</span> ההזמנות שלי</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">🔍</span> חיפוש חללים</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">❤️</span> מועדפים</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">👤</span> הפרופיל שלי</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">📄</span> מסמכים</div>
+        <div class="sidebar-nav-item" style="margin-top:40px"><span class="sidebar-nav-icon">🤖</span> עוזרת AI</div>
+        <div class="sidebar-nav-item" onclick="showScreen('home')"><span class="sidebar-nav-icon">←</span> יציאה</div>
+      </div>
+    </div>
+    <div class="dashboard-main">
+      <div class="dashboard-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="dashboard-title">שלום, מיכל 👋</div>
+            <div class="dashboard-subtitle">יום חמישי, 24 ביולי 2026 · הכל מוכן לשיעור הבוקר שלך</div>
+          </div>
+          <button class="btn btn-teal" onclick="showScreen('venues')">+ הזמנה חדשה</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon teal">📅</div>
+          <div class="stat-value">38</div>
+          <div class="stat-label">שיעורים השנה</div>
+          <div class="stat-change">↑ +12% מהחודש שעבר</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon gold">💰</div>
+          <div class="stat-value">₪14,200</div>
+          <div class="stat-label">חסכון על סטודיו</div>
+          <div class="stat-change">↑ חסכת בעלויות שכירות</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon sage">⭐</div>
+          <div class="stat-value">4.97</div>
+          <div class="stat-label">דירוג ממוצע</div>
+          <div class="stat-change">↑ על בסיס 38 ביקורות</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon coral">❤️</div>
+          <div class="stat-value">6</div>
+          <div class="stat-label">חללים שמורים</div>
+          <div class="stat-change">מועדפים שלך</div>
+        </div>
+      </div>
+
+      <!-- Profile completion banner -->
+      <div class="profile-completion" style="margin-bottom:24px">
+        <div style="font-size:28px">📄</div>
+        <div class="completion-bar-wrap">
+          <div style="font-size:13px;font-weight:700;color:white;margin-bottom:6px">הפרופיל שלך 65% מלא — הוסיפי תמונה ותעודה לקבל יותר הזמנות</div>
+          <div class="completion-bar-bg"><div class="completion-bar-fill"></div></div>
+        </div>
+        <button class="btn btn-white btn-sm" style="flex-shrink:0">השלמת פרופיל</button>
+      </div>
+
+      <!-- Next booking -->
+      <div style="background:var(--gradient-hero);border-radius:var(--radius);padding:24px;margin-bottom:28px;display:flex;align-items:center;gap:24px">
+        <div style="background:rgba(255,255,255,.15);border-radius:14px;padding:20px;text-align:center;min-width:80px">
+          <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px">מחר</div>
+          <div style="font-size:28px;font-weight:900;color:white">25</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6)">יולי</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">ההזמנה הבאה</div>
+          <div style="font-size:18px;font-weight:700;color:white">דק ים רוטשילד</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.7)">07:30 – 09:00 · 18 משתתפות רשומות</div>
+        </div>
+        <div>
+          <button class="btn btn-white btn-sm">פרטים מלאים →</button>
+        </div>
+      </div>
+
+      <!-- Bookings table -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <div class="table-card-title">ההזמנות שלי</div>
+          <button class="btn btn-outline btn-sm">כל ההזמנות</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>חלל</th>
+              <th>תאריך</th>
+              <th>שעות</th>
+              <th>משתתפות</th>
+              <th>מחיר</th>
+              <th>סטטוס</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>דק ים רוטשילד</strong><br><span style="font-size:11px;color:var(--gray)">תל אביב</span></td>
+              <td>25.07.2026</td>
+              <td>07:30–09:00</td>
+              <td>18</td>
+              <td>₪455</td>
+              <td><span class="status-badge status-confirmed">✓ מאושר</span></td>
+            </tr>
+            <tr>
+              <td><strong>גלריה ימית גורדון</strong><br><span style="font-size:11px;color:var(--gray)">תל אביב</span></td>
+              <td>28.07.2026</td>
+              <td>08:00–09:30</td>
+              <td>12</td>
+              <td>₪560</td>
+              <td><span class="status-badge status-pending">⏳ ממתין</span></td>
+            </tr>
+            <tr>
+              <td><strong>מרפסת הילטון</strong><br><span style="font-size:11px;color:var(--gray)">תל אביב</span></td>
+              <td>01.08.2026</td>
+              <td>07:00–08:30</td>
+              <td>10</td>
+              <td>₪665</td>
+              <td><span class="status-badge status-confirmed">✓ מאושר</span></td>
+            </tr>
+            <tr>
+              <td><strong>דק ים רוטשילד</strong><br><span style="font-size:11px;color:var(--gray)">תל אביב</span></td>
+              <td>15.06.2026</td>
+              <td>07:30–09:00</td>
+              <td>20</td>
+              <td>₪455</td>
+              <td><span class="status-badge status-confirmed">✓ הושלם</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 5 — HOST DASHBOARD
+═══════════════════════════════════════ -->
+<div id="screen-host-dashboard" class="screen">
+  <div class="dashboard-layout">
+    <div class="dashboard-sidebar">
+      <div class="dashboard-sidebar-logo">
+        <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:white">SOUL<span style="color:var(--coral)">&</span>SEA</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px">פאנל מארח</div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="sidebar-nav-item active"><span class="sidebar-nav-icon">🏠</span> סקירה כללית</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">🏖️</span> החללים שלי</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">📅</span> הזמנות נכנסות</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">💰</span> הכנסות</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">👤</span> פרופיל עסקי</div>
+        <div class="sidebar-nav-item"><span class="sidebar-nav-icon">📊</span> אנליטיקס</div>
+        <div class="sidebar-nav-item" style="margin-top:40px"><span class="sidebar-nav-icon">➕</span> הוסף חלל</div>
+        <div class="sidebar-nav-item" onclick="showScreen('home')"><span class="sidebar-nav-icon">←</span> יציאה</div>
+      </div>
+    </div>
+    <div class="dashboard-main">
+      <div class="dashboard-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="dashboard-title">קפה רוטשילד — ניהול חלל</div>
+            <div class="dashboard-subtitle">יולי 2026 · ביצועים מעולים החודש 🎉</div>
+          </div>
+          <button class="btn btn-primary" onclick="showScreen('host-add-venue')">+ הוסף חלל חדש</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon gold">₪</div>
+          <div class="stat-value">₪3,240</div>
+          <div class="stat-label">הכנסה החודש</div>
+          <div class="stat-change">↑ +18% מחודש שעבר</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon teal">📅</div>
+          <div class="stat-value">12</div>
+          <div class="stat-label">שיעורים החודש</div>
+          <div class="stat-change">↑ 3 ממתינים לאישור</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon sage">⭐</div>
+          <div class="stat-value">4.98</div>
+          <div class="stat-label">דירוג הממוצע</div>
+          <div class="stat-change">↑ על בסיס 47 ביקורות</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon coral">📈</div>
+          <div class="stat-value">78%</div>
+          <div class="stat-label">אחוז ניצול</div>
+          <div class="stat-change">↑ שיא של הפלטפורמה</div>
+        </div>
+      </div>
+
+      <!-- Earnings chart placeholder -->
+      <div style="background:var(--white);border-radius:var(--radius);padding:24px;margin-bottom:28px;box-shadow:var(--shadow-card)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div style="font-size:16px;font-weight:700;color:var(--teal)">הכנסות חודשיות</div>
+          <div style="font-size:12px;color:var(--gray)">6 חודשים אחרונים</div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:12px;height:100px">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;background:var(--sage-light);border-radius:4px;height:40%"></div>
+            <div style="font-size:10px;color:var(--gray)">פבר'</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;background:var(--sage-light);border-radius:4px;height:55%"></div>
+            <div style="font-size:10px;color:var(--gray)">מרץ</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;background:var(--sage-light);border-radius:4px;height:65%"></div>
+            <div style="font-size:10px;color:var(--gray)">אפר'</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;background:var(--sage-light);border-radius:4px;height:72%"></div>
+            <div style="font-size:10px;color:var(--gray)">מאי</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;background:var(--sage-light);border-radius:4px;height:80%"></div>
+            <div style="font-size:10px;color:var(--gray)">יוני</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;background:var(--teal-mid);border-radius:4px;height:100%"></div>
+            <div style="font-size:10px;color:var(--teal);font-weight:700">יולי</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Incoming bookings -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <div class="table-card-title">הזמנות נכנסות</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm">ייצוא</button>
+            <button class="btn btn-teal btn-sm">כל ההזמנות</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>מדריכה</th>
+              <th>תאריך</th>
+              <th>שעות</th>
+              <th>משתתפות</th>
+              <th>תשלום</th>
+              <th>סטטוס</th>
+              <th>פעולה</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>מיכל ברנר</strong><br><span style="font-size:11px;color:var(--gray)">יוגה · ★4.97</span></td>
+              <td>25.07.2026</td>
+              <td>07:30–09:00</td>
+              <td>18</td>
+              <td style="color:var(--sage);font-weight:700">₪408 ✓</td>
+              <td><span class="status-badge status-confirmed">✓ מאושר</span></td>
+              <td><button class="btn btn-outline btn-sm">פרטים</button></td>
+            </tr>
+            <tr>
+              <td><strong>שירי לוי</strong><br><span style="font-size:11px;color:var(--gray)">פילאטיס · ★5.0</span></td>
+              <td>28.07.2026</td>
+              <td>08:00–09:30</td>
+              <td>12</td>
+              <td style="color:var(--gold);font-weight:700">₪315 ⏳</td>
+              <td><span class="status-badge status-pending">⏳ ממתין</span></td>
+              <td style="display:flex;gap:6px;padding:14px 24px">
+                <button class="btn btn-teal btn-sm">אשר</button>
+                <button class="btn btn-outline btn-sm">דחה</button>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>דנה אברהם</strong><br><span style="font-size:11px;color:var(--gray)">מדיטציה · ★4.92</span></td>
+              <td>01.08.2026</td>
+              <td>07:00–08:30</td>
+              <td>8</td>
+              <td style="color:var(--gold);font-weight:700">₪252 ⏳</td>
+              <td><span class="status-badge status-pending">⏳ ממתין</span></td>
+              <td style="display:flex;gap:6px;padding:14px 24px">
+                <button class="btn btn-teal btn-sm">אשר</button>
+                <button class="btn btn-outline btn-sm">דחה</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN: AUTH — LOGIN
+═══════════════════════════════════════ -->
+<div id="screen-auth-login" class="screen">
+  <div class="auth-layout">
+    <div class="auth-left">
+      <div style="position:relative;z-index:1;max-width:380px">
+        <div style="font-family:'Playfair Display',serif;font-size:46px;font-weight:700;color:white;line-height:1.1;margin-bottom:20px">
+          SOUL<span style="color:var(--gold-light)">&</span>SEA
+        </div>
+        <div style="font-size:22px;color:rgba(255,255,255,.8);font-style:italic;margin-bottom:16px">
+          where the soul meets the sea
+        </div>
+        <div style="font-size:15px;color:rgba(255,255,255,.6);line-height:1.7">
+          פלטפורמה המחברת מדריכות יוגה לחללים מרהיבים על קו החוף. 120+ חללים, 340+ מדריכות.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:36px">
+          <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.75);font-size:14px">
+            <span style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">🌊</span>
+            חוף מנהריה ועד אילת
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.75);font-size:14px">
+            <span style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">🛡️</span>
+            תשלום מאובטח + ביטוח מקצועי
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,.75);font-size:14px">
+            <span style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">⭐</span>
+            4.9 ממוצע מ-4,200+ שיעורים
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="auth-right">
+      <div class="auth-form-wrap">
+        <div class="auth-form-title">ברוכה הבאה בחזרה</div>
+        <div class="auth-form-subtitle">התחברי לחשבון SOUL&SEA שלך</div>
+        <button class="google-btn" style="margin-bottom:4px">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+          המשך עם Google
+        </button>
+        <div class="form-divider">או</div>
+        <div class="form-field">
+          <label class="form-label">אימייל</label>
+          <input class="form-input" type="email" placeholder="michal@example.com">
+        </div>
+        <div class="form-field">
+          <label class="form-label">סיסמה</label>
+          <input class="form-input" type="password" placeholder="••••••••">
+          <div style="text-align:left;margin-top:6px"><a style="font-size:12px;color:var(--teal-mid);cursor:pointer">שכחתי סיסמה</a></div>
+        </div>
+        <button class="btn btn-teal" style="width:100%;font-size:16px;padding:14px" onclick="showScreen('instructor-dashboard')">
+          התחברות →
+        </button>
+        <div style="text-align:center;margin-top:20px;font-size:13px;color:var(--gray)">
+          אין לך חשבון? <a style="color:var(--teal);font-weight:700;cursor:pointer" onclick="showScreen('auth-signup')">הצטרפי חינם</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN: AUTH — SIGNUP
+═══════════════════════════════════════ -->
+<div id="screen-auth-signup" class="screen">
+  <div class="auth-layout">
+    <div class="auth-left">
+      <div style="position:relative;z-index:1;max-width:360px;text-align:center">
+        <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:white;margin-bottom:16px">
+          SOUL<span style="color:var(--gold-light)">&</span>SEA
+        </div>
+        <div style="font-size:19px;color:rgba(255,255,255,.7);margin-bottom:32px">מקום שבו הנשמה פוגשת את הים</div>
+        <div style="background:rgba(255,255,255,.08);border-radius:20px;padding:28px">
+          <div style="font-size:28px;margin-bottom:12px">🌊</div>
+          <div style="font-size:16px;font-weight:700;color:white;margin-bottom:8px">הצטרפי לקהילה שלנו</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.7">
+            340 מדריכות כבר מעבירות שיעורים מרהיבים<br>מול הים בעזרת SOUL&SEA
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="auth-right">
+      <div class="auth-form-wrap">
+        <div class="auth-form-title">הצטרפות לSOUL&SEA</div>
+        <div class="auth-form-subtitle">בחרי את התפקיד שלך כדי להתחיל</div>
+        <div class="role-picker">
+          <div class="role-card" id="role-instructor" onclick="selectRole('instructor')">
+            <div class="role-card-icon">🧘</div>
+            <div class="role-card-title">מדריכה</div>
+            <div class="role-card-desc">אחפש חללים ואזמין שיעורים בחזית הים</div>
+          </div>
+          <div class="role-card" id="role-host" onclick="selectRole('host')">
+            <div class="role-card-icon">🏖️</div>
+            <div class="role-card-title">מארח/ת</div>
+            <div class="role-card-desc">יש לי מסעדה/קפה ורוצה להשכיר חלל בוקר</div>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">שם מלא</label>
+          <input class="form-input" placeholder="מיכל ברנר">
+        </div>
+        <div class="form-field">
+          <label class="form-label">אימייל</label>
+          <input class="form-input" type="email" placeholder="michal@example.com">
+        </div>
+        <div class="form-field">
+          <label class="form-label">סיסמה</label>
+          <input class="form-input" type="password" placeholder="לפחות 8 תווים">
+        </div>
+        <button class="btn btn-teal" style="width:100%;font-size:16px;padding:14px" onclick="showScreen('instructor-dashboard')">
+          יצירת חשבון חינמי →
+        </button>
+        <div style="font-size:11px;color:var(--gray);text-align:center;margin-top:12px;line-height:1.6">
+          בלחיצה על הכפתור אני מסכימה ל<a style="color:var(--teal);cursor:pointer">תנאי השימוש</a> ולמדיניות הפרטיות
+        </div>
+        <div class="form-divider">כבר חברה?</div>
+        <button class="btn btn-outline" style="width:100%" onclick="showScreen('auth-login')">התחברות</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN: BOOKING CONFIRMATION
+═══════════════════════════════════════ -->
+<div id="screen-booking-confirm" class="screen">
+  <div class="confirm-layout">
+    <!-- Steps -->
+    <div class="confirm-steps">
+      <div class="confirm-step done">
+        <div class="confirm-step-num">✓</div>
+        <span style="display:none">בחירת חלל</span>
+      </div>
+      <div class="confirm-step-line done"></div>
+      <div class="confirm-step done">
+        <div class="confirm-step-num">✓</div>
+        <span style="display:none">תאריך ושעה</span>
+      </div>
+      <div class="confirm-step-line done"></div>
+      <div class="confirm-step active">
+        <div class="confirm-step-num">3</div>
+        <span style="color:var(--teal);font-size:13px;font-weight:700">אישור ותשלום</span>
+      </div>
+    </div>
+
+    <!-- Booking summary card -->
+    <div class="confirm-card">
+      <div class="confirm-card-title">סיכום ההזמנה</div>
+      <div style="display:flex;gap:20px;align-items:flex-start">
+        <div style="width:120px;height:90px;border-radius:12px;flex-shrink:0" class="venue-photo-telaviv"></div>
+        <div style="flex:1">
+          <div style="font-size:17px;font-weight:700;color:var(--teal);margin-bottom:4px">דק ים רוטשילד</div>
+          <div style="font-size:13px;color:var(--gray);margin-bottom:8px">📍 רוטשילד 120, תל אביב</div>
+          <div style="display:flex;gap:16px;font-size:13px;color:var(--dark)">
+            <span>📅 25.07.2026</span>
+            <span>⏰ 07:30 – 09:00</span>
+            <span>👥 עד 20</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--sand)">
+        <div class="dual-transparency">
+          <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:10px">💡 פירוט תשלום — שקיפות מלאה</div>
+          <div class="dual-row instructor"><span>שכ"ד חלל 1.5 שעות (280 × 1.5)</span><span style="font-weight:700">₪420</span></div>
+          <div class="dual-row platform"><span>דמי שירות SOUL&SEA (8.3%)</span><span>₪35</span></div>
+          <div class="dual-divider"></div>
+          <div class="dual-row instructor" style="font-weight:800;font-size:15px"><span>סה"כ לתשלום</span><span>₪455</span></div>
+          <div class="dual-divider"></div>
+          <div class="dual-row host" style="font-size:11px"><span>המארח מקבל</span><span style="font-weight:700">₪385</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructor details -->
+    <div class="confirm-card">
+      <div class="confirm-card-title">פרטי השיעור</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="form-field" style="margin:0">
+          <label class="form-label">סוג השיעור</label>
+          <select class="form-input"><option>יוגה</option><option>פילאטיס</option><option>מדיטציה</option><option>אחר</option></select>
+        </div>
+        <div class="form-field" style="margin:0">
+          <label class="form-label">מספר משתתפות משוער</label>
+          <input class="form-input" type="number" placeholder="12" value="15">
+        </div>
+      </div>
+      <div class="form-field" style="margin-top:16px;margin-bottom:0">
+        <label class="form-label">הערות למארח (אופציונלי)</label>
+        <textarea class="form-input" rows="3" placeholder="למשל: נדרשת שטיחה, נגיע ב-07:15 להתקנה..."></textarea>
+      </div>
+    </div>
+
+    <!-- Payment -->
+    <div class="confirm-card">
+      <div class="confirm-card-title">אמצעי תשלום</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="border:2px solid var(--teal);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;gap:12px;background:rgba(10,74,74,.03)">
+          <input type="radio" checked style="accent-color:var(--teal)">
+          <span style="font-size:14px;font-weight:600;color:var(--dark)">💳 כרטיס אשראי</span>
+          <span style="margin-right:auto;font-size:12px;color:var(--gray)">מאובטח על ידי Tranzila</span>
+        </div>
+        <div style="border:1.5px solid var(--sand);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;gap:12px">
+          <input type="radio" style="accent-color:var(--teal)">
+          <span style="font-size:14px;color:var(--gray)">🏦 העברה בנקאית</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div>
+          <label class="form-label">מספר כרטיס</label>
+          <input class="form-input" placeholder="•••• •••• •••• ••••">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <label class="form-label">תוקף</label>
+            <input class="form-input" placeholder="MM/YY">
+          </div>
+          <div>
+            <label class="form-label">CVV</label>
+            <input class="form-input" placeholder="•••">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-coral" style="width:100%;font-size:18px;padding:18px" onclick="showScreen('home')">
+      🔒 שלמי ₪455 — אישור הזמנה
+    </button>
+    <div style="text-align:center;font-size:12px;color:var(--gray);margin-top:12px">
+      ביטול חינמי עד 24 שעות לפני השיעור · לא יחויב עד אישור
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN: HOST ADD VENUE WIZARD
+═══════════════════════════════════════ -->
+<div id="screen-host-add-venue" class="screen">
+  <div class="wizard-layout">
+    <!-- Wizard nav -->
+    <div class="wizard-nav">
+      <div class="wizard-nav-item active" id="wizard-nav-1">
+        <div class="wizard-nav-step">1</div>
+        <div class="wizard-nav-label">פרטי המקום</div>
+      </div>
+      <div class="wizard-nav-line"></div>
+      <div class="wizard-nav-item pending" id="wizard-nav-2">
+        <div class="wizard-nav-step">2</div>
+        <div class="wizard-nav-label">תנאים ומחיר</div>
+      </div>
+      <div class="wizard-nav-line"></div>
+      <div class="wizard-nav-item pending" id="wizard-nav-3">
+        <div class="wizard-nav-step">3</div>
+        <div class="wizard-nav-label">תמונות</div>
+      </div>
+      <div class="wizard-nav-line"></div>
+      <div class="wizard-nav-item pending" id="wizard-nav-4">
+        <div class="wizard-nav-step">4</div>
+        <div class="wizard-nav-label">זמינות</div>
+      </div>
+    </div>
+
+    <!-- Step 1: Basic details -->
+    <div class="wizard-step active" id="wizard-step-1">
+      <div class="wizard-card">
+        <div class="wizard-card-title">ספר לנו על המקום שלך</div>
+        <div class="wizard-card-subtitle">המידע הזה יופיע בדף החלל שלך</div>
+        <div class="form-field">
+          <label class="form-label">שם המקום</label>
+          <input class="form-input" placeholder='לדוגמה: "דק ים רוטשילד"' value="קפה שקיעה — חוף בת גלים">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-field">
+            <label class="form-label">עיר</label>
+            <select class="form-input">
+              <option>נהריה</option><option>חיפה</option><option>תל אביב</option>
+              <option>הרצליה</option><option>נתניה</option><option>אשדוד</option><option>אילת</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">כתובת מדויקת</label>
+            <input class="form-input" placeholder="רחוב + מספר">
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">תיאור החלל</label>
+          <textarea class="form-input" rows="4" placeholder="תאר את החלל — הנוף, האווירה, מה שהופך אותו לייחודי...">מרפסת מרהיבה הצופה על חוף בת גלים בחיפה. נוף ישיר לים, אוויר ים טרי ורוח קלה בבוקר. מושלם לקבוצות יוגה קטנות.</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-field">
+            <label class="form-label">קיבולת מקס. (אנשים)</label>
+            <input class="form-input" type="number" value="20" min="1" max="100">
+          </div>
+          <div class="form-field">
+            <label class="form-label">גודל החלל (מ"ר)</label>
+            <input class="form-input" type="number" value="75" min="20">
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">בונוס שתציע לקבוצות (אופציונלי)</label>
+          <input class="form-input" placeholder='לדוגמה: "קפה טרי + מאפין בוקר לכל משתתפת"'>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-teal btn-lg" onclick="gotoWizardStep(2)">המשך לתנאים ומחיר →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Amenities & Price -->
+    <div class="wizard-step" id="wizard-step-2">
+      <div class="wizard-card">
+        <div class="wizard-card-title">מה כלול בחלל שלך?</div>
+        <div class="wizard-card-subtitle">סמני את כל מה שזמין עבור המדריכות</div>
+        <div class="amenity-toggle-grid">
+          <div class="amenity-toggle on" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">🌊</div><div class="amenity-toggle-label">נוף לים</div></div>
+          <div class="amenity-toggle on" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">⛱️</div><div class="amenity-toggle-label">הצללה</div></div>
+          <div class="amenity-toggle on" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">🚽</div><div class="amenity-toggle-label">שירותים</div></div>
+          <div class="amenity-toggle" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">❄️</div><div class="amenity-toggle-label">מיזוג</div></div>
+          <div class="amenity-toggle" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">🚿</div><div class="amenity-toggle-label">מקלחת</div></div>
+          <div class="amenity-toggle on" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">🔊</div><div class="amenity-toggle-label">מערכת שמע</div></div>
+          <div class="amenity-toggle on" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">📶</div><div class="amenity-toggle-label">Wi-Fi</div></div>
+          <div class="amenity-toggle on" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">☀️</div><div class="amenity-toggle-label">אור טבעי</div></div>
+          <div class="amenity-toggle" onclick="this.classList.toggle('on')"><div class="amenity-toggle-icon">🅿️</div><div class="amenity-toggle-label">חניה</div></div>
+        </div>
+
+        <div style="background:var(--sand-light);border-radius:var(--radius);padding:24px;margin-bottom:24px">
+          <div style="font-size:14px;font-weight:700;color:var(--teal);margin-bottom:16px">תמחור</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="form-field" style="margin:0">
+              <label class="form-label">מחיר לשעה (₪)</label>
+              <input class="form-input" type="number" value="280">
+            </div>
+            <div class="form-field" style="margin:0">
+              <label class="form-label">מינימום שעות</label>
+              <select class="form-input"><option>1</option><option selected>1.5</option><option>2</option><option>3</option></select>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:12px 16px;background:rgba(92,140,110,.08);border-radius:10px;font-size:13px;color:var(--sage)">
+            💡 על בסיס מינימום 1.5 שעות — הכנסה ממוצעת לשיעור: <strong>₪385</strong> (אחרי עמלת הפלטפורמה)
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between">
+          <button class="btn btn-outline" onclick="gotoWizardStep(1)">← חזרה</button>
+          <button class="btn btn-teal btn-lg" onclick="gotoWizardStep(3)">המשך לתמונות →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Photos -->
+    <div class="wizard-step" id="wizard-step-3">
+      <div class="wizard-card">
+        <div class="wizard-card-title">תמונות המקום</div>
+        <div class="wizard-card-subtitle">לפחות 5 תמונות · חללים עם תמונות מרובות מקבלים 3x יותר הזמנות</div>
+        <div class="upload-zone" onclick="alert('בדמו: בחירת קבצים')">
+          <div class="upload-zone-icon">📷</div>
+          <div class="upload-zone-text">גרורי תמונות לכאן או לחצי לבחירה</div>
+          <div class="upload-zone-hint">JPG, PNG עד 10MB לתמונה · מינ' 5 תמונות</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px">
+          <div style="aspect-ratio:1;border-radius:10px;position:relative" class="venue-photo-haifa">
+            <div style="position:absolute;top:6px;right:6px;background:var(--gold);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">ראשית</div>
+          </div>
+          <div style="aspect-ratio:1;border-radius:10px" class="venue-photo-telaviv"></div>
+          <div style="aspect-ratio:1;border-radius:10px" class="venue-photo-herzliya"></div>
+          <div style="aspect-ratio:1;border-radius:10px;border:2px dashed var(--bamboo);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--bamboo);cursor:pointer">+</div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:24px">
+          <button class="btn btn-outline" onclick="gotoWizardStep(2)">← חזרה</button>
+          <button class="btn btn-teal btn-lg" onclick="gotoWizardStep(4)">המשך לזמינות →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Availability -->
+    <div class="wizard-step" id="wizard-step-4">
+      <div class="wizard-card">
+        <div class="wizard-card-title">מתי החלל פנוי?</div>
+        <div class="wizard-card-subtitle">הגדירי את שעות הפעילות האפשריות. מדריכות יוכלו להזמין בתוך הטווח הזה בלבד.</div>
+        <div style="display:grid;gap:14px;margin-bottom:24px">
+          <div style="font-size:13px;font-weight:700;color:var(--teal);margin-bottom:4px">ימים ושעות</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+            <span style="padding:8px 16px;border-radius:50px;background:var(--teal);color:white;font-size:13px;font-weight:600">ראשון</span>
+            <span style="padding:8px 16px;border-radius:50px;background:var(--teal);color:white;font-size:13px;font-weight:600">שני</span>
+            <span style="padding:8px 16px;border-radius:50px;background:var(--teal);color:white;font-size:13px;font-weight:600">שלישי</span>
+            <span style="padding:8px 16px;border-radius:50px;background:var(--teal);color:white;font-size:13px;font-weight:600">רביעי</span>
+            <span style="padding:8px 16px;border-radius:50px;background:var(--teal);color:white;font-size:13px;font-weight:600">חמישי</span>
+            <span style="padding:8px 16px;border-radius:50px;border:1.5px solid var(--sand);color:var(--gray);font-size:13px;font-weight:600">שישי</span>
+            <span style="padding:8px 16px;border-radius:50px;border:1.5px solid var(--sand);color:var(--gray);font-size:13px;font-weight:600">שבת</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div><label class="form-label">שעת פתיחה</label><input class="form-input" type="time" value="07:00"></div>
+            <div><label class="form-label">שעת סגירה</label><input class="form-input" type="time" value="12:00"></div>
+          </div>
+        </div>
+        <div style="background:rgba(92,140,110,.06);border:1px solid rgba(92,140,110,.2);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px">
+          <div style="font-size:13px;font-weight:700;color:var(--sage);margin-bottom:4px">🎯 ממוצע עבור הגדרה זו:</div>
+          <div style="font-size:13px;color:var(--dark)">15 שיעורים בחודש · הכנסה ממוצעת <strong>₪2,800+</strong> / חודש</div>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <button class="btn btn-outline" onclick="gotoWizardStep(3)">← חזרה</button>
+          <button class="btn btn-primary btn-lg" onclick="showScreen('host-dashboard')">
+            🚀 פרסם את החלל!
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     LIGHTBOX (global)
+═══════════════════════════════════════ -->
+<div id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <div id="lightbox-main" class="lightbox-main-img venue-photo-telaviv">
+    <div style="font-size:80px;opacity:.3">🌊</div>
+  </div>
+  <div class="lightbox-thumbs">
+    <div class="lightbox-thumb venue-photo-telaviv active" onclick="setLightboxImg(0)">🌊</div>
+    <div class="lightbox-thumb venue-photo-haifa" onclick="setLightboxImg(1)">🌿</div>
+    <div class="lightbox-thumb venue-photo-herzliya" onclick="setLightboxImg(2)">🏄</div>
+    <div class="lightbox-thumb venue-photo-eilat" onclick="setLightboxImg(3)">🐠</div>
+    <div class="lightbox-thumb venue-photo-nahariya" onclick="setLightboxImg(4)">⛵</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MOBILE MENU (global)
+═══════════════════════════════════════ -->
+<div id="mobile-menu">
+  <a onclick="showScreen('home');toggleMobileMenu()">🏠 דף הבית</a>
+  <a onclick="showScreen('venues');toggleMobileMenu()">🔍 חיפוש חללים</a>
+  <a onclick="showScreen('auth-signup');toggleMobileMenu()">🧘 הצטרפות כמדריכה</a>
+  <a onclick="showScreen('host-add-venue');toggleMobileMenu()">🏖️ רשם את החלל שלך</a>
+  <a onclick="showScreen('auth-login');toggleMobileMenu()">🔑 התחברות</a>
+</div>
+
+<!-- ═══════════════════════════════════════
+     FLOATING AI CHAT WIDGET
+═══════════════════════════════════════ -->
+<div id="chat-widget" style="
+  position:fixed;bottom:24px;left:24px;z-index:999;
+  display:flex;flex-direction:column;align-items:flex-start;gap:12px;
+">
+  <div id="chat-bubble" style="
+    display:none;
+    background:var(--white);border-radius:20px;padding:20px;
+    box-shadow:0 12px 40px rgba(10,74,74,.18);
+    width:300px;border:1px solid var(--sand);
+  ">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="width:36px;height:36px;background:var(--gradient-hero);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">🤖</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--teal)">עוזרת SOUL&SEA AI</div>
+        <div style="font-size:11px;color:var(--gray)">מחפשת חלל מושלם</div>
+      </div>
+      <button onclick="toggleChat()" style="margin-right:auto;background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray)">✕</button>
+    </div>
+    <div style="background:var(--sand-light);border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px;color:var(--gray);line-height:1.6">
+      שלום! אני כאן לעזור לך למצוא את החלל המושלם 🌊<br>
+      ספרי לי: <strong>באיזה עיר? כמה משתתפות?</strong>
+    </div>
+    <input placeholder="הקלידי שאלה..." style="
+      width:100%;padding:10px 14px;border:1.5px solid var(--sand);
+      border-radius:10px;font-family:'Heebo',sans-serif;font-size:13px;
+      direction:rtl;outline:none;
+    " onfocus="this.style.borderColor='var(--teal-mid)'" onblur="this.style.borderColor='var(--sand)'">
+  </div>
+  <button onclick="toggleChat()" style="
+    width:52px;height:52px;border-radius:50%;
+    background:var(--gradient-hero);border:none;cursor:pointer;
+    box-shadow:0 6px 20px rgba(10,74,74,.3);
+    font-size:22px;display:flex;align-items:center;justify-content:center;
+    transition:transform .2s;
+  " onmouseenter="this.style.transform='scale(1.08)'" onmouseleave="this.style.transform='scale(1)'">
+    🤖
+  </button>
+</div>
+
+<script>
+// ═══ NAVIGATION ═══
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById('screen-' + name);
+  if (screen) {
+    screen.classList.add('active');
+    window.scrollTo(0,0);
+  }
+  // Navbar transparency for home hero
+  const navbar = document.getElementById('navbar');
+  navbar.classList.toggle('transparent', name === 'home');
+}
+
+// ═══ BOOKING WIDGET ═══
+function onDateChange() {
+  const val = document.getElementById('booking-date').value;
+  document.getElementById('slots-section').style.display = val ? 'block' : 'none';
+  document.getElementById('booking-summary').style.display = 'none';
+  document.getElementById('book-btn').disabled = true;
+  document.getElementById('book-btn').textContent = 'בחרי שעה';
+  document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+}
+
+function selectSlot(el, slot) {
+  if (el.classList.contains('disabled')) return;
+  document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('booking-summary').style.display = 'block';
+  const btn = document.getElementById('book-btn');
+  btn.disabled = false;
+  btn.textContent = `הזמיני — ${slot} ›`;
+}
+
+// ═══ FILTER CHIPS ═══
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ═══ AI CHAT ═══
+function toggleChat() {
+  const bubble = document.getElementById('chat-bubble');
+  bubble.style.display = bubble.style.display === 'none' ? 'block' : 'none';
+}
+
+// ═══ NAVBAR SCROLL BEHAVIOR ═══
+window.addEventListener('scroll', () => {
+  const navbar = document.getElementById('navbar');
+  const activeScreen = document.querySelector('.screen.active');
+  if (activeScreen && activeScreen.id === 'screen-home') {
+    navbar.classList.toggle('transparent', window.scrollY < 80);
+  }
+});
+
+// Init
+showScreen('home');
+
+// ═══ SCROLL ANIMATIONS ═══
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+// ═══ MOBILE MENU ═══
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  menu.classList.toggle('open');
+}
+
+// ═══ INLINE CALENDAR ═══
+let calendarYear = 2026, calendarMonth = 6; // July 2026
+const heMonths = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const heDays = ['א','ב','ג','ד','ה','ו','ש'];
+const bookedDates = [3,7,14,21,28];
+
+function renderCalendar() {
+  const grid = document.getElementById('cal-days');
+  if (!grid) return;
+  document.getElementById('cal-month').textContent = heMonths[calendarMonth] + ' ' + calendarYear;
+  const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+  const daysInMonth = new Date(calendarYear, calendarMonth+1, 0).getDate();
+  const today = new Date();
+  let html = '';
+  for (let i = 0; i < firstDay; i++) html += '<div></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isBooked = bookedDates.includes(d);
+    const isPast = new Date(calendarYear, calendarMonth, d) < today;
+    const cls = isPast ? 'cal-day past' : isBooked ? 'cal-day booked' : 'cal-day avail';
+    html += `<div class="${cls}" onclick="selectCalDay(${d},this)">${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+function selectCalDay(day, el) {
+  if (el.classList.contains('past') || el.classList.contains('booked')) return;
+  document.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('slots-section').style.display = 'block';
+  document.getElementById('slots-section2').style.display = 'block';
+  document.getElementById('booking-summary').style.display = 'none';
+  document.getElementById('book-btn').disabled = true;
+  document.getElementById('book-btn').textContent = 'בחרי שעה';
+  document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+  const dateStr = `${day} ${heMonths[calendarMonth]}`;
+  const label = document.getElementById('selected-date-label');
+  if (label) label.textContent = dateStr;
+}
+function calPrev() { if(calendarMonth===0){calendarMonth=11;calendarYear--;}else calendarMonth--; renderCalendar(); }
+function calNext() { if(calendarMonth===11){calendarMonth=0;calendarYear++;}else calendarMonth++; renderCalendar(); }
+setTimeout(renderCalendar, 100);
+
+// ═══ LIGHTBOX ═══
+function openLightbox(idx) {
+  document.getElementById('lightbox').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setLightboxImg(idx||0);
+}
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function setLightboxImg(idx) {
+  const imgs = document.querySelectorAll('.lightbox-thumb');
+  imgs.forEach((t,i)=>t.classList.toggle('active',i===idx));
+  const main = document.getElementById('lightbox-main');
+  const gradients = [
+    'linear-gradient(145deg,#0a4a4a,#1a9090)',
+    'linear-gradient(145deg,#1a4a2a,#2d8a5a)',
+    'linear-gradient(145deg,#0a2a4a,#2a6a9a)',
+    'linear-gradient(145deg,#4a2a0a,#9a6a2a)',
+    'linear-gradient(145deg,#2a1a4a,#6a4a9a)',
+  ];
+  main.style.background = gradients[idx % gradients.length];
+}
+
+// ═══ ROLE PICKER ═══
+function selectRole(role) {
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('role-'+role).classList.add('selected');
+}
+
+// ═══ MAP TOGGLE ═══
+function toggleMapView(mode) {
+  document.getElementById('grid-view').style.display = mode==='grid' ? 'block' : 'none';
+  document.getElementById('map-view').style.display = mode==='map' ? 'block' : 'none';
+  document.querySelectorAll('.map-toggle-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('toggle-'+mode).classList.add('active');
+}
+
+// ═══ VENUE WIZARD ═══
+let wizardStep = 1;
+function gotoWizardStep(n) {
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('wizard-step-'+n).classList.add('active');
+  document.querySelectorAll('.wizard-nav-item').forEach((s,i) => {
+    s.classList.toggle('done', i+1 < n);
+    s.classList.toggle('active', i+1 === n);
+  });
+  wizardStep = n;
+}
+</script>
+</body>
+</html>

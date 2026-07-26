@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-ocean: #0077B6;
+  --color-deep-ocean: #023E8A;
+  --color-teal: #00B4D8;
+  --color-sand: #F4E4C1;
+  --color-cream: #FDF6EC;
+  --color-coral: #FF6B6B;
+  --color-golden: #F4A261;
+  --font-sans: 'Heebo', sans-serif;
+}
+
+:root {
+  --ocean: #0077B6;
+  --deep-ocean: #023E8A;
+  --teal: #00B4D8;
+  --sand: #F4E4C1;
+  --cream: #FDF6EC;
+  --coral: #FF6B6B;
+  --golden: #F4A261;
+}
+
+* {
+  direction: rtl;
+}
+
+body {
+  font-family: 'Heebo', sans-serif;
+  background-color: #FDF6EC;
+  color: #1a1a2e;
+}
+
+.ocean-gradient {
+  background: linear-gradient(135deg, #023E8A 0%, #0077B6 50%, #00B4D8 100%);
+}
+
+.sand-gradient {
+  background: linear-gradient(180deg, #FDF6EC 0%, #F4E4C1 100%);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Tailwind color utilities via CSS variables */
+.bg-ocean { background-color: #0077B6; }
+.bg-deep-ocean { background-color: #023E8A; }
+.bg-teal { background-color: #00B4D8; }
+.bg-sand { background-color: #F4E4C1; }
+.bg-cream { background-color: #FDF6EC; }
+.bg-coral { background-color: #FF6B6B; }
+.bg-golden { background-color: #F4A261; }
+
+.text-ocean { color: #0077B6; }
+.text-deep-ocean { color: #023E8A; }
+.text-teal { color: #00B4D8; }
+.text-sand { color: #F4E4C1; }
+.text-cream { color: #FDF6EC; }
+.text-coral { color: #FF6B6B; }
+.text-golden { color: #F4A261; }
+
+.border-ocean { border-color: #0077B6; }
+.border-sand { border-color: #F4E4C1; }
+.border-golden { border-color: #F4A261; }
+
+.hover\:bg-ocean:hover { background-color: #0077B6; }
+.hover\:bg-deep-ocean:hover { background-color: #023E8A; }
+.hover\:text-ocean:hover { color: #0077B6; }
+.hover\:text-white:hover { color: #ffffff; }
+.hover\:border-ocean:hover { border-color: #0077B6; }
+
+.fill-golden { fill: #F4A261; }
+
+.focus\:border-ocean:focus { border-color: #0077B6; }
+.focus-visible\:ring-ocean:focus-visible { --tw-ring-color: #0077B6; }
+
+/* Hover opacity utilities */
+.hover\:bg-coral\/90:hover { background-color: rgb(255 107 107 / 0.9); }
+.hover\:bg-golden\/90:hover { background-color: rgb(244 162 97 / 0.9); }
+.hover\:bg-sand\/80:hover { background-color: rgb(244 228 193 / 0.8); }
+.bg-white\/10 { background-color: rgb(255 255 255 / 0.1); }
+.bg-white\/20 { background-color: rgb(255 255 255 / 0.2); }
+.bg-white\/95 { background-color: rgb(255 255 255 / 0.95); }
+.bg-ocean\/5 { background-color: rgb(0 119 182 / 0.05); }
+.bg-golden\/10 { background-color: rgb(244 162 97 / 0.1); }
+.border-golden\/20 { border-color: rgb(244 162 97 / 0.2); }
+.border-white\/10 { border-color: rgb(255 255 255 / 0.1); }
+.border-white\/20 { border-color: rgb(255 255 255 / 0.2); }

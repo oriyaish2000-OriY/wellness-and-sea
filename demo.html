@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WELLNESS&SEA — Demo כל הפיצ'רים החדשים</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --ocean: #1e6fa0;
+    --deep-ocean: #0d3d5c;
+    --coral: #e85d42;
+    --teal: #2d9c8e;
+    --golden: #d4a017;
+    --sand: #f5f0e8;
+    --cream: #faf8f5;
+    --green: #16a34a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Heebo', sans-serif; background: #f0f4f8; color: #1a1a2e; }
+
+  /* ── NAV ── */
+  .nav {
+    background: var(--deep-ocean);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,.3);
+  }
+  .nav-logo { color: white; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .nav-logo span { color: var(--golden); }
+  .nav-links { display: flex; gap: 6px; }
+  .nav-links a {
+    color: rgba(255,255,255,.75);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all .2s;
+    cursor: pointer;
+  }
+  .nav-links a:hover, .nav-links a.active { background: rgba(255,255,255,.15); color: white; }
+  .badge-live {
+    background: var(--coral);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    animation: pulse-badge 2s infinite;
+  }
+  @keyframes pulse-badge {
+    0%,100% { opacity:1 } 50% { opacity:.7 }
+  }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 28px; max-width: 1100px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    background: linear-gradient(135deg, var(--deep-ocean), var(--ocean));
+    color: white;
+    border-radius: 20px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .section-header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px; right: -20px;
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,.07);
+    border-radius: 50%;
+  }
+  .section-header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+  .section-header p { opacity: .75; font-size: 14px; }
+  .tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.18); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 10px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--deep-ocean);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .card-title .icon { width: 18px; height: 18px; }
+
+  /* ── STATS GRID ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+  }
+  .stat-num { font-size: 30px; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 11px; color: #666; margin-top: 6px; font-weight: 500; }
+  .ocean { color: var(--ocean); }
+  .teal { color: var(--teal); }
+  .golden { color: var(--golden); }
+  .coral { color: var(--coral); }
+  .green { color: var(--green); }
+
+  /* ── UPCOMING BOOKING ── */
+  .booking-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 12px;
+    background: #f8f9fa;
+    margin-bottom: 10px;
+    transition: background .2s;
+    cursor: pointer;
+  }
+  .booking-item:hover { background: #e8f2ff; }
+  .date-badge {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--ocean), var(--deep-ocean));
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: white; flex-shrink: 0;
+  }
+  .date-badge .month { font-size: 10px; font-weight: 500; opacity: .8; }
+  .date-badge .day { font-size: 20px; font-weight: 800; line-height: 1; }
+  .booking-info .name { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+  .booking-info .meta { font-size: 12px; color: #888; margin-top: 3px; }
+  .status-badge {
+    margin-right: auto;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-confirmed { background: #dcfce7; color: var(--green); }
+  .status-pending { background: #fef9c3; color: #92400e; }
+  .status-completed { background: #dbeafe; color: var(--ocean); }
+
+  /* ── REGULAR VENUES (Customer Base) ── */
+  .regular-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background .2s;
+    margin-bottom: 8px;
+  }
+  .regular-item:hover { background: #f0f7ff; }
+  .rank-badge {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; flex-shrink: 0;
+  }
+  .rank-1 { background: rgba(212,160,23,.15); color: var(--golden); }
+  .rank-2 { background: rgba(30,111,160,.1); color: var(--ocean); }
+  .rank-3 { background: #f1f5f9; color: #94a3b8; }
+  .regular-name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+  .regular-meta { font-size: 11px; color: #999; margin-top: 2px; }
+  .cap-pill {
+    margin-right: auto;
+    background: rgba(30,111,160,.08);
+    color: var(--ocean);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .insight-strip {
+    background: rgba(45,156,142,.06);
+    border: 1px solid rgba(45,156,142,.2);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--teal);
+    font-weight: 500;
+    margin-top: 12px;
+  }
+
+  /* ── HISTORY ── */
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background .2s;
+    margin-bottom: 6px;
+  }
+  .history-item:hover { background: #f8f9fa; }
+  .history-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+  .history-name { font-size: 13px; font-weight: 600; color: #333; }
+  .history-date { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .rebook-link { margin-right: auto; font-size: 12px; color: var(--ocean); font-weight: 600; cursor: pointer; }
+
+  /* ── NEARBY SECTION ── */
+  .nearby-section {
+    border: 2px dashed rgba(30,111,160,.25);
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    background: rgba(30,111,160,.02);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .nearby-section:hover { border-color: var(--ocean); background: rgba(30,111,160,.05); }
+  .nearby-section.located { border-style: solid; border-color: rgba(30,111,160,.2); text-align: right; padding: 20px; }
+  .location-icon { font-size: 36px; margin-bottom: 10px; }
+  .nearby-section h3 { font-size: 15px; font-weight: 700; color: var(--deep-ocean); margin-bottom: 6px; }
+  .nearby-section p { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .loc-btn {
+    background: var(--ocean);
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .loc-btn:hover { background: var(--deep-ocean); }
+  .loc-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .2s;
+    margin-bottom: 6px;
+  }
+  .loc-item:hover { background: #f0f7ff; }
+  .loc-thumb {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #c8e6ff, #a0d8ef);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .loc-name { font-size: 13px; font-weight: 600; }
+  .loc-meta { font-size: 11px; color: #999; }
+  .loc-indicator { display: flex; align-items: center; gap: 6px; background: #dcfce7; color: var(--green); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 14px; }
+
+  /* ── VENUES PAGE ── */
+  .happening-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .happening-header h2 { font-size: 22px; font-weight: 800; color: var(--deep-ocean); }
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--coral);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pulse-dot {
+    width: 7px; height: 7px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse-dot 1.5s infinite;
+  }
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
+
+  .happening-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0 32px; }
+  .happening-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .happening-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+  .happening-img {
+    height: 130px;
+    background: linear-gradient(135deg, #1e6fa0, #2d9c8e);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
+  .happening-live-badge { position: absolute; top: 10px; right: 10px; }
+  .pulse-ring {
+    position: absolute; top: 10px; left: 10px;
+    width: 12px; height: 12px;
+  }
+  .pulse-ring::before, .pulse-ring::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--coral);
+  }
+  .pulse-ring::before { animation: ring 1.5s infinite; }
+  @keyframes ring { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.5);opacity:0} }
+  .happening-body { padding: 12px 14px; }
+  .happening-name { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  .happening-row { display: flex; justify-content: space-between; align-items: center; }
+  .happening-city { font-size: 11px; color: #888; display: flex; align-items: center; gap: 3px; }
+  .happening-class { font-size: 11px; color: var(--teal); font-weight: 600; }
+
+  /* ── BOOKING WIDGET ── */
+  .widget-container { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+  .venue-detail { }
+  .venue-img {
+    width: 100%; height: 200px;
+    background: linear-gradient(135deg, #1e6fa0 0%, #2d9c8e 50%, #0d3d5c 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    margin-bottom: 16px;
+  }
+  .venue-title { font-size: 22px; font-weight: 800; color: var(--deep-ocean); margin-bottom: 8px; }
+  .venue-meta-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .venue-meta-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555; }
+
+  /* Widget */
+  .booking-widget {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.12);
+    padding: 24px;
+  }
+  .price-header { text-align: center; margin-bottom: 20px; }
+  .price-big { font-size: 34px; font-weight: 800; color: var(--ocean); }
+  .price-unit { font-size: 14px; color: #aaa; }
+
+  /* Recommended hours banner */
+  .rec-banner {
+    background: rgba(30,111,160,.06);
+    border: 1px solid rgba(30,111,160,.18);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .rec-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .rec-title { font-size: 12px; font-weight: 700; color: var(--ocean); margin-bottom: 3px; }
+  .rec-reason { font-size: 11px; color: #666; line-height: 1.4; }
+
+  /* Venue quick stats */
+  .venue-quick-stats { display: flex; gap: 14px; margin-bottom: 16px; }
+  .quick-stat { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+  .quick-stat span.icon { color: var(--ocean); }
+
+  /* Duration selector */
+  .duration-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 8px; }
+  .duration-opts { display: flex; gap: 8px; margin-bottom: 16px; }
+  .dur-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    transition: all .2s;
+    font-family: inherit;
+    text-align: center;
+  }
+  .dur-btn:hover { border-color: var(--ocean); color: var(--ocean); }
+  .dur-btn.active { background: var(--ocean); color: white; border-color: var(--ocean); }
+  .dur-btn .rec-tag { display: block; font-size: 9px; opacity: .7; margin-top: 2px; }
+
+  /* Date & time */
+  .field-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 8px; display: block; }
+  .date-input {
+    width: 100%;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    margin-bottom: 16px;
+    transition: border-color .2s;
+  }
+  .date-input:focus { outline: none; border-color: var(--ocean); }
+
+  .slots-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+  .slot-btn {
+    padding: 8px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    background: white;
+    font-family: inherit;
+    color: #444;
+  }
+  .slot-btn:hover { border-color: var(--ocean); color: var(--ocean); }
+  .slot-btn.selected { background: var(--ocean); color: white; border-color: var(--ocean); }
+
+  /* Price summary */
+  .price-summary {
+    background: var(--sand);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .price-row { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-bottom: 8px; }
+  .price-total { display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; color: #1a1a2e; padding-top: 10px; border-top: 1px solid #e8e2d8; }
+
+  .cta-btn {
+    width: 100%;
+    background: var(--coral);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s;
+    margin-bottom: 10px;
+  }
+  .cta-btn:hover { background: #d14d32; }
+  .cta-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+  .cta-note { text-align: center; font-size: 11px; color: #bbb; }
+
+  /* ── AI CHAT ── */
+  .chat-demo-container { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+  .chat-features { }
+  .feature-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .feature-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-1px); }
+  .feature-icon-wrap {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .fc-ocean { background: rgba(30,111,160,.1); }
+  .fc-teal { background: rgba(45,156,142,.1); }
+  .fc-coral { background: rgba(232,93,66,.1); }
+  .fc-golden { background: rgba(212,160,23,.1); }
+  .feature-title { font-size: 14px; font-weight: 700; color: var(--deep-ocean); margin-bottom: 4px; }
+  .feature-desc { font-size: 12px; color: #777; line-height: 1.5; }
+
+  /* Chat widget */
+  .chat-widget {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.12);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 540px;
+  }
+  .chat-header {
+    background: linear-gradient(135deg, var(--ocean), var(--deep-ocean));
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .chat-agent { display: flex; align-items: center; gap: 10px; }
+  .agent-avatar {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .agent-name { font-size: 13px; font-weight: 700; color: white; }
+  .agent-status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,.7); margin-top: 2px; }
+  .status-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; animation: pulse-dot 1.5s infinite; }
+  .chat-actions { display: flex; gap: 6px; }
+  .chat-action-btn {
+    background: rgba(255,255,255,.15);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .chat-action-btn:hover { background: rgba(255,255,255,.25); }
+  .loc-active { background: rgba(74,222,128,.25) !important; }
+
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { display: flex; gap: 8px; }
+  .msg.user { flex-direction: row-reverse; }
+  .msg-avatar {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--ocean), var(--deep-ocean));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg-bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .msg-bubble.bot { background: white; border: 1px solid #e8ecf0; border-radius: 18px 18px 18px 4px; color: #333; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .msg-bubble.user { background: var(--ocean); color: white; border-radius: 18px 18px 4px 18px; }
+
+  /* Location indicator in chat */
+  .loc-indicator-chat { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 6px 10px; font-size: 11px; color: var(--green); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+
+  /* Venue card in chat */
+  .chat-venue-card {
+    background: white;
+    border: 1px solid #e8ecf0;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow .2s;
+    max-width: 240px;
+    margin-top: 4px;
+  }
+  .chat-venue-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.1); }
+  .chat-venue-img {
+    height: 90px;
+    background: linear-gradient(135deg, var(--ocean), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+  }
+  .chat-venue-body { padding: 10px; }
+  .chat-venue-name { font-size: 12px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  .chat-venue-row { display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+
+  /* Quick actions */
+  .quick-actions { padding: 8px 14px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; overflow-x: auto; }
+  .qa-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(30,111,160,.07);
+    border: 1px solid rgba(30,111,160,.18);
+    color: var(--ocean);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    transition: all .2s;
+  }
+  .qa-btn:hover { background: rgba(30,111,160,.15); }
+
+  /* Input area */
+  .chat-input-area { padding: 10px 14px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    text-align: right;
+    direction: rtl;
+  }
+  .chat-input:focus { outline: none; border-color: var(--ocean); }
+  .send-btn {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--ocean), var(--deep-ocean));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── WELLNESS WORLD ── */
+  .world-section { background: white; border-radius: 20px; overflow: hidden; }
+  .world-header { padding: 32px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+  .world-label { font-size: 11px; font-weight: 700; color: var(--ocean); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 6px; }
+  .world-title { font-size: 26px; font-weight: 800; color: var(--deep-ocean); margin-bottom: 8px; }
+  .world-subtitle { font-size: 14px; color: #777; max-width: 480px; margin: 0 auto; }
+  .world-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 24px; }
+  .wstat {
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid;
+  }
+  .wstat-ocean { background: rgba(30,111,160,.04); border-color: rgba(30,111,160,.15); }
+  .wstat-teal { background: rgba(45,156,142,.04); border-color: rgba(45,156,142,.15); }
+  .wstat-coral { background: rgba(232,93,66,.04); border-color: rgba(232,93,66,.15); }
+  .wstat-golden { background: rgba(212,160,23,.04); border-color: rgba(212,160,23,.15); }
+  .wstat-emoji { font-size: 28px; margin-bottom: 10px; }
+  .wstat-value { font-size: 26px; font-weight: 800; margin-bottom: 4px; line-height: 1; }
+  .wstat-label { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .wstat-sub { font-size: 11px; color: #888; line-height: 1.4; }
+  .wstat-ocean .wstat-value { color: var(--ocean); }
+  .wstat-teal .wstat-value { color: var(--teal); }
+  .wstat-coral .wstat-value { color: var(--coral); }
+  .wstat-golden .wstat-value { color: var(--golden); }
+
+  .diff-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 0 24px 24px; }
+  .diff-card {
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all .2s;
+    border: 1px solid transparent;
+  }
+  .diff-card:hover { background: rgba(30,111,160,.05); border-color: rgba(30,111,160,.15); }
+  .diff-emoji { font-size: 28px; margin-bottom: 10px; }
+  .diff-title { font-size: 13px; font-weight: 700; color: var(--deep-ocean); margin-bottom: 6px; }
+  .diff-desc { font-size: 11px; color: #777; line-height: 1.5; }
+  .world-source { text-align: center; padding: 0 24px 20px; font-size: 11px; color: #ccc; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .happening-grid { grid-template-columns: 1fr; }
+    .widget-container, .chat-demo-container { grid-template-columns: 1fr; }
+    .world-stats, .diff-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">🌊 WELLNESS<span>&</span>SEA</div>
+  <div class="nav-links">
+    <a onclick="show('dashboard')" id="tab-dashboard" class="active">📊 דשבורד מדריכה</a>
+    <a onclick="show('venues')" id="tab-venues">🔍 חיפוש חללים <span class="badge-live">LIVE</span></a>
+    <a onclick="show('booking')" id="tab-booking">📅 הזמנה + שעות מומלצות</a>
+    <a onclick="show('ai')" id="tab-ai">🤖 AI Agent</a>
+    <a onclick="show('wellness')" id="tab-wellness">🌍 Wellness World</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════
+     TAB 1 — INSTRUCTOR DASHBOARD
+════════════════════════════════════════════ -->
+<div id="section-dashboard" class="section active">
+  <div class="section-header">
+    <h1>דשבורד מדריכה — כל הפיצ'רים החדשים</h1>
+    <p>היסטוריית שיעורים · בסיס לקוחות קבוע · מיקום קרוב · סטטיסטיקות</p>
+    <span class="tag">✨ חדש: 4 פיצ'רים הוטמעו</span>
+  </div>
+
+  <!-- Stats 4-col -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-num ocean">3</div><div class="stat-label">שיעורים קרובים</div></div>
+    <div class="stat-card"><div class="stat-num teal">47</div><div class="stat-label">שיעורים הועברו</div></div>
+    <div class="stat-card"><div class="stat-num golden">68</div><div class="stat-label">שעות פעילות</div></div>
+    <div class="stat-card"><div class="stat-num coral">12</div><div class="stat-label">חללים ביקרתי</div></div>
+  </div>
+
+  <!-- Upcoming bookings -->
+  <div class="card">
+    <div class="card-title">📅 הזמנות קרובות</div>
+    <div class="booking-item">
+      <div class="date-badge"><div class="month">יול</div><div class="day">26</div></div>
+      <div class="booking-info"><div class="name">מרפסת הנמל · יפו</div><div class="meta">⏰ 08:00–09:30 · יוגה</div></div>
+      <span class="status-badge status-confirmed">מאושרת</span>
+    </div>
+    <div class="booking-item">
+      <div class="date-badge"><div class="month">יול</div><div class="day">28</div></div>
+      <div class="booking-info"><div class="name">טרסת הים · הרצליה</div><div class="meta">⏰ 07:30–09:00 · פילאטיס</div></div>
+      <span class="status-badge status-confirmed">מאושרת</span>
+    </div>
+    <div class="booking-item">
+      <div class="date-badge"><div class="month">אוג</div><div class="day">01</div></div>
+      <div class="booking-info"><div class="name">הגן הירוק · נתניה</div><div class="meta">⏰ 09:00–10:00 · מדיטציה</div></div>
+      <span class="status-badge status-pending">ממתינה</span>
+    </div>
+  </div>
+
+  <!-- ✅ NEW: Regular Venues (Customer Base) -->
+  <div class="card">
+    <div class="card-title" style="justify-content: space-between">
+      <span>🔁 החללים הקבועים שלי — בסיס לקוחות</span>
+      <span style="font-size:11px;font-weight:500;color:var(--ocean);cursor:pointer">גלי עוד ›</span>
+    </div>
+    <div style="font-size:12px;color:#aaa;margin-top:-10px;margin-bottom:14px">חללים שחזרת אליהם יותר מפעם אחת</div>
+    <div class="regular-item">
+      <div class="rank-badge rank-1">#1</div>
+      <div><div class="regular-name">מרפסת הנמל · יפו</div><div class="regular-meta">📅 8 ביקורים · אחרון: 18 ביולי</div></div>
+      <span class="cap-pill">👥 25</span>
+    </div>
+    <div class="regular-item">
+      <div class="rank-badge rank-2">#2</div>
+      <div><div class="regular-name">טרסת הים · הרצליה</div><div class="regular-meta">📅 5 ביקורים · אחרון: 12 ביולי</div></div>
+      <span class="cap-pill">👥 18</span>
+    </div>
+    <div class="regular-item">
+      <div class="rank-badge rank-3">#3</div>
+      <div><div class="regular-name">חוף דבורה · נתניה</div><div class="regular-meta">📅 3 ביקורים · אחרון: 5 ביולי</div></div>
+      <span class="cap-pill">👥 30</span>
+    </div>
+    <div class="insight-strip">💡 מדריכות שחוזרות לאותו חלל מקבלות 30% יותר תלמידים בממוצע — הפלטפורמה מקדמת אותן אוטומטית</div>
+  </div>
+
+  <!-- ✅ NEW: Class History -->
+  <div class="card">
+    <div class="card-title" style="justify-content: space-between">
+      <span>📋 היסטוריית שיעורים</span>
+      <span style="font-size:11px;font-weight:500;color:var(--ocean);cursor:pointer">היסטוריה מלאה ›</span>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">✅</div>
+      <div><div class="history-name">מרפסת הנמל · יפו</div><div class="history-date">ג', 18 ביולי · 08:00–09:30 · יוגה</div></div>
+      <span class="rebook-link">הזמן שוב</span>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">✅</div>
+      <div><div class="history-name">טרסת הים · הרצליה</div><div class="history-date">א', 14 ביולי · 07:30–09:00 · פילאטיס</div></div>
+      <span class="rebook-link">הזמן שוב</span>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">✅</div>
+      <div><div class="history-name">הגן הירוק · נתניה</div><div class="history-date">ו', 11 ביולי · 09:00–10:00 · מדיטציה</div></div>
+      <span class="rebook-link">הזמן שוב</span>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">✅</div>
+      <div><div class="history-name">מרפסת הנמל · יפו</div><div class="history-date">ג', 8 ביולי · 08:00–09:30 · יוגה</div></div>
+      <span class="rebook-link">הזמן שוב</span>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">📅</div>
+      <div><div class="history-name">חוף דבורה · נתניה</div><div class="history-date">א', 5 ביולי · 07:00–08:30 · פילאטיס</div></div>
+      <span class="rebook-link">הזמן שוב</span>
+    </div>
+    <div class="history-item">
+      <div class="history-icon">✅</div>
+      <div><div class="history-name">טרסת הים · הרצליה</div><div class="history-date">ו', 1 ביולי · 07:30–09:00 · יוגה</div></div>
+      <span class="rebook-link">הזמן שוב</span>
+    </div>
+  </div>
+
+  <!-- ✅ NEW: Nearby by Geolocation -->
+  <div>
+    <div class="card-title" style="margin-bottom:12px"><span>📍 חללים קרובים אליך</span></div>
+    <div class="nearby-section" id="nearby-demo" onclick="activateNearby()">
+      <div class="location-icon">📡</div>
+      <h3>חללים קרובים אליך</h3>
+      <p>אפשרי גישה למיקום ונמצא את החללים הקרובים ביותר אליך — יש שיעורי בוקר פנויים עכשיו!</p>
+      <button class="loc-btn" onclick="event.stopPropagation();activateNearby()">📍 אכן מיקום</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TAB 2 — VENUES (Happening Now)
+════════════════════════════════════════════ -->
+<div id="section-venues" class="section">
+  <div class="section-header">
+    <h1>עמוד חיפוש חללים</h1>
+    <p>שיעורים מתרחשים כעת · חיפוש וסינון מתקדם</p>
+    <span class="tag">🔴 LIVE: שיעורים פעילים ברגע זה</span>
+  </div>
+
+  <!-- ✅ NEW: Happening Now -->
+  <div class="card">
+    <div class="happening-header">
+      <span style="font-size:18px">📡</span>
+      <h2 class="happening-header" style="font-size:20px;font-weight:800;color:var(--deep-ocean)">שיעורים מתרחשים כעת</h2>
+      <span class="live-badge"><span class="pulse-dot"></span>עכשיו</span>
+    </div>
+    <p style="font-size:13px;color:#888;margin-bottom:16px;margin-right:28px">חללים עם שיעורים פעילים ברגע זה</p>
+
+    <div class="happening-grid">
+      <div class="happening-card">
+        <div class="happening-img">🌊
+          <div class="happening-live-badge"><span class="live-badge"><span class="pulse-dot"></span>עכשיו</span></div>
+          <div class="pulse-ring" style="left:auto;right:48px"></div>
+        </div>
+        <div class="happening-body">
+          <div class="happening-name">מרפסת הנמל · יפו</div>
+          <div class="happening-row">
+            <span class="happening-city">📍 תל אביב</span>
+            <span class="happening-class">🧘 יוגה</span>
+          </div>
+        </div>
+      </div>
+      <div class="happening-card">
+        <div class="happening-img" style="background:linear-gradient(135deg,#2d9c8e,#0d3d5c)">🌅
+          <div class="happening-live-badge"><span class="live-badge"><span class="pulse-dot"></span>עכשיו</span></div>
+        </div>
+        <div class="happening-body">
+          <div class="happening-name">טרסת הים · הרצליה</div>
+          <div class="happening-row">
+            <span class="happening-city">📍 הרצליה</span>
+            <span class="happening-class">🏋️ פילאטיס</span>
+          </div>
+        </div>
+      </div>
+      <div class="happening-card">
+        <div class="happening-img" style="background:linear-gradient(135deg,#d4a017,#e85d42)">🏖️
+          <div class="happening-live-badge"><span class="live-badge"><span class="pulse-dot"></span>עכשיו</span></div>
+        </div>
+        <div class="happening-body">
+          <div class="happening-name">חוף הצוק · חיפה</div>
+          <div class="happening-row">
+            <span class="happening-city">📍 חיפה</span>
+            <span class="happening-class">🧘 מדיטציה</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div style="background:#f8fafc;border-radius:14px;padding:20px;display:flex;gap:10px;flex-wrap:wrap">
+      <input class="date-input" style="flex:1;min-width:140px;margin:0" placeholder="🏙️ עיר...">
+      <input class="date-input" style="flex:1;min-width:120px;margin:0" type="date">
+      <input class="date-input" style="flex:1;min-width:100px;margin:0" placeholder="👥 משתתפים">
+      <button class="cta-btn" style="width:auto;padding:10px 24px;font-size:13px;margin:0">חיפוש</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TAB 3 — BOOKING WIDGET (Recommended Hours)
+════════════════════════════════════════════ -->
+<div id="section-booking" class="section">
+  <div class="section-header">
+    <h1>הזמנת חלל — שעות מומלצות חכמות</h1>
+    <p>האלגוריתם מנתח גודל החלל + קיבולת ומציע את משך השכירות המיטבי</p>
+    <span class="tag">💡 חדש: המלצה אוטומטית לפי space_size_sqm</span>
+  </div>
+
+  <div class="widget-container">
+    <!-- Venue detail -->
+    <div class="venue-detail">
+      <div class="venue-img">🌊</div>
+      <div class="venue-title">מרפסת הנמל — יפו</div>
+      <div class="venue-meta-row">
+        <div class="venue-meta-item"><span>📍</span> יפו, תל אביב</div>
+        <div class="venue-meta-item"><span>👥</span> עד 25 משתתפים</div>
+        <div class="venue-meta-item"><span>📐</span> 65 מ"ר</div>
+        <div class="venue-meta-item"><span>🌊</span> נוף לים</div>
+        <div class="venue-meta-item"><span>❄️</span> מיזוג</div>
+        <div class="venue-meta-item"><span>🚿</span> מקלחת</div>
+      </div>
+
+      <!-- Algorithm explanation -->
+      <div class="card" style="background:linear-gradient(135deg,rgba(30,111,160,.05),rgba(45,156,142,.05));border:1px solid rgba(30,111,160,.15)">
+        <div class="card-title" style="color:var(--ocean)">💡 איך האלגוריתם עובד?</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+          <div style="background:white;border-radius:10px;padding:14px;border:1px solid #e2e8f0">
+            <div style="font-size:22px;margin-bottom:6px">🏠</div>
+            <div style="font-size:12px;font-weight:700;color:var(--deep-ocean);margin-bottom:4px">≤50 מ"ר / &lt;10 אנשים</div>
+            <div style="font-size:20px;font-weight:800;color:var(--ocean)">שעה</div>
+            <div style="font-size:11px;color:#888;margin-top:4px">קבוצות קטנות, שיעורים אינטנסיביים</div>
+          </div>
+          <div style="background:rgba(30,111,160,.06);border-radius:10px;padding:14px;border:2px solid var(--ocean)">
+            <div style="font-size:22px;margin-bottom:6px">🏢</div>
+            <div style="font-size:12px;font-weight:700;color:var(--deep-ocean);margin-bottom:4px">50-80 מ"ר / 10-20 אנשים</div>
+            <div style="font-size:20px;font-weight:800;color:var(--ocean)">1.5 שעות</div>
+            <div style="font-size:11px;color:var(--ocean);margin-top:4px;font-weight:600">⭐ מומלץ לחלל זה</div>
+          </div>
+          <div style="background:white;border-radius:10px;padding:14px;border:1px solid #e2e8f0">
+            <div style="font-size:22px;margin-bottom:6px">🏛️</div>
+            <div style="font-size:12px;font-weight:700;color:var(--deep-ocean);margin-bottom:4px">&gt;80 מ"ר / &gt;20 אנשים</div>
+            <div style="font-size:20px;font-weight:800;color:var(--ocean)">2 שעות</div>
+            <div style="font-size:11px;color:#888;margin-top:4px">קבוצות גדולות, שיעורים ארוכים</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:12px;background:rgba(45,156,142,.06);border-radius:10px;font-size:12px;color:var(--teal)">
+          🎯 <strong>מרפסת הנמל (65 מ"ר, 25 אנשים):</strong> מסווג כ"בינוני" → המלצה: <strong>1.5 שעות</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking widget -->
+    <div class="booking-widget">
+      <div class="price-header">
+        <span class="price-big">₪180</span>
+        <span class="price-unit"> / שעה</span>
+      </div>
+
+      <!-- ✅ NEW: Recommended hours banner -->
+      <div class="rec-banner">
+        <div class="rec-icon">💡</div>
+        <div>
+          <div class="rec-title">המלצת הפלטפורמה: 1.5 שעות</div>
+          <div class="rec-reason">חלל בינוני (65 מ"ר) — הזמן המומלץ לשיעור מאוזן עם קבוצות של 10-20 אנשים</div>
+        </div>
+      </div>
+
+      <!-- Venue stats -->
+      <div class="venue-quick-stats">
+        <div class="quick-stat"><span class="icon">👥</span> עד 25 משתתפים</div>
+        <div class="quick-stat"><span class="icon">📐</span> 65 מ"ר</div>
+      </div>
+
+      <!-- Duration selector -->
+      <div class="duration-label">משך השיעור</div>
+      <div class="duration-opts">
+        <button class="dur-btn" onclick="selectDur(this,1)">שעה<span class="rec-tag"></span></button>
+        <button class="dur-btn active" onclick="selectDur(this,1.5)">1.5 שעות<span class="rec-tag">מומלץ</span></button>
+        <button class="dur-btn" onclick="selectDur(this,2)">2 שעות<span class="rec-tag"></span></button>
+      </div>
+
+      <!-- Date -->
+      <label class="field-label">תאריך האימון</label>
+      <input type="date" class="date-input" id="demo-date" onchange="showSlots()" min="2026-07-24">
+
+      <!-- Slots -->
+      <div id="slots-section" style="display:none">
+        <label class="field-label">שעות פנויות</label>
+        <div class="slots-grid" id="slots-grid"></div>
+      </div>
+
+      <!-- Price summary -->
+      <div class="price-summary" id="price-summary" style="display:none">
+        <div class="price-row"><span>שכ"ד חלל (1.5 שעות)</span><span id="subtotal-price">₪270</span></div>
+        <div class="price-total"><span>סה"כ לתשלום</span><span id="total-price">₪270</span></div>
+      </div>
+
+      <button class="cta-btn" id="cta-btn" disabled>בחרי תאריך ושעה</button>
+      <div class="cta-note">לא חויבת עדיין. ניתן לבטל עד 24 שעות לפני</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TAB 4 — AI AGENT
+════════════════════════════════════════════ -->
+<div id="section-ai" class="section">
+  <div class="section-header">
+    <h1>AI Agent — סוכן חכם עם 3 כלים חדשים</h1>
+    <p>מיקום · שיעורים עכשיו · המלצת שעות + Quick Actions</p>
+    <span class="tag">🤖 claude-haiku-4-5 · Tool Calling · Streaming</span>
+  </div>
+
+  <div class="chat-demo-container">
+    <!-- Feature cards -->
+    <div class="chat-features">
+      <div class="feature-card">
+        <div class="feature-icon-wrap fc-ocean">🔍</div>
+        <div>
+          <div class="feature-title">search_venues — חיפוש מורחב</div>
+          <div class="feature-desc">מחפש לפי עיר, קיבולת, מחיר, תאריך, שעה, ציוד. כעת גם מודע למיקום המשתמשת — אם שיתפה מיקום, הוא מוסיף את העיר הקרובה אוטומטית לחיפוש.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon-wrap fc-coral">📡</div>
+        <div>
+          <div class="feature-title">get_happening_now — שיעורים פעילים</div>
+          <div class="feature-desc">כלי חדש! מחזיר חללים עם booking פעיל ברגע זה (start_time ≤ NOW ≤ end_time). מתממשק עם DB בזמן אמת.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon-wrap fc-golden">⏱️</div>
+        <div>
+          <div class="feature-title">get_recommended_hours — המלצת משך</div>
+          <div class="feature-desc">כלי חדש! מקבל space_size_sqm + capacity ומחזיר המלצת משך שכירות מנומקת. מחובר לאותה לוגיקה של BookingWidget.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon-wrap fc-teal">📍</div>
+        <div>
+          <div class="feature-title">שיתוף מיקום בצ'אט</div>
+          <div class="feature-desc">כפתור 📍 בכותרת הצ'אט — Haversine ל-9 ערי חוף. אחרי אישור, כל הודעה נשלחת עם [מיקום: עיר] כ-context לסוכן.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon-wrap fc-ocean">⚡</div>
+        <div>
+          <div class="feature-title">Quick Action Chips</div>
+          <div class="feature-desc">3 כפתורי פעולה מהירים בפתיחת הצ'אט: "שיעורים עכשיו", "קרוב אלי", "בוקר מחר". מפעילים sendMessage ישירות עם הטקסט המוגדר.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat widget demo -->
+    <div class="chat-widget">
+      <div class="chat-header">
+        <div class="chat-agent">
+          <div class="agent-avatar">🌊</div>
+          <div>
+            <div class="agent-name">סוכן WELLNESS&SEA</div>
+            <div class="agent-status"><span class="status-dot"></span>פעיל · יכול לחפש, להמליץ ולאתר</div>
+          </div>
+        </div>
+        <div class="chat-actions">
+          <button class="chat-action-btn" id="loc-btn" onclick="toggleLocation()">📍 מיקום</button>
+          <button class="chat-action-btn" onclick="closeChat()">✕</button>
+        </div>
+      </div>
+
+      <!-- Location indicator -->
+      <div id="loc-indicator" style="display:none;background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:8px 16px">
+        <div class="loc-indicator" style="margin:0"><span>📍</span> מיקום: תל אביב — אוסיף לכל חיפוש אוטומטית</div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages">
+        <div class="msg">
+          <div class="msg-avatar">🌊</div>
+          <div class="msg-bubble bot">שלום! אני סוכן WELLNESS&SEA 🌊<br><br>אני יכולה לעזור לך למצוא חללים, לראות שיעורים פעילים עכשיו, ולהמליץ על משך שכירות. מה תרצי לעשות?</div>
+        </div>
+      </div>
+
+      <!-- Quick actions (show only at start) -->
+      <div class="quick-actions" id="quick-actions">
+        <button class="qa-btn" onclick="sendQuick('אילו שיעורים מתרחשים עכשיו?')">📡 שיעורים עכשיו</button>
+        <button class="qa-btn" onclick="sendQuick('מצאי חלל קרוב אלי')">📍 קרוב אלי</button>
+        <button class="qa-btn" onclick="sendQuick('אני מחפשת חלל לשיעור בוקר מחר ב-08:00')">⏰ בוקר מחר</button>
+      </div>
+
+      <div class="chat-input-area">
+        <input class="chat-input" id="chat-input" placeholder="שאלי על חללים, שיעורים פעילים..." dir="rtl" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="send-btn" onclick="sendChat()">↩</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TAB 5 — WELLNESS WORLD INSIGHTS
+════════════════════════════════════════════ -->
+<div id="section-wellness" class="section">
+  <div class="section-header">
+    <h1>Wellness World Insights — בידול מבוסס מחקר</h1>
+    <p>נתוני תעשייה עולמיים + 4 בידולים ייחודיים של הפלטפורמה</p>
+    <span class="tag">🌍 מבוסס על Global Wellness Institute 2024</span>
+  </div>
+
+  <div class="world-section">
+    <div class="world-header">
+      <div class="world-label">מחקר עולמי · בידול הפלטפורמה</div>
+      <div class="world-title">למה WELLNESS&SEA שונה?</div>
+      <div class="world-subtitle">הנתונים מדברים בעד עצמם — מדריכות שמשתמשות בחללי חוף בונות קהילה חזקה יותר</div>
+    </div>
+
+    <div class="world-stats">
+      <div class="wstat wstat-ocean">
+        <div class="wstat-emoji">🌍</div>
+        <div class="wstat-value">500M+</div>
+        <div class="wstat-label">מתרגלי יוגה ופילאטיס בעולם</div>
+        <div class="wstat-sub">הגידול הגדול ביותר מאז 2012 (Global Wellness Institute)</div>
+      </div>
+      <div class="wstat wstat-teal">
+        <div class="wstat-emoji">📈</div>
+        <div class="wstat-value">$87B</div>
+        <div class="wstat-label">תיירות וולנס עולמית</div>
+        <div class="wstat-sub">שוק שגדל פי 3 מהתיירות הרגילה בעשור האחרון</div>
+      </div>
+      <div class="wstat wstat-coral">
+        <div class="wstat-emoji">🌊</div>
+        <div class="wstat-value">40%</div>
+        <div class="wstat-label">מעדיפים שיעורים בחוץ / ים</div>
+        <div class="wstat-sub">סביבת טבע מגבירה מוטיבציה ב-50% לעומת אולמות סגורים</div>
+      </div>
+      <div class="wstat wstat-golden">
+        <div class="wstat-emoji">🔁</div>
+        <div class="wstat-value">3.5X</div>
+        <div class="wstat-label">שיעורי חזרה גבוהים יותר</div>
+        <div class="wstat-sub">מדריכות שמשתמשות בחללים ייחודיים שומרות 3.5× יותר תלמידים</div>
+      </div>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff-card">
+        <div class="diff-emoji">🌅</div>
+        <div class="diff-title">רק חללי חוף</div>
+        <div class="diff-desc">בניגוד לאולמות סגורים — אנחנו מתמקדים אך ורק בחוויית הים. כל חלל עם נוף, אוויר ים, ואנרגיה ייחודית.</div>
+      </div>
+      <div class="diff-card">
+        <div class="diff-emoji">🍋</div>
+        <div class="diff-title">בונוסים ייחודיים</div>
+        <div class="diff-desc">כל הזמנה כוללת בונוס מהמסעדה לתלמידים — מיץ טרי, פרי עונתי, או קפה. בידול שאף פלטפורמה אחרת לא מציעה.</div>
+      </div>
+      <div class="diff-card">
+        <div class="diff-emoji">✅</div>
+        <div class="diff-title">מאומת ומבוטח</div>
+        <div class="diff-desc">כל חלל עובר בדיקת איכות, ביטוח מלא, ותנאים ברורים. אנחנו ערבים לחוויה — לא רק לחדר.</div>
+      </div>
+      <div class="diff-card">
+        <div class="diff-emoji">🤖</div>
+        <div class="diff-title">AI שמכיר אותך</div>
+        <div class="diff-desc">הסוכן שלנו לומד את הפרופיל שלך ומציע חללים לפי גודל הקבוצה, השעה, והסגנון שלך.</div>
+      </div>
+    </div>
+
+    <div class="world-source">מקורות: Global Wellness Institute 2024 · Yoga Alliance World Report · McKinsey Wellness Survey</div>
+  </div>
+</div>
+
+<script>
+// ── NAVIGATION ──
+function show(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── NEARBY GEOLOCATION DEMO ──
+function activateNearby() {
+  const el = document.getElementById('nearby-demo');
+  el.classList.add('located');
+  el.innerHTML = `
+    <div class="loc-indicator" style="display:flex;margin-bottom:12px"><span>📍</span> מיקום אוכן — תל אביב (3 ק"מ)</div>
+    <div class="loc-item">
+      <div class="loc-thumb">🌊</div>
+      <div>
+        <div class="loc-name">מרפסת הנמל · יפו</div>
+        <div class="loc-meta">📍 תל אביב · ₪180/ש"ה</div>
+      </div>
+    </div>
+    <div class="loc-item">
+      <div class="loc-thumb">🏖️</div>
+      <div>
+        <div class="loc-name">טרסת בוגרשוב · תל אביב</div>
+        <div class="loc-meta">📍 תל אביב · ₪150/ש"ה</div>
+      </div>
+    </div>
+    <div class="loc-item">
+      <div class="loc-thumb">🌅</div>
+      <div>
+        <div class="loc-name">גן הרצועה · ת"א</div>
+        <div class="loc-meta">📍 תל אביב · ₪120/ש"ה</div>
+      </div>
+    </div>
+    <div class="loc-item">
+      <div class="loc-thumb">⭐</div>
+      <div>
+        <div class="loc-name">קפה הים · גבעת עלייה</div>
+        <div class="loc-meta">📍 תל אביב · ₪200/ש"ה</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── BOOKING WIDGET ──
+let selectedDuration = 1.5;
+let selectedSlot = null;
+
+function selectDur(btn, dur) {
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedDuration = dur;
+  selectedSlot = null;
+  updatePrice();
+  if (document.getElementById('demo-date').value) showSlots();
+}
+
+function showSlots() {
+  const section = document.getElementById('slots-section');
+  const grid = document.getElementById('slots-grid');
+  section.style.display = 'block';
+
+  const startTimes = ['07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30'];
+  grid.innerHTML = startTimes.map(t => {
+    const [h,m] = t.split(':').map(Number);
+    const endMins = h * 60 + m + selectedDuration * 60;
+    const endH = Math.floor(endMins/60).toString().padStart(2,'0');
+    const endM = (endMins%60).toString().padStart(2,'0');
+    const available = Math.random() > 0.3;
+    return `<button class="slot-btn" ${!available?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="selectSlot(this,'${t}','${endH}:${endM}')">${t} – ${endH}:${endM}</button>`;
+  }).join('');
+}
+
+function selectSlot(btn, start, end) {
+  document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedSlot = {start, end};
+  updatePrice();
+}
+
+function updatePrice() {
+  const summary = document.getElementById('price-summary');
+  const cta = document.getElementById('cta-btn');
+  if (selectedSlot) {
+    const price = 180 * selectedDuration;
+    document.getElementById('subtotal-price').textContent = '₪' + price;
+    document.getElementById('total-price').textContent = '₪' + price;
+    summary.style.display = 'block';
+    cta.disabled = false;
+    cta.textContent = 'המשך להזמנה →';
+  } else {
+    summary.style.display = 'none';
+    cta.disabled = true;
+    cta.textContent = 'בחרי תאריך ושעה';
+  }
+}
+
+// ── AI CHAT ──
+let locActive = false;
+const chatBotResponses = {
+  'אילו שיעורים מתרחשים עכשיו?': `🔴 **get_happening_now** ← הכלי הופעל!
+
+מצאתי 3 שיעורים פעילים ברגע זה:
+
+• **מרפסת הנמל** — יוגה, פעיל עד 09:30
+• **טרסת הים הרצליה** — פילאטיס, פעיל עד 08:45
+• **חוף הצוק חיפה** — מדיטציה, פעיל עד 09:00
+
+רוצה לראות את כרטיסי החללים? 🌊`,
+
+  'מצאי חלל קרוב אלי': `📍 קיבלתי את המיקום שלך — תל אביב!
+
+**search_venues** ← חיפוש בתל אביב...
+
+מצאתי 3 חללים קרובים אלייך:
+
+• **מרפסת הנמל** — 1.2 ק"מ · ₪180/ש"ה
+• **טרסת בוגרשוב** — 2.5 ק"מ · ₪150/ש"ה
+• **גן הרצועה** — 3.1 ק"מ · ₪120/ש"ה`,
+
+  'אני מחפשת חלל לשיעור בוקר מחר ב-08:00': `מצוין! כמה משתתפים יהיו בשיעור ובאיזו עיר?
+
+(אפשרי גם לשתף מיקום 📍 ואמצא את הקרוב ביותר אוטומטית)`,
+
+  default: `**search_venues** ← מחפשת בשבילך...
+
+מצאתי 4 חללים זמינים:
+
+• **מרפסת הנמל** — יפו, 25 מקומות, ₪180/ש"ה 🌊
+• **טרסת הים** — הרצליה, 18 מקומות, ₪160/ש"ה
+• **חוף הצוק** — חיפה, 30 מקומות, ₪140/ש"ה
+• **גן הים** — נתניה, 20 מקומות, ₪130/ש"ה`
+};
+
+function toggleLocation() {
+  locActive = !locActive;
+  const btn = document.getElementById('loc-btn');
+  const ind = document.getElementById('loc-indicator');
+  if (locActive) {
+    btn.classList.add('loc-active');
+    btn.textContent = '✅ תל אביב';
+    ind.style.display = 'block';
+    addMessage('bot', '📍 מיקום אוכן — אני אחפש חללים קרובים לתל אביב');
+  } else {
+    btn.classList.remove('loc-active');
+    btn.textContent = '📍 מיקום';
+    ind.style.display = 'none';
+  }
+}
+
+function closeChat() { /* demo only */ }
+
+function addMessage(role, text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg' + (role === 'user' ? ' user' : '');
+  div.innerHTML = role === 'user'
+    ? `<div class="msg-bubble user">${text}</div>`
+    : `<div class="msg-avatar">🌊</div><div class="msg-bubble bot">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Hide quick actions after first message
+  document.getElementById('quick-actions').style.display = 'none';
+}
+
+function sendQuick(text) {
+  addMessage('user', text);
+  setTimeout(() => {
+    const response = chatBotResponses[text] || chatBotResponses.default;
+    addMessage('bot', response);
+  }, 800);
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  addMessage('user', text);
+  input.value = '';
+  setTimeout(() => {
+    addMessage('bot', chatBotResponses.default);
+  }, 900);
+}
+</script>
+</body>
+</html>
