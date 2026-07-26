@@ -24,9 +24,9 @@ export default async function VenueDetailPage({ params }: Props) {
   let venue = await getVenueById(id)
   const isMock = !venue
   if (isMock) {
-    venue = mockVenues.find(v => v.id === id) ?? mockVenues[0]
-    if (!venue) notFound()
+    venue = mockVenues.find(v => v.id === id) ?? mockVenues[0] ?? null
   }
+  if (!venue) notFound()
 
   // Fetch reviews and rating
   const [reviews, ratingSummary] = await Promise.all([
