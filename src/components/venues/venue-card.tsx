@@ -31,7 +31,7 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
   const showNewBadge = badgeType === 'new' || (!badgeType && isNewVenue(venue.created_at))
 
   return (
-    <Card className={`overflow-hidden group bg-white border-0 transition-all duration-300 ${compact ? 'rounded-2xl' : ''}`} style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-5px)'; (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-hover)' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-card)' }}>
+    <Card className={`overflow-hidden group bg-white border-0 venue-card-hover ${compact ? 'rounded-2xl' : ''}`} style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}>
       {/* Image / visual area */}
       <div className={`relative ocean-gradient overflow-hidden ${compact ? 'h-40' : 'h-56'}`}>
         <div className="absolute inset-0 flex items-center justify-center">

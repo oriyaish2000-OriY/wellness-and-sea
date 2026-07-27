@@ -196,6 +196,15 @@ body {
 .hover\:bg-ocean\/5:hover   { background-color: rgb(13 110 110 / 0.05); }
 .hover\:border-ocean:hover  { border-color: #0d6e6e; }
 
+/* ── Hover lift card ── */
+.venue-card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.venue-card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-hover) !important;
+}
+
 /* ── From/To gradient utilities ── */
 .from-deep-ocean { --tw-gradient-from: #0a4a4a; }
 .from-ocean     { --tw-gradient-from: #0d6e6e; }
