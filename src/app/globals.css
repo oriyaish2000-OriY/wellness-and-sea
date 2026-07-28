@@ -210,3 +210,203 @@ body {
 .from-ocean     { --tw-gradient-from: #0d6e6e; }
 .to-ocean       { --tw-gradient-to: #0d6e6e; }
 .to-teal        { --tw-gradient-to: #1a9090; }
+
+/* ════════════════════════════════════════
+   WAVE PAGE TRANSITION
+════════════════════════════════════════ */
+
+/* The full-screen wave overlay container */
+.wave-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Panel that slides in from bottom, holds the page */
+.wave-panel {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #0a4a4a 0%, #0d6e6e 55%, #1a9090 100%);
+  transform: translateY(100%);
+  will-change: transform;
+}
+.wave-panel.entering {
+  animation: wave-enter 0.55s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+.wave-panel.exiting {
+  animation: wave-exit 0.50s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+
+/* Wave-shaped top edge of the panel */
+.wave-panel-edge {
+  position: absolute;
+  top: -48px;
+  left: 0;
+  right: 0;
+  height: 52px;
+  overflow: hidden;
+}
+.wave-panel-edge svg {
+  position: absolute;
+  bottom: 0;
+  width: 200%;
+  animation: wave-roll 1.4s linear infinite;
+}
+
+@keyframes wave-enter {
+  0%   { transform: translateY(100%); }
+  100% { transform: translateY(0%); }
+}
+@keyframes wave-exit {
+  0%   { transform: translateY(0%); }
+  100% { transform: translateY(-100%); }
+}
+@keyframes wave-roll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Yoga / sea symbols inside the transition */
+.wave-symbol {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.18);
+  animation: wave-symbol-float 0.55s ease-out forwards;
+  font-size: 48px;
+  line-height: 1;
+  user-select: none;
+}
+@keyframes wave-symbol-float {
+  0%   { opacity: 0; transform: translateY(30px) scale(0.6) rotate(-10deg); }
+  40%  { opacity: 1; }
+  100% { opacity: 0.18; transform: translateY(0px) scale(1) rotate(0deg); }
+}
+
+/* ════════════════════════════════════════
+   FLOATING SEA AMBIENCE LAYER
+════════════════════════════════════════ */
+
+.sea-ambience {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ambience-symbol {
+  position: absolute;
+  color: #0d6e6e;
+  will-change: transform, opacity;
+  user-select: none;
+}
+
+/* Named float animations — each has slightly different arc */
+@keyframes float-drift-a {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(0deg);   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-110vh) translateX(18px)  rotate(20deg);  opacity: 0; }
+}
+@keyframes float-drift-b {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(0deg);   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-115vh) translateX(-22px) rotate(-15deg); opacity: 0; }
+}
+@keyframes float-drift-c {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(0deg);   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-105vh) translateX(10px)  rotate(30deg);  opacity: 0; }
+}
+@keyframes float-drift-d {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(0deg);   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-120vh) translateX(-14px) rotate(-25deg); opacity: 0; }
+}
+
+/* Slow gentle rotation for mandala/lotus */
+@keyframes lotus-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════
+   BREATHING RING (mindfulness element)
+════════════════════════════════════════ */
+
+@keyframes breathe-expand {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.18;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.08;
+  }
+}
+@keyframes breathe-inner {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.30;
+  }
+  50% {
+    transform: scale(0.82);
+    opacity: 0.55;
+  }
+}
+@keyframes breathe-text {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0.90; }
+}
+
+.breathing-ring-outer {
+  animation: breathe-expand 5s ease-in-out infinite;
+}
+.breathing-ring-inner {
+  animation: breathe-inner 5s ease-in-out infinite;
+}
+.breathing-ring-text {
+  animation: breathe-text 5s ease-in-out infinite;
+}
+
+/* ════════════════════════════════════════
+   RIPPLE on CTA clicks
+════════════════════════════════════════ */
+
+@keyframes ripple-out {
+  0%   { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  animation: ripple-out 0.65s ease-out forwards;
+  pointer-events: none;
+}
+
+/* pulse for live indicators */
+@keyframes pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.3); }
+}
+
+/* ════════════════════════════════════════
+   SCROLL FADE-IN for section reveals
+════════════════════════════════════════ */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+.fade-up-delay-1 { animation-delay: 0.08s; }
+.fade-up-delay-2 { animation-delay: 0.16s; }
+.fade-up-delay-3 { animation-delay: 0.24s; }
+.fade-up-delay-4 { animation-delay: 0.32s; }
