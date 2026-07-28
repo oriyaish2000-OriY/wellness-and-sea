@@ -18,8 +18,18 @@ export default async function InstructorProfilePage({ params }: { params: Promis
 
   if (!instructor) notFound()
 
+  type BookingWithVenue = {
+    id: string
+    booking_date: string
+    start_time: string
+    end_time: string
+    class_type?: string
+    participants_count?: number
+    venue?: { id?: string; title?: string; location_city?: string; images?: string[]; hourly_price?: number } | null
+  }
+
   const today = new Date().toISOString().split('T')[0]
-  const { data: upcomingBookings } = await supabase
+  const { data: upcomingBookingsRaw } = await supabase
     .from('bookings')
     .select('id, booking_date, start_time, end_time, class_type, participants_count, venue:venues(id, title, location_city, images, hourly_price)')
     .eq('instructor_id', id)
@@ -27,6 +37,7 @@ export default async function InstructorProfilePage({ params }: { params: Promis
     .gte('booking_date', today)
     .order('booking_date')
     .limit(10)
+  const upcomingBookings = upcomingBookingsRaw as unknown as BookingWithVenue[] | null
 
   return (
     <div className="min-h-screen" style={{ background: '#faf5ee' }}>
@@ -110,16 +121,8 @@ export default async function InstructorProfilePage({ params }: { params: Promis
               </div>
             ) : (
               <div className="space-y-4">
-                {upcomingBookings.map((booking: {
-                  id: string
-                  booking_date: string
-                  start_time: string
-                  end_time: string
-                  class_type?: string
-                  participants_count?: number
-                  venue?: { id?: string; title?: string; location_city?: string; images?: string[]; hourly_price?: number } | null
-                }) => {
-                  const venue = booking.venue as { id?: string; title?: string; location_city?: string; images?: string[]; hourly_price?: number } | null
+                {upcomingBookings.map((booking) => {
+                  const venue = booking.venue ?? null
                   const dateObj = new Date(booking.booking_date)
                   const dateStr = dateObj.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
                   return (

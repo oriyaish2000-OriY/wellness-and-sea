@@ -61,24 +61,21 @@ export async function updateProfile(formData: FormData) {
     return { error: 'שם מלא חייב להכיל לפחות 2 תווים.' }
   }
 
-  const updateData: Record<string, unknown> = {
-    full_name: fullName,
-    phone: phone || null,
-    bio: bio || null,
-    avatar_url: avatarUrl || null,
-  }
-
-  if (certificationUrl !== undefined) updateData.certification_url = certificationUrl || null
-  if (insuranceUrl !== undefined) updateData.insurance_url = insuranceUrl || null
-  if (bitPhone !== undefined) updateData.bit_phone = bitPhone || null
-  if (payboxPhone !== undefined) updateData.paybox_phone = payboxPhone || null
-  if (bankAccount !== undefined) updateData.bank_account = bankAccount || null
-  if (instagram !== undefined) updateData.instagram = instagram || null
-  if (specialties !== undefined) updateData.specialties = specialties.length > 0 ? specialties : null
-
   const { error } = await supabase
     .from('profiles')
-    .update(updateData)
+    .update({
+      full_name: fullName,
+      phone: phone || null,
+      bio: bio || null,
+      avatar_url: avatarUrl || null,
+      certification_url: certificationUrl || null,
+      insurance_url: insuranceUrl || null,
+      bit_phone: bitPhone || null,
+      paybox_phone: payboxPhone || null,
+      bank_account: bankAccount || null,
+      instagram: instagram || null,
+      specialties: specialties && specialties.length > 0 ? specialties : null,
+    })
     .eq('id', user.id)
 
   if (error) return { error: 'שגיאה בעדכון הפרופיל.' }

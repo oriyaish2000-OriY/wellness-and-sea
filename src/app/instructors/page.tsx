@@ -2,7 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import Link from 'next/link'
-import type { Profile } from '@/lib/supabase/types'
+type InstructorCard = {
+  id: string
+  full_name: string
+  avatar_url?: string | null
+  bio?: string | null
+  specialties?: string[] | null
+  bit_phone?: string | null
+  paybox_phone?: string | null
+}
 
 export default async function InstructorsPage() {
   const supabase = await createClient()
@@ -44,7 +52,7 @@ export default async function InstructorsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {instructors.map((instructor: Profile) => (
+              {instructors.map((instructor: InstructorCard) => (
                 <Link key={instructor.id} href={`/instructors/${instructor.id}`}
                   className="block rounded-2xl overflow-hidden group"
                   style={{ background: 'white', boxShadow: '0 2px 16px rgba(10,74,74,0.08)', transition: 'transform 0.2s, box-shadow 0.2s' }}
