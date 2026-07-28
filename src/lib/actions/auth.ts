@@ -19,7 +19,9 @@ export async function signIn(
   }
 
   const role = data.user?.user_metadata?.role as string | undefined
-  redirect(role === 'host' ? '/host-dashboard' : '/instructor-dashboard')
+  if (role === 'host') redirect('/host-dashboard')
+  else if (role === 'instructor') redirect('/instructor-dashboard')
+  else redirect('/classes')
 }
 
 export async function signUp(
@@ -31,7 +33,7 @@ export async function signUp(
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const fullName = formData.get('full_name') as string
-  const role = formData.get('role') as 'host' | 'instructor'
+  const role = formData.get('role') as 'host' | 'instructor' | 'student'
 
   if (!fullName || fullName.trim().length < 2) {
     return { error: 'נא להזין שם מלא (לפחות 2 תווים).' }
@@ -39,7 +41,7 @@ export async function signUp(
   if (password.length < 8) {
     return { error: 'הסיסמה חייבת להכיל לפחות 8 תווים.' }
   }
-  if (!['host', 'instructor'].includes(role)) {
+  if (!['host', 'instructor', 'student'].includes(role)) {
     return { error: 'נא לבחור סוג משתמש.' }
   }
 
@@ -58,7 +60,9 @@ export async function signUp(
     return { error: 'שגיאה בהרשמה. אנא נסי שוב.' }
   }
 
-  redirect(role === 'host' ? '/host-dashboard' : '/instructor-dashboard')
+  if (role === 'host') redirect('/host-dashboard')
+  else if (role === 'instructor') redirect('/instructor-dashboard')
+  else redirect('/classes')
 }
 
 export async function signInWithGoogle(formData: FormData): Promise<void> {

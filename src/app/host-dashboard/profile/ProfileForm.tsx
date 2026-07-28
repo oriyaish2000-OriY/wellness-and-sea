@@ -14,6 +14,9 @@ interface ProfileFormProps {
     phone: string
     bio: string
     avatar_url: string
+    bank_account?: string
+    bit_phone?: string
+    paybox_phone?: string
   }
 }
 
@@ -95,6 +98,56 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       </div>
 
       <input type="hidden" name="avatar_url" value={initialData.avatar_url} />
+
+      {/* Payment details */}
+      <div className="space-y-4 pt-2 border-t border-gray-100">
+        <h3 className="font-semibold text-gray-900 text-sm pt-2">פרטי תשלום</h3>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="bank_account" className="text-sm font-medium text-gray-700">
+            מספר חשבון בנק / IBAN
+          </Label>
+          <Input
+            id="bank_account"
+            name="bank_account"
+            type="text"
+            defaultValue={initialData.bank_account ?? ''}
+            placeholder="IL000000000000000000"
+            className="text-right"
+            dir="rtl"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="bit_phone" className="text-sm font-medium text-gray-700">
+            מספר Bit
+          </Label>
+          <Input
+            id="bit_phone"
+            name="bit_phone"
+            type="tel"
+            defaultValue={initialData.bit_phone ?? ''}
+            placeholder="05X-XXXXXXX"
+            className="text-right"
+            dir="rtl"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="paybox_phone" className="text-sm font-medium text-gray-700">
+            מספר PayBox
+          </Label>
+          <Input
+            id="paybox_phone"
+            name="paybox_phone"
+            type="tel"
+            defaultValue={initialData.paybox_phone ?? ''}
+            placeholder="05X-XXXXXXX"
+            className="text-right"
+            dir="rtl"
+          />
+        </div>
+      </div>
 
       <div className="pt-2">
         <Button

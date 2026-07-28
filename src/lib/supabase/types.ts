@@ -1,4 +1,4 @@
-export type UserRole = 'host' | 'instructor'
+export type UserRole = 'host' | 'instructor' | 'student'
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
 export type MessageRole = 'user' | 'assistant'
 
@@ -13,6 +13,11 @@ export interface Profile {
   insurance_url?: string
   created_at: string
   updated_at?: string
+  bit_phone?: string
+  paybox_phone?: string
+  bank_account?: string
+  specialties?: string[]
+  instagram?: string
 }
 
 export interface VenueAmenities {

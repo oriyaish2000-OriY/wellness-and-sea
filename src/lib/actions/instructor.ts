@@ -48,21 +48,37 @@ export async function updateProfile(formData: FormData) {
   const certificationUrl = (formData.get('certification_url') as string)?.trim()
   const insuranceUrl = (formData.get('insurance_url') as string)?.trim()
   const avatarUrl = (formData.get('avatar_url') as string)?.trim()
+  const bitPhone = (formData.get('bit_phone') as string)?.trim()
+  const payboxPhone = (formData.get('paybox_phone') as string)?.trim()
+  const bankAccount = (formData.get('bank_account') as string)?.trim()
+  const instagram = (formData.get('instagram') as string)?.trim()
+  const specialtiesText = (formData.get('specialties_text') as string)?.trim()
+  const specialties = specialtiesText
+    ? specialtiesText.split(',').map(s => s.trim()).filter(Boolean)
+    : undefined
 
   if (!fullName || fullName.length < 2) {
     return { error: 'שם מלא חייב להכיל לפחות 2 תווים.' }
   }
 
+  const updateData: Record<string, unknown> = {
+    full_name: fullName,
+    phone: phone || null,
+    bio: bio || null,
+    avatar_url: avatarUrl || null,
+  }
+
+  if (certificationUrl !== undefined) updateData.certification_url = certificationUrl || null
+  if (insuranceUrl !== undefined) updateData.insurance_url = insuranceUrl || null
+  if (bitPhone !== undefined) updateData.bit_phone = bitPhone || null
+  if (payboxPhone !== undefined) updateData.paybox_phone = payboxPhone || null
+  if (bankAccount !== undefined) updateData.bank_account = bankAccount || null
+  if (instagram !== undefined) updateData.instagram = instagram || null
+  if (specialties !== undefined) updateData.specialties = specialties.length > 0 ? specialties : null
+
   const { error } = await supabase
     .from('profiles')
-    .update({
-      full_name: fullName,
-      phone: phone || null,
-      bio: bio || null,
-      certification_url: certificationUrl || null,
-      insurance_url: insuranceUrl || null,
-      avatar_url: avatarUrl || null,
-    })
+    .update(updateData)
     .eq('id', user.id)
 
   if (error) return { error: 'שגיאה בעדכון הפרופיל.' }

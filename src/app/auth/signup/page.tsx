@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import Link from 'next/link'
-import { Waves, Loader2, UtensilsCrossed, Dumbbell } from 'lucide-react'
+import { Waves, Loader2, UtensilsCrossed, Dumbbell, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,7 +21,7 @@ function GoogleIcon() {
 }
 
 export default function SignupPage() {
-  const [role, setRole] = useState<'instructor' | 'host'>('instructor')
+  const [role, setRole] = useState<'instructor' | 'host' | 'student'>('instructor')
   const [state, action, isPending] = useActionState(signUp, null)
 
   return (
@@ -42,7 +42,7 @@ export default function SignupPage() {
 
         <Card className="p-6 border-0 shadow-xl">
           {/* Role Selector */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             <button
               type="button"
               onClick={() => setRole('instructor')}
@@ -68,6 +68,19 @@ export default function SignupPage() {
               <UtensilsCrossed className="w-6 h-6" />
               <span className="text-sm font-medium">בעלת מסעדה</span>
               <span className="text-xs text-center leading-tight opacity-70">פרסמי את החלל שלך וקבלי הכנסה</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('student')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                role === 'student'
+                  ? 'border-ocean bg-ocean/5 text-ocean'
+                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              <Users className="w-6 h-6" />
+              <span className="text-sm font-medium">מתאמנת / תלמידה</span>
+              <span className="text-xs text-center leading-tight opacity-70">מצאי שיעורים פעילים והירשמי בקלות</span>
             </button>
           </div>
 

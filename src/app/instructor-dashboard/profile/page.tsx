@@ -68,6 +68,10 @@ export default async function InstructorProfilePage() {
               avatar_url: profile.avatar_url ?? '',
               certification_url: profile.certification_url ?? '',
               insurance_url: profile.insurance_url ?? '',
+              bit_phone: profile.bit_phone ?? '',
+              paybox_phone: profile.paybox_phone ?? '',
+              instagram: profile.instagram ?? '',
+              specialties: profile.specialties ?? [],
             }}
           />
         </CardContent>

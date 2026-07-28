@@ -17,6 +17,10 @@ interface ProfileFormProps {
     avatar_url: string
     certification_url?: string
     insurance_url?: string
+    bit_phone?: string
+    paybox_phone?: string
+    instagram?: string
+    specialties?: string[]
   }
 }
 
@@ -31,6 +35,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
   const [certUrl, setCertUrl] = useState(initialData.certification_url ?? '')
   const [insuranceUrl, setInsuranceUrl] = useState(initialData.insurance_url ?? '')
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url ?? '')
+  const specialtiesDefault = (initialData.specialties ?? []).join(', ')
 
   return (
     <form action={formAction} className="space-y-6">
@@ -197,6 +202,66 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             />
           )}
           <input type="hidden" name="insurance_url" value={insuranceUrl} />
+        </div>
+      </div>
+
+      {/* Public profile & payment */}
+      <div className="space-y-4 pt-2 border-t border-gray-100">
+        <h3 className="font-semibold text-gray-900 text-sm pt-2">פרופיל ציבורי ותשלום</h3>
+        <p className="text-xs text-gray-500">
+          פרטים אלו יוצגו בפרופיל הציבורי שלך ויאפשרו לתלמידות למצוא אותך ולשלם ישירות
+        </p>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="bit_phone" className="text-sm font-medium text-gray-700">מספר Bit</Label>
+          <Input
+            id="bit_phone"
+            name="bit_phone"
+            type="tel"
+            defaultValue={initialData.bit_phone ?? ''}
+            placeholder="05X-XXXXXXX"
+            className="text-right"
+            dir="rtl"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="paybox_phone" className="text-sm font-medium text-gray-700">מספר PayBox</Label>
+          <Input
+            id="paybox_phone"
+            name="paybox_phone"
+            type="tel"
+            defaultValue={initialData.paybox_phone ?? ''}
+            placeholder="05X-XXXXXXX"
+            className="text-right"
+            dir="rtl"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="instagram" className="text-sm font-medium text-gray-700">אינסטגרם</Label>
+          <Input
+            id="instagram"
+            name="instagram"
+            type="text"
+            defaultValue={initialData.instagram ?? ''}
+            placeholder="@username"
+            className="text-right"
+            dir="rtl"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="specialties_text" className="text-sm font-medium text-gray-700">התמחויות</Label>
+          <Input
+            id="specialties_text"
+            name="specialties_text"
+            type="text"
+            defaultValue={specialtiesDefault}
+            placeholder="יוגה, פילאטיס, מדיטציה (מופרד בפסיקים)"
+            className="text-right"
+            dir="rtl"
+          />
         </div>
       </div>
 
