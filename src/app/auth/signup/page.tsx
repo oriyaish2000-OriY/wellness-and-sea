@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Waves, Loader2, UtensilsCrossed, Dumbbell, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,9 +21,18 @@ function GoogleIcon() {
   )
 }
 
-export default function SignupPage() {
-  const [role, setRole] = useState<'instructor' | 'host' | 'student'>('instructor')
+function SignupForm() {
+  const searchParams = useSearchParams()
+  const urlRole = searchParams.get('role') as 'instructor' | 'host' | 'student' | null
+  const [role, setRole] = useState<'instructor' | 'host' | 'student'>(urlRole ?? 'instructor')
   const [state, action, isPending] = useActionState(signUp, null)
+
+  // Sync role if URL param changes (e.g. navigating from host flow)
+  useEffect(() => {
+    if (urlRole && ['instructor', 'host', 'student'].includes(urlRole)) {
+      setRole(urlRole)
+    }
+  }, [urlRole])
 
   return (
     <div className="min-h-screen sand-gradient flex items-center justify-center p-4">
@@ -183,5 +193,13 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   )
 }

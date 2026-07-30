@@ -36,6 +36,13 @@ export async function proxy(request: NextRequest) {
   const isProtected = protectedRoutes.some(r => pathname.startsWith(r))
 
   if (isProtected && !user) {
+    // Host-specific routes → send to signup pre-selected as host
+    if (pathname.startsWith('/host-dashboard') || pathname.startsWith('/host/list-space')) {
+      const signupUrl = new URL('/auth/signup', request.url)
+      signupUrl.searchParams.set('role', 'host')
+      signupUrl.searchParams.set('next', pathname)
+      return NextResponse.redirect(signupUrl)
+    }
     const loginUrl = new URL('/auth/login', request.url)
     loginUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(loginUrl)

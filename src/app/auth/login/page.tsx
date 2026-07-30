@@ -1,6 +1,8 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useActionState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Waves, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,7 +22,9 @@ function GoogleIcon() {
   )
 }
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const urlRole = searchParams.get('role') ?? 'instructor'
   const [state, action, isPending] = useActionState(signIn, null)
 
   return (
@@ -126,7 +130,7 @@ export default function LoginPage() {
             </div>
 
             {/* Route Handler — fixes PKCE cookie timing bug in Next.js 16 */}
-            <a href="/api/auth/google" className="block w-full">
+            <a href={`/api/auth/google?role=${urlRole}`} className="block w-full">
               <Button variant="outline" className="w-full font-medium" style={{ borderRadius: 50, borderColor: '#f0e6d3' }} type="button">
                 <GoogleIcon />
                 התחברות עם Google
@@ -136,12 +140,20 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-gray-500 mt-5">
             אין לך חשבון?{' '}
-            <Link href="/auth/signup" className="text-ocean font-semibold hover:underline">
+            <Link href={`/auth/signup?role=${urlRole}`} className="text-ocean font-semibold hover:underline">
               הצטרפות חינמית
             </Link>
           </p>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
