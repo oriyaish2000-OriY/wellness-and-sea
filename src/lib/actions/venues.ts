@@ -117,7 +117,8 @@ export async function createVenue(formData: FormData) {
   }
 
   revalidatePath('/host-dashboard')
-  redirect(`/host-dashboard/venues/${venue.id}?created=true`)
+  revalidatePath('/host-dashboard/venues')
+  redirect('/host-dashboard/venues?created=true')
 }
 
 export async function updateVenue(venueId: string, formData: FormData) {

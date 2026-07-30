@@ -12,13 +12,19 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // If user registered via Google OAuth, set role in metadata if not already set
       const existingRole = data.user.user_metadata?.role
+      const userRole = existingRole ?? role
+
+      // New Google OAuth user — set role in JWT metadata and sync profiles table
       if (!existingRole && role) {
         await supabase.auth.updateUser({ data: { role } })
+        // Also update profiles.role (trigger only runs on INSERT with default 'instructor')
+        await supabase
+          .from('profiles')
+          .update({ role })
+          .eq('id', data.user.id)
       }
 
-      const userRole = existingRole ?? role
       const dashboard = userRole === 'host' ? '/host-dashboard' : userRole === 'student' ? '/student-dashboard' : '/instructor-dashboard'
 
       return NextResponse.redirect(`${origin}${next === '/' ? dashboard : next}`)

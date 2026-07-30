@@ -12,7 +12,11 @@ function formatPrice(amount: number) {
   return `₪${amount.toLocaleString('he-IL')}`
 }
 
-export default async function HostVenuesPage() {
+export default async function HostVenuesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ created?: string }>
+}) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -21,10 +25,22 @@ export default async function HostVenuesPage() {
   if (!user) redirect('/auth/login')
   if (user.user_metadata?.role !== 'host') redirect('/instructor-dashboard')
 
-  const venues = await getHostVenues(user.id)
+  const [venues, params] = await Promise.all([
+    getHostVenues(user.id),
+    searchParams,
+  ])
+
+  const justCreated = params.created === 'true'
 
   return (
     <div className="space-y-6">
+      {/* Success banner */}
+      {justCreated && (
+        <div className="flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-medium" style={{ background: 'rgba(92,140,110,0.12)', border: '1.5px solid rgba(92,140,110,0.3)', color: '#1a5c3a' }}>
+          <span className="text-xl">🎉</span>
+          <span>החלל נוצר בהצלחה! ניתן לפרסמו לאחר בדיקת הפרטים.</span>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
