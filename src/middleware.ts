@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect all dashboard + booking routes
-  const protectedRoutes = ['/host-dashboard', '/instructor-dashboard', '/booking', '/student-dashboard']
+  const protectedRoutes = ['/host-dashboard', '/instructor-dashboard', '/booking', '/student-dashboard', '/host/list-space']
   const isProtected = protectedRoutes.some(r => pathname.startsWith(r))
 
   if (isProtected && !user) {
