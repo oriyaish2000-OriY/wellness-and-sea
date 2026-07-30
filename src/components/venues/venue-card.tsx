@@ -34,9 +34,17 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
     <Card className={`overflow-hidden group bg-white border-0 venue-card-hover ${compact ? 'rounded-2xl' : ''}`} style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}>
       {/* Image / visual area */}
       <div className={`relative ocean-gradient overflow-hidden ${compact ? 'h-40' : 'h-56'}`}>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Waves className="w-16 h-16 text-white/20" />
-        </div>
+        {venue.images?.[0] ? (
+          <img
+            src={venue.images[0]}
+            alt={venue.title}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Waves className="w-16 h-16 text-white/20" />
+          </div>
+        )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,74,74,0.6) 0%, transparent 60%)' }} />
 
         {/* Top badges row */}
