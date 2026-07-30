@@ -175,10 +175,12 @@ export default async function InstructorDashboardLayout({
             </div>
           </div>
 
-          {/* Nav links — client island handles hover colours */}
+          {/* Nav links — icon rendered server-side, passed as children */}
           <nav className="flex-1 px-3 py-5 space-y-1">
             {navLinks.map(({ href, label, icon: Icon }) => (
-              <SidebarLink key={href} href={href} label={label} Icon={Icon} />
+              <SidebarLink key={href} href={href} label={label}>
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: 'inherit' }} />
+              </SidebarLink>
             ))}
           </nav>
 

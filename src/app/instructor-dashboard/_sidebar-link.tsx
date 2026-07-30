@@ -1,16 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 export function SidebarLink({
   href,
   label,
-  Icon,
+  children,
 }: {
   href: string
   label: string
-  Icon: LucideIcon
+  children: ReactNode
 }) {
   return (
     <Link
@@ -28,7 +28,7 @@ export function SidebarLink({
         el.style.background = 'transparent'
       }}
     >
-      <Icon className="w-4 h-4 flex-shrink-0" style={{ color: 'inherit' }} />
+      {children}
       {label}
     </Link>
   )
