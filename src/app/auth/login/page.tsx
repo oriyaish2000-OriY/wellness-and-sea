@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { signIn, signInWithGoogle } from '@/lib/actions/auth'
+import { signIn } from '@/lib/actions/auth'
 import { usePlatform } from '@/hooks/usePlatform'
 
 function GoogleIcon() {
@@ -161,18 +161,19 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <form action={signInWithGoogle}>
+                {/* Route Handler link — fixes PKCE cookie timing in Next.js 16 */}
+                <a href="/api/auth/google" className="block w-full">
                   <Button
                     variant="outline"
                     className="w-full font-medium"
                     style={{ borderRadius: 50, borderColor: '#f0e6d3' }}
-                    type="submit"
+                    type="button"
                     disabled={isPending}
                   >
                     <GoogleIcon />
                     התחברות עם Google
                   </Button>
-                </form>
+                </a>
               </>
             )}
           </Card>
