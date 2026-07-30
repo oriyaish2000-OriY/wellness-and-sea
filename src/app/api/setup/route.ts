@@ -258,7 +258,7 @@ export async function GET(request: NextRequest) {
   }
 
   const client = new Client({
-    connectionString: `postgresql://postgres.qfrjvkfrzdsrfxjmxxop:${encodeURIComponent('OriY2611$&!')}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`,
+    connectionString: `postgresql://postgres:${encodeURIComponent('OriY2611$&!')}@db.qfrjvkfrzdsrfxjmxxop.supabase.co:5432/postgres`,
     ssl: { rejectUnauthorized: false }
   })
 
