@@ -8,7 +8,7 @@ A two-sided marketplace connecting beachfront restaurant owners (Hosts) with yog
 ---
 
 ## Tech Stack
-- **Framework**: Next.js 16 (middleware lives in `src/middleware.ts` — standard Next.js convention)
+- **Framework**: Next.js 16.2.11 custom build (uses `src/proxy.ts` with `export function proxy()` — NOT `middleware.ts`)
 - **Database & Auth**: Supabase (PostgreSQL + Auth + Storage + RLS)
 - **UI**: Tailwind CSS 4 + Radix UI components (already installed)
 - **Language**: TypeScript, strict mode
@@ -20,10 +20,10 @@ A two-sided marketplace connecting beachfront restaurant owners (Hosts) with yog
 
 ## Next.js 16 Critical Rules
 
-### Middleware lives in `src/middleware.ts`
-- Standard Next.js middleware file — must export `middleware` function and `config` matcher
-- Handles Supabase session refresh (critical for preventing token expiry errors), route protection, and role-based redirects
-- `src/proxy.ts` is legacy dead code — do not edit it, logic has been moved to `middleware.ts`
+### ALWAYS use `proxy.ts` not `middleware.ts`
+- This Next.js 16 build reads `src/proxy.ts` with `export function proxy()` — do NOT create `middleware.ts`
+- Having both files causes a build error: "Both middleware file and proxy file are detected"
+- Route protection, Supabase session refresh, and role-based redirects go in `src/proxy.ts`
 
 ### Server Components are the default
 - Pages are Server Components unless they need interactivity
@@ -165,7 +165,7 @@ NEXT_PUBLIC_APP_URL=              # for OAuth redirect
 ---
 
 ## What NOT to Do
-- Do NOT edit `src/proxy.ts` — it is dead code; middleware logic lives in `src/middleware.ts`
+- Do NOT create `middleware.ts` — this build uses `proxy.ts` and having both causes a build failure
 - Do NOT expose `SUPABASE_SERVICE_ROLE_KEY` to client
 - Do NOT trust client-side availability checks — always re-validate in Server Action before booking
 - Do NOT show `platform_fee` in any user-facing UI
