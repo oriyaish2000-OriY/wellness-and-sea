@@ -41,11 +41,14 @@ export async function GET(
     return NextResponse.json({ slots: [] })
   }
 
+  const durationParam = searchParams.get('duration')
+  const durationMinutes = durationParam ? Math.round(parseFloat(durationParam) * 60) : 60
+
   const slots = generateTimeSlots(
     dayAvailability.start_time,
     dayAvailability.end_time,
     existingBookings ?? [],
-    90 // 90-minute slot increments
+    durationMinutes
   )
 
   return NextResponse.json({ slots })

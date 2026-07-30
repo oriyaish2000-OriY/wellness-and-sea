@@ -27,13 +27,15 @@ export async function createPendingBooking(formData: FormData) {
   }
 
   // Server-side availability re-validation (never trust client)
+  // Overlap condition: existing.start < newEnd AND existing.end > newStart
   const { data: existingBookings } = await supabase
     .from('bookings')
     .select('id')
     .eq('venue_id', venueId)
     .eq('booking_date', bookingDate)
     .not('status', 'eq', 'cancelled')
-    .or(`start_time.lt.${endTime},end_time.gt.${startTime}`)
+    .lt('start_time', endTime)
+    .gt('end_time', startTime)
     .limit(1)
 
   if (existingBookings && existingBookings.length > 0) {
@@ -218,6 +220,19 @@ export async function completeBooking(bookingId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'לא מחוברת.' }
+  if (user.user_metadata?.role !== 'host') return { error: 'גישה נדחתה.' }
+
+  // Verify the booking belongs to one of this host's venues
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('id, status, venue:venues(host_id)')
+    .eq('id', bookingId)
+    .single()
+
+  if (!booking) return { error: 'ההזמנה לא נמצאה.' }
+  const venue = booking.venue as { host_id?: string } | null
+  if (venue?.host_id !== user.id) return { error: 'גישה נדחתה.' }
+  if (booking.status !== 'confirmed') return { error: 'ניתן לסמן כהושלמה רק הזמנות מאושרות.' }
 
   const { error } = await supabase
     .from('bookings')

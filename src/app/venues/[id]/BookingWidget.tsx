@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { generateTimeSlots } from '@/lib/booking-engine'
 import { Venue } from '@/lib/supabase/types'
-import { Lightbulb, Users, Maximize2, Shield, Clock } from 'lucide-react'
+import { Lightbulb, Users, Maximize2, Shield, Clock, Loader2 } from 'lucide-react'
 
 function getRecommendedHours(spaceSizeSqm?: number, capacity?: number): {
   hours: number; label: string; reason: string
@@ -32,10 +31,19 @@ export function BookingWidget({ venue }: { venue: Venue }) {
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedDuration, setSelectedDuration] = useState(recommended.hours)
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | null>(null)
+  const [timeSlots, setTimeSlots] = useState<{ start: string; end: string; available: boolean }[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
 
-  const timeSlots = selectedDate
-    ? generateTimeSlots('07:00', '13:00', [], selectedDuration)
-    : []
+  useEffect(() => {
+    if (!selectedDate) { setTimeSlots([]); return }
+    setLoadingSlots(true)
+    setSelectedSlot(null)
+    fetch(`/api/venues/${venue.id}/slots?date=${selectedDate}&duration=${selectedDuration}`)
+      .then(r => r.json())
+      .then(data => setTimeSlots(data.slots ?? []))
+      .catch(() => setTimeSlots([]))
+      .finally(() => setLoadingSlots(false))
+  }, [selectedDate, selectedDuration, venue.id])
 
   const totalPrice = selectedSlot ? venue.hourly_price * selectedDuration : 0
 
@@ -107,7 +115,7 @@ export function BookingWidget({ venue }: { venue: Venue }) {
             {durationOptions.map(opt => (
               <button
                 key={opt.value}
-                onClick={() => { setSelectedDuration(opt.value); setSelectedSlot(null) }}
+                onClick={() => { setSelectedDuration(opt.value) }}
                 className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all"
                 style={{
                   border: selectedDuration === opt.value ? '2px solid #0d6e6e' : '1.5px solid #f0e6d3',
@@ -150,6 +158,13 @@ export function BookingWidget({ venue }: { venue: Venue }) {
             <label className="text-xs font-bold uppercase tracking-wider block mb-2.5" style={{ color: '#0a4a4a' }}>
               🌊 שעות גאות פנויות
             </label>
+            {loadingSlots ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#0d6e6e' }} />
+              </div>
+            ) : timeSlots.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-3">לא קיימות שעות פנויות ביום זה</p>
+            ) : (
             <div className="grid grid-cols-2 gap-2">
               {timeSlots.map(slot => {
                 const tide = getTideLabel(slot.start)
@@ -181,6 +196,7 @@ export function BookingWidget({ venue }: { venue: Venue }) {
                 )
               })}
             </div>
+            )}
           </div>
         )}
 
