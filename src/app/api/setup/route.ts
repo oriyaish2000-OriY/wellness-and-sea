@@ -259,29 +259,34 @@ export async function GET(request: NextRequest) {
 
   const pass = encodeURIComponent('OriY2611$&!')
   const ref = 'qfrjvkfrzdsrfxjmxxop'
+  // Try transaction pooler (6543) first, then session pooler (5432), then direct
   const connStrings = [
+    `postgresql://postgres.${ref}:${pass}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres`,
     `postgresql://postgres.${ref}:${pass}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`,
-    `postgresql://postgres.${ref}:${pass}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.${ref}:${pass}@aws-0-eu-west-2.pooler.supabase.com:6543/postgres`,
     `postgresql://postgres.${ref}:${pass}@aws-0-eu-west-2.pooler.supabase.com:5432/postgres`,
-    `postgresql://postgres.${ref}:${pass}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
     `postgresql://postgres:${pass}@db.${ref}.supabase.co:5432/postgres`,
   ]
 
+  const errors: string[] = []
+
   for (const connString of connStrings) {
-    const client = new Client({ connectionString: connString, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 })
+    const host = connString.split('@')[1]?.split('/')[0]
+    const client = new Client({ connectionString: connString, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 })
     try {
       await client.connect()
       await client.query(SCHEMA)
       await client.end()
-      const host = connString.split('@')[1]?.split(':')[0]
       return NextResponse.json({ ok: true, message: `Schema applied via ${host}` })
     } catch (err: unknown) {
       await client.end().catch(() => {})
       const msg = err instanceof Error ? err.message : String(err)
-      if (!msg.includes('ENOTFOUND') && !msg.includes('ECONNREFUSED') && !msg.includes('not found')) {
-        return NextResponse.json({ ok: false, error: msg }, { status: 500 })
+      errors.push(`${host}: ${msg}`)
+      // Only stop early on a real SQL error (not connection errors)
+      if (!msg.includes('ENOTFOUND') && !msg.includes('ECONNREFUSED') && !msg.includes('not found') && !msg.includes('ETIMEDOUT') && !msg.includes('timeout')) {
+        return NextResponse.json({ ok: false, error: msg, tried: errors }, { status: 500 })
       }
     }
   }
-  return NextResponse.json({ ok: false, error: 'Could not connect to database — all hosts failed' }, { status: 500 })
+  return NextResponse.json({ ok: false, error: 'All hosts failed', details: errors }, { status: 500 })
 }
