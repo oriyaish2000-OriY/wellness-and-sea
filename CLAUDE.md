@@ -8,7 +8,7 @@ A two-sided marketplace connecting beachfront restaurant owners (Hosts) with yog
 ---
 
 ## Tech Stack
-- **Framework**: Next.js 16 (uses `proxy.ts` NOT `middleware.ts` — critical)
+- **Framework**: Next.js 16 (middleware lives in `src/middleware.ts` — standard Next.js convention)
 - **Database & Auth**: Supabase (PostgreSQL + Auth + Storage + RLS)
 - **UI**: Tailwind CSS 4 + Radix UI components (already installed)
 - **Language**: TypeScript, strict mode
@@ -20,9 +20,10 @@ A two-sided marketplace connecting beachfront restaurant owners (Hosts) with yog
 
 ## Next.js 16 Critical Rules
 
-### ALWAYS use `proxy.ts` not `middleware.ts`
-- The runtime reads `src/proxy.ts` with `export function proxy()` — the old `middleware.ts` export is ignored
-- Route protection and auth redirects go in `src/proxy.ts`
+### Middleware lives in `src/middleware.ts`
+- Standard Next.js middleware file — must export `middleware` function and `config` matcher
+- Handles Supabase session refresh (critical for preventing token expiry errors), route protection, and role-based redirects
+- `src/proxy.ts` is legacy dead code — do not edit it, logic has been moved to `middleware.ts`
 
 ### Server Components are the default
 - Pages are Server Components unless they need interactivity
@@ -164,7 +165,7 @@ NEXT_PUBLIC_APP_URL=              # for OAuth redirect
 ---
 
 ## What NOT to Do
-- Do NOT use `middleware.ts` — use `proxy.ts`
+- Do NOT edit `src/proxy.ts` — it is dead code; middleware logic lives in `src/middleware.ts`
 - Do NOT expose `SUPABASE_SERVICE_ROLE_KEY` to client
 - Do NOT trust client-side availability checks — always re-validate in Server Action before booking
 - Do NOT show `platform_fee` in any user-facing UI

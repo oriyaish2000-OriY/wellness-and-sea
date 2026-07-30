@@ -44,6 +44,12 @@ export function NearbyInstructorSection() {
   const [venues, setVenues] = useState<Venue[]>([])
   const [cityLabel, setCityLabel] = useState('')
   const [distKm, setDistKm] = useState<number | null>(null)
+  const [isWorkout, setIsWorkout] = useState(false)
+
+  useEffect(() => {
+    const h = new Date().getHours()
+    setIsWorkout(h >= 6 && h <= 12)
+  }, [])
 
   function requestLocation() {
     if (!navigator.geolocation) {
@@ -73,10 +79,6 @@ export function NearbyInstructorSection() {
       { timeout: 8000, maximumAge: 300000 }
     )
   }
-
-  // Current time for "happening now" label
-  const hour = new Date().getHours()
-  const isWorkout = hour >= 6 && hour <= 12
 
   if (status === 'idle') {
     return (

@@ -122,11 +122,14 @@ export async function updatePassword(
     return { error: 'הסיסמה חייבת להכיל לפחות 8 תווים.' }
   }
 
-  const { error } = await supabase.auth.updateUser({ password })
+  const { error, data } = await supabase.auth.updateUser({ password })
 
   if (error) {
     return { error: 'שגיאה בעדכון הסיסמה. אנא נסי שוב.' }
   }
 
-  redirect('/instructor-dashboard')
+  const role = data.user?.user_metadata?.role
+  if (role === 'host') redirect('/host-dashboard')
+  else if (role === 'instructor') redirect('/instructor-dashboard')
+  else redirect('/student-dashboard')
 }

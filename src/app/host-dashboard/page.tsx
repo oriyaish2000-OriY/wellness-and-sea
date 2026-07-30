@@ -52,8 +52,11 @@ export default async function HostDashboardPage() {
   if (user.user_metadata?.role !== 'host') redirect('/instructor-dashboard')
 
   const [stats, allBookings] = await Promise.all([
-    getHostStats(user.id),
-    getHostBookings(user.id),
+    getHostStats(user.id).catch(() => ({
+      totalVenues: 0, activeVenues: 0, totalBookings: 0,
+      thisMonthBookings: 0, thisMonthEarnings: 0, totalEarnings: 0,
+    })),
+    getHostBookings(user.id).catch(() => [] as Awaited<ReturnType<typeof getHostBookings>>),
   ])
 
   const today = new Date().toISOString().split('T')[0]

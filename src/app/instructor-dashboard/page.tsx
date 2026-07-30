@@ -58,10 +58,10 @@ export default async function InstructorDashboardPage() {
   if (user.user_metadata?.role !== 'instructor') redirect('/host-dashboard')
 
   const [allBookings, savedVenues, recentlyVisited, regularVenues] = await Promise.all([
-    getInstructorBookings(user.id),
-    getSavedVenues(user.id),
-    getRecentlyVisitedVenues(user.id),
-    getRegularVenues(user.id),
+    getInstructorBookings(user.id).catch(() => [] as Awaited<ReturnType<typeof getInstructorBookings>>),
+    getSavedVenues(user.id).catch(() => [] as Awaited<ReturnType<typeof getSavedVenues>>),
+    getRecentlyVisitedVenues(user.id).catch(() => [] as Awaited<ReturnType<typeof getRecentlyVisitedVenues>>),
+    getRegularVenues(user.id).catch(() => [] as Awaited<ReturnType<typeof getRegularVenues>>),
   ])
 
   const today = new Date().toISOString().split('T')[0]
