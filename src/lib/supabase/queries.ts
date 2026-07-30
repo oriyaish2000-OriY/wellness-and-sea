@@ -23,7 +23,7 @@ export async function getVenues(filters: VenueFilters = {}): Promise<Venue[]> {
 
   let query = supabase
     .from('venues')
-    .select('*, host:profiles(id, full_name, avatar_url)')
+    .select('*, host:profiles!venues_host_id_fkey(id, full_name, avatar_url)')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
@@ -114,7 +114,7 @@ export async function getVenueById(id: string): Promise<Venue | null> {
     .from('venues')
     .select(`
       *,
-      host:profiles(id, full_name, avatar_url, bio, phone),
+      host:profiles!venues_host_id_fkey(id, full_name, avatar_url, bio, phone),
       availabilities(*)
     `)
     .eq('id', id)
@@ -315,8 +315,8 @@ export async function getBookingById(id: string): Promise<Booking | null> {
     .from('bookings')
     .select(`
       *,
-      venue:venues(*, host:profiles(id, full_name, phone)),
-      instructor:profiles(id, full_name, avatar_url, phone)
+      venue:venues(*, host:profiles!venues_host_id_fkey(id, full_name, phone)),
+      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, phone)
     `)
     .eq('id', id)
     .single()
