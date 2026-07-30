@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { signIn, signInWithGoogle } from '@/lib/actions/auth'
+import { signIn } from '@/lib/actions/auth'
 
 function GoogleIcon() {
   return (
@@ -125,12 +125,13 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <form action={signInWithGoogle}>
-              <Button variant="outline" className="w-full font-medium" style={{ borderRadius: 50, borderColor: '#f0e6d3' }} type="submit" disabled={isPending}>
+            {/* Route Handler — fixes PKCE cookie timing bug in Next.js 16 */}
+            <a href="/api/auth/google" className="block w-full">
+              <Button variant="outline" className="w-full font-medium" style={{ borderRadius: 50, borderColor: '#f0e6d3' }} type="button">
                 <GoogleIcon />
                 התחברות עם Google
               </Button>
-            </form>
+            </a>
           </Card>
 
           <p className="text-center text-sm text-gray-500 mt-5">
