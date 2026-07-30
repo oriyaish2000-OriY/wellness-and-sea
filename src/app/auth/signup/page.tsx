@@ -133,6 +133,20 @@ export default function SignupPage() {
               />
             </div>
 
+            <div className="flex items-start gap-2 mt-2">
+              <input
+                type="checkbox"
+                id="terms_accepted"
+                name="terms_accepted"
+                required
+                className="mt-0.5 w-4 h-4 accent-ocean flex-shrink-0"
+                disabled={isPending}
+              />
+              <label htmlFor="terms_accepted" className="text-xs text-gray-500 text-right leading-relaxed">
+                קראתי ומסכימה ל<Link href="/terms" className="underline text-ocean">תנאי השימוש</Link> ו<Link href="/privacy-policy" className="underline text-ocean">מדיניות הפרטיות</Link>
+              </label>
+            </div>
+
             <Button
               type="submit"
               className="w-full bg-ocean hover:bg-deep-ocean text-white h-11"
@@ -159,12 +173,6 @@ export default function SignupPage() {
             </Button>
           </form>
 
-          <p className="text-xs text-gray-400 text-center mt-4">
-            בלחיצה את מסכימה ל
-            <Link href="/terms" className="underline mx-1">תנאי השימוש</Link>
-            ו
-            <Link href="/privacy" className="underline mx-1">מדיניות הפרטיות</Link>
-          </p>
         </Card>
 
         <p className="text-center text-sm text-gray-500 mt-4">

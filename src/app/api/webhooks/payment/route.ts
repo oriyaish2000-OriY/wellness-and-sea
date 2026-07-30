@@ -10,7 +10,8 @@ import {
 
 function verifySignature(body: string, signature: string | null): boolean {
   const secret = process.env.TRANZILA_WEBHOOK_SECRET
-  if (!secret || !signature) return !secret // allow unsigned in dev
+  if (!secret) return true // dev mode: no secret configured, allow all
+  if (!signature) return false
   const expected = createHmac('sha256', secret).update(body).digest('hex')
   return expected === signature
 }

@@ -21,7 +21,7 @@ export async function signIn(
   const role = data.user?.user_metadata?.role as string | undefined
   if (role === 'host') redirect('/host-dashboard')
   else if (role === 'instructor') redirect('/instructor-dashboard')
-  else redirect('/classes')
+  else redirect('/student-dashboard')
 }
 
 export async function signUp(
@@ -34,6 +34,11 @@ export async function signUp(
   const password = formData.get('password') as string
   const fullName = formData.get('full_name') as string
   const role = formData.get('role') as 'host' | 'instructor' | 'student'
+
+  const termsAccepted = formData.get('terms_accepted')
+  if (!termsAccepted) {
+    return { error: 'יש לאשר את תנאי השימוש ומדיניות הפרטיות.' }
+  }
 
   if (!fullName || fullName.trim().length < 2) {
     return { error: 'נא להזין שם מלא (לפחות 2 תווים).' }
@@ -62,7 +67,7 @@ export async function signUp(
 
   if (role === 'host') redirect('/host-dashboard')
   else if (role === 'instructor') redirect('/instructor-dashboard')
-  else redirect('/classes')
+  else redirect('/student-dashboard')
 }
 
 export async function signInWithGoogle(formData: FormData): Promise<void> {

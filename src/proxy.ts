@@ -27,12 +27,12 @@ export async function proxy(request: NextRequest) {
 
   // Redirect logged-in users away from auth pages
   if (user && (pathname.startsWith('/auth/login') || pathname.startsWith('/auth/signup'))) {
-    const dashboard = role === 'host' ? '/host-dashboard' : role === 'instructor' ? '/instructor-dashboard' : '/classes'
+    const dashboard = role === 'host' ? '/host-dashboard' : role === 'instructor' ? '/instructor-dashboard' : '/student-dashboard'
     return NextResponse.redirect(new URL(dashboard, request.url))
   }
 
   // Protect all dashboard + booking routes
-  const protectedRoutes = ['/host-dashboard', '/instructor-dashboard', '/booking']
+  const protectedRoutes = ['/host-dashboard', '/instructor-dashboard', '/booking', '/student-dashboard']
   const isProtected = protectedRoutes.some(r => pathname.startsWith(r))
 
   if (isProtected && !user) {
@@ -47,7 +47,10 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL(role === 'student' ? '/classes' : '/instructor-dashboard', request.url))
     }
     if (pathname.startsWith('/instructor-dashboard') && role !== 'instructor') {
-      return NextResponse.redirect(new URL(role === 'student' ? '/classes' : '/host-dashboard', request.url))
+      return NextResponse.redirect(new URL(role === 'student' ? '/student-dashboard' : '/host-dashboard', request.url))
+    }
+    if (pathname.startsWith('/student-dashboard') && role !== 'student') {
+      return NextResponse.redirect(new URL(role === 'host' ? '/host-dashboard' : '/instructor-dashboard', request.url))
     }
     if (pathname.startsWith('/host/list-space') && role !== 'host') {
       return NextResponse.redirect(new URL('/auth/signup?role=host', request.url))

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       }
 
       const userRole = existingRole ?? role
-      const dashboard = userRole === 'host' ? '/host-dashboard' : '/instructor-dashboard'
+      const dashboard = userRole === 'host' ? '/host-dashboard' : userRole === 'student' ? '/student-dashboard' : '/instructor-dashboard'
 
       return NextResponse.redirect(`${origin}${next === '/' ? dashboard : next}`)
     }

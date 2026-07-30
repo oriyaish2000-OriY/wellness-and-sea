@@ -482,6 +482,52 @@ export async function getVenueRatingSummary(venueId: string): Promise<{ avg: num
   return { avg: Math.round(avg * 10) / 10, count: data.length }
 }
 
+// ============================================================
+// STUDENT
+// ============================================================
+
+export async function getStudentEnrollments(studentId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('class_enrollments')
+    .select(`
+      *,
+      booking:bookings(
+        id, booking_date, start_time, end_time, status, class_type,
+        venue:venues(id, title, location_city, images),
+        instructor:profiles(id, full_name, avatar_url, instagram)
+      )
+    `)
+    .eq('student_id', studentId)
+    .order('enrolled_at', { ascending: false })
+  if (error) return []
+  return data ?? []
+}
+
+export async function getInstructorStudentRoster(instructorId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('health_declarations')
+    .select(`
+      student_name, student_phone, signed_at,
+      booking:bookings(booking_date, class_type, start_time, end_time,
+        venue:venues(title, location_city))
+    `)
+    .eq('bookings.instructor_id', instructorId)
+    .order('signed_at', { ascending: false })
+  if (error) return []
+  return data ?? []
+}
+
+export async function getHealthDeclarationsForInstructor(instructorId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('health_declarations')
+    .select('*, booking:bookings!inner(instructor_id, booking_date, start_time, venue:venues(title))')
+    .eq('booking.instructor_id', instructorId)
+  return data ?? []
+}
+
 export async function getBookingForReview(bookingId: string): Promise<Booking | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

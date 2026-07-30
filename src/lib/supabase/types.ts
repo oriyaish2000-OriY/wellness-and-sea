@@ -118,6 +118,14 @@ export interface SavedVenue {
   venue?: Venue
 }
 
+export interface ClassEnrollment {
+  id: string
+  booking_id: string
+  student_id: string
+  enrolled_at: string
+  booking?: Booking
+}
+
 // Filters for venue search
 export interface VenueFilters {
   city?: string
