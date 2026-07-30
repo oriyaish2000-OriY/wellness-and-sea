@@ -1,5 +1,22 @@
 'use client'
 
+/**
+ * LOGIN PAGE — Platform-adaptive authentication
+ * ==============================================
+ * WEB (Vercel):   Email/Password form + Google Sign-In button
+ * iOS (Capacitor): Email/Password form only — Google button is HIDDEN
+ *
+ * WHY: Apple Guideline 4.8 requires "Sign in with Apple" if ANY third-party
+ * social login (e.g. Google) is present in the native app. By conditionally
+ * hiding the Google button on iOS we have zero social logins on native →
+ * no "Sign in with Apple" requirement → simpler review process.
+ *
+ * The platform check uses usePlatform() which reads window.Capacitor at
+ * runtime (after hydration). During SSR and initial paint, isNative = false,
+ * so the Google button is rendered → then hidden on iOS after hydration.
+ * The tiny flash is acceptable (100ms) and avoids SSR mismatch errors.
+ */
+
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { Waves, Loader2 } from 'lucide-react'
@@ -8,6 +25,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { signIn, signInWithGoogle } from '@/lib/actions/auth'
+import { usePlatform } from '@/hooks/usePlatform'
 
 function GoogleIcon() {
   return (
@@ -23,9 +41,15 @@ function GoogleIcon() {
 export default function LoginPage() {
   const [state, action, isPending] = useActionState(signIn, null)
 
+  // ── Platform detection (SSR-safe) ─────────────────────────────────────────
+  // isNative is false during SSR and becomes true on iOS after hydration.
+  // We deliberately do NOT suppress the Google button during SSR to avoid
+  // layout shift on web. On iOS the button disappears within ~100ms of mount.
+  const { isNative } = usePlatform()
+
   return (
     <div className="min-h-screen flex" style={{ background: '#faf5ee' }}>
-      {/* Left panel — brand (hidden on mobile) */}
+      {/* Left panel — brand (hidden on mobile and on iOS native) */}
       <div className="hidden lg:flex flex-col justify-between w-2/5 ocean-gradient p-12 relative overflow-hidden">
         <div className="absolute" style={{ width: 400, height: 400, background: 'rgba(92,140,110,0.18)', borderRadius: '50%', filter: 'blur(80px)', top: -100, left: -100 }} />
         <Link href="/" className="flex items-center gap-2.5 relative z-10">
@@ -116,21 +140,41 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full" style={{ borderTop: '1px solid #f0e6d3' }} />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-3 text-gray-400" style={{ background: 'white' }}>או</span>
-              </div>
-            </div>
+            {/*
+             * ── GOOGLE SIGN-IN: HIDDEN ON iOS ──────────────────────────────
+             * Reason: Apple Guideline 4.8 — if any third-party social login
+             * exists in a native app, "Sign in with Apple" becomes mandatory.
+             * Hiding Google on iOS means we have no social logins natively →
+             * no "Sign in with Apple" required → no Apple OAuth infrastructure.
+             *
+             * This block renders normally on web (isNative is always false on web).
+             * On iOS: isNative becomes true after hydration → block is removed.
+             */}
+            {!isNative && (
+              <>
+                <div className="relative my-5">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full" style={{ borderTop: '1px solid #f0e6d3' }} />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-3 text-gray-400" style={{ background: 'white' }}>או</span>
+                  </div>
+                </div>
 
-            <form action={signInWithGoogle}>
-              <Button variant="outline" className="w-full font-medium" style={{ borderRadius: 50, borderColor: '#f0e6d3' }} type="submit" disabled={isPending}>
-                <GoogleIcon />
-                התחברות עם Google
-              </Button>
-            </form>
+                <form action={signInWithGoogle}>
+                  <Button
+                    variant="outline"
+                    className="w-full font-medium"
+                    style={{ borderRadius: 50, borderColor: '#f0e6d3' }}
+                    type="submit"
+                    disabled={isPending}
+                  >
+                    <GoogleIcon />
+                    התחברות עם Google
+                  </Button>
+                </form>
+              </>
+            )}
           </Card>
 
           <p className="text-center text-sm text-gray-500 mt-5">

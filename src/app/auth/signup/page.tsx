@@ -1,5 +1,14 @@
 'use client'
 
+/**
+ * SIGNUP PAGE — Platform-adaptive registration
+ * =============================================
+ * WEB:  Email/Password + Google Sign-Up
+ * iOS:  Email/Password ONLY — Google button hidden (Apple Guideline 4.8)
+ *
+ * See login/page.tsx for detailed comment on the Apple 4.8 strategy.
+ */
+
 import { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { Waves, Loader2, UtensilsCrossed, Dumbbell, Users } from 'lucide-react'
@@ -8,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { signUp, signInWithGoogle } from '@/lib/actions/auth'
+import { usePlatform } from '@/hooks/usePlatform'
 
 function GoogleIcon() {
   return (
@@ -23,6 +33,9 @@ function GoogleIcon() {
 export default function SignupPage() {
   const [role, setRole] = useState<'instructor' | 'host' | 'student'>('instructor')
   const [state, action, isPending] = useActionState(signUp, null)
+
+  // ── Platform detection: Google hidden on iOS (Apple Guideline 4.8) ────────
+  const { isNative } = usePlatform()
 
   return (
     <div className="min-h-screen sand-gradient flex items-center justify-center p-4">
@@ -156,23 +169,31 @@ export default function SignupPage() {
             </Button>
           </form>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-400">או</span>
-            </div>
-          </div>
+          {/*
+           * ── GOOGLE SIGN-UP: HIDDEN ON iOS ───────────────────────────────
+           * Same reason as login page — Apple Guideline 4.8 compliance.
+           * On web this renders normally. On iOS it's removed after hydration.
+           */}
+          {!isNative && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-400">או</span>
+                </div>
+              </div>
 
-          <form action={signInWithGoogle}>
-            <input type="hidden" name="role" value={role} />
-            <Button variant="outline" className="w-full" type="submit" disabled={isPending}>
-              <GoogleIcon />
-              הצטרפות עם Google
-            </Button>
-          </form>
-
+              <form action={signInWithGoogle}>
+                <input type="hidden" name="role" value={role} />
+                <Button variant="outline" className="w-full" type="submit" disabled={isPending}>
+                  <GoogleIcon />
+                  הצטרפות עם Google
+                </Button>
+              </form>
+            </>
+          )}
         </Card>
 
         <p className="text-center text-sm text-gray-500 mt-4">

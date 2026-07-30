@@ -87,6 +87,77 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
   }
 }
 
+/**
+ * signInWithOtp — Email OTP for iOS native (bypasses Apple Guideline 4.8)
+ * =========================================================================
+ * Step 1: Send a 6-digit one-time code to the user's email.
+ * Step 2: User enters the code → call verifyOtp to establish a session.
+ *
+ * This flow is used on iOS instead of Google Sign-In to comply with
+ * Apple Guideline 4.8 (which mandates "Sign in with Apple" if ANY third-party
+ * social login is present). By using email OTP exclusively on iOS we have
+ * zero social logins on the native app → no Apple sign-in requirement.
+ */
+export async function sendOtp(
+  _prevState: { error?: string; success?: string } | null,
+  formData: FormData
+): Promise<{ error?: string; success?: string; email?: string }> {
+  const supabase = await createClient()
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+
+  if (!email || !email.includes('@')) {
+    return { error: 'נא להזין כתובת אימייל תקינה.' }
+  }
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      // shouldCreateUser: false means only existing users can log in via OTP.
+      // Set to true if you also want signup via OTP (useful for iOS onboarding).
+      shouldCreateUser: true,
+      // Auth callback runs in the WebView normally — no custom scheme needed.
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    return { error: 'שגיאה בשליחת הקוד. אנא נסי שוב.' }
+  }
+
+  return { success: 'שלחנו קוד אימות לאימייל שלך. הקוד תקף ל-10 דקות.', email }
+}
+
+/** Step 2 of OTP flow: verify the 6-digit code and create a session */
+export async function verifyOtp(
+  _prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const token = (formData.get('token') as string)?.trim()
+
+  if (!token || token.length !== 6) {
+    return { error: 'נא להזין קוד בן 6 ספרות.' }
+  }
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'email',
+  })
+
+  if (error) {
+    return { error: 'הקוד שגוי או פג תוקף. בקשי קוד חדש.' }
+  }
+
+  const role = data.user?.user_metadata?.role as string | undefined
+  if (role === 'host') redirect('/host-dashboard')
+  else if (role === 'instructor') redirect('/instructor-dashboard')
+  else redirect('/student-dashboard')
+
+  return {}
+}
+
 export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()
