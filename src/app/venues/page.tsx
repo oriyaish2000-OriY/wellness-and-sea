@@ -2,10 +2,12 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { VenueSearch } from './VenueSearch'
 import { HappeningNowSection } from '@/components/venues/happening-now-section'
+import { getVenues } from '@/lib/supabase/queries'
 
-export default function VenuesPage() {
+export default async function VenuesPage() {
   const hour = new Date().getHours()
   const isMorning = hour >= 5 && hour < 13
+  const venues = await getVenues()
 
   return (
     <div className="min-h-screen" style={{ background: '#faf5ee' }}>
@@ -75,7 +77,7 @@ export default function VenuesPage() {
 
         {/* Search + results */}
         <div className="max-w-7xl mx-auto px-4">
-          <VenueSearch />
+          <VenueSearch initialVenues={venues} />
         </div>
       </div>
 

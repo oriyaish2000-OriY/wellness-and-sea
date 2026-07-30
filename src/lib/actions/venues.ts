@@ -89,12 +89,16 @@ export async function createVenue(formData: FormData) {
 
   const { availabilities, ...venueFields } = venueData
 
+  // Auto-publish when the wizard provides all required content
+  const hasImages = venueData.images.length > 0
+  const isReadyToPublish = hasImages
+
   const { data: venue, error: venueError } = await supabase
     .from('venues')
     .insert({
       ...venueFields,
       host_id: user.id,
-      is_active: false, // starts as draft
+      is_active: isReadyToPublish,
     })
     .select('id')
     .single()
@@ -112,10 +116,11 @@ export async function createVenue(formData: FormData) {
 
     if (availError) {
       console.error('availabilities error:', availError)
-      // Don't fail — venue was created, user can add availability later
     }
   }
 
+  revalidatePath('/')
+  revalidatePath('/venues')
   revalidatePath('/host-dashboard')
   revalidatePath('/host-dashboard/venues')
   redirect('/host-dashboard/venues?created=true')

@@ -8,8 +8,7 @@ import { Footer } from '@/components/layout/footer'
 import { InstructorHome } from '@/components/home/instructor-home'
 import { WellnessWorldInsights } from '@/components/home/wellness-world-insights'
 import { createClient } from '@/lib/supabase/server'
-import { getInstructorBookings, getSavedVenues, getRecentlyVisitedVenues } from '@/lib/supabase/queries'
-import { mockVenues } from '@/lib/mock-data'
+import { getInstructorBookings, getSavedVenues, getRecentlyVisitedVenues, getVenues } from '@/lib/supabase/queries'
 
 export default async function HomePage() {
   // Check auth state — personalize if instructor
@@ -60,6 +59,8 @@ export default async function HomePage() {
   }
 
   // ── Public marketing home ──────────────────────────────────
+  const featuredVenues = await getVenues()
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -195,8 +196,8 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockVenues.slice(0, 3).map((venue) => (
-              <VenueCard key={venue.id} venue={venue} />
+            {featuredVenues.slice(0, 3).map((venue) => (
+              <VenueCard key={venue.id} venue={venue} badgeType="new" />
             ))}
           </div>
         </div>

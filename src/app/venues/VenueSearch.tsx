@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { VenueCard } from '@/components/venues/venue-card'
 import { SearchFilters } from '@/components/venues/search-filters'
 import { NearbySection } from '@/components/home/nearby-section'
-import { mockVenues, NEW_VENUE_THRESHOLD_DAYS, RECOMMENDED_VENUE_IDS } from '@/lib/mock-data'
+import { NEW_VENUE_THRESHOLD_DAYS, RECOMMENDED_VENUE_IDS } from '@/lib/mock-data'
 import { Venue } from '@/lib/supabase/types'
 
 function getBadgeType(venue: Venue): 'new' | 'recommended' | undefined {
@@ -15,13 +15,17 @@ function getBadgeType(venue: Venue): 'new' | 'recommended' | undefined {
   return undefined
 }
 
-export function VenueSearch() {
-  const [filteredVenues, setFilteredVenues] = useState<Venue[]>(mockVenues)
+interface VenueSearchProps {
+  initialVenues: Venue[]
+}
+
+export function VenueSearch({ initialVenues }: VenueSearchProps) {
+  const [filteredVenues, setFilteredVenues] = useState<Venue[]>(initialVenues)
   const [hasSearched, setHasSearched] = useState(false)
 
   const handleSearch = (query: string, filters: string[]) => {
     setHasSearched(true)
-    let results = mockVenues
+    let results = initialVenues
 
     if (query) {
       const q = query.toLowerCase()
