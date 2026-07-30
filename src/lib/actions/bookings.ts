@@ -5,7 +5,15 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { calculatePlatformFee } from '@/lib/constants'
 
-export async function createPendingBooking(formData: FormData) {
+// useActionState-compatible wrapper
+export async function createPendingBookingAction(
+  _prevState: { error: string } | null,
+  formData: FormData
+): Promise<{ error: string } | null> {
+  return createPendingBooking(formData)
+}
+
+export async function createPendingBooking(formData: FormData): Promise<{ error: string } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

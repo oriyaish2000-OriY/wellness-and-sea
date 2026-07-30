@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Users, Shield, Loader2 } from 'lucide-react'
-import { createPendingBooking } from '@/lib/actions/bookings'
+import { createPendingBookingAction } from '@/lib/actions/bookings'
 
 const CLASS_TYPES = [
   'יוגה',
@@ -26,7 +26,7 @@ interface Props {
 }
 
 export function BookingForm({ venueId, date, startTime, endTime, capacity }: Props) {
-  const [state, action, isPending] = useActionState(createPendingBooking, null)
+  const [state, action, isPending] = useActionState(createPendingBookingAction, null)
 
   return (
     <form action={action} className="space-y-4">
