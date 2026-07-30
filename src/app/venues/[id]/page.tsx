@@ -9,7 +9,6 @@ import { ReviewSection } from '@/components/venues/ReviewSection'
 import { getVenueById, getVenueReviews, getVenueRatingSummary, getInstructorBookings, hasReviewedBooking } from '@/lib/supabase/queries'
 import { createClient } from '@/lib/supabase/server'
 import { AMENITY_OPTIONS } from '@/lib/constants'
-import { mockVenues } from '@/lib/mock-data'
 
 const amenityLabels = Object.fromEntries(AMENITY_OPTIONS.map(a => [a.key, { label: a.label, icon: a.icon }]))
 
@@ -20,18 +19,12 @@ interface Props {
 export default async function VenueDetailPage({ params }: Props) {
   const { id } = await params
 
-  // Try real DB first, fall back to mock
-  let venue = await getVenueById(id)
-  const isMock = !venue
-  if (isMock) {
-    venue = mockVenues.find(v => v.id === id) ?? mockVenues[0] ?? null
-  }
+  const venue = await getVenueById(id)
   if (!venue) notFound()
 
-  // Fetch reviews and rating
   const [reviews, ratingSummary] = await Promise.all([
-    isMock ? Promise.resolve([]) : getVenueReviews(id),
-    isMock ? Promise.resolve({ avg: 0, count: 0 }) : getVenueRatingSummary(id),
+    getVenueReviews(id),
+    getVenueRatingSummary(id),
   ])
 
   // Check if logged-in instructor has a completed booking eligible for review
@@ -39,7 +32,7 @@ export default async function VenueDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   let eligibleBookingId: string | undefined
 
-  if (user && user.user_metadata?.role === 'instructor' && !isMock) {
+  if (user && user.user_metadata?.role === 'instructor') {
     const myBookings = await getInstructorBookings(user.id)
     const completedForVenue = myBookings.filter(
       b => b.venue_id === id && b.status === 'completed'

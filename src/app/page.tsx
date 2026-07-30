@@ -26,10 +26,11 @@ export default async function HomePage() {
 
   if (isInstructor && user) {
     // Personalized instructor home
-    const [allBookings, savedVenues, recentlyVisited] = await Promise.all([
+    const [allBookings, savedVenues, recentlyVisited, allVenues] = await Promise.all([
       getInstructorBookings(user.id),
       getSavedVenues(user.id),
       getRecentlyVisitedVenues(user.id),
+      getVenues(),
     ])
 
     const today = new Date().toISOString().split('T')[0]
@@ -51,6 +52,7 @@ export default async function HomePage() {
             upcomingBookings={upcomingBookings}
             recentlyVisited={recentlyVisited}
             savedVenues={savedVenues}
+            allVenues={allVenues}
           />
         </div>
         <Footer />

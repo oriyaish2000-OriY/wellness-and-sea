@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button'
 import { VenueCarousel } from '@/components/venues/venue-carousel'
 import { NearbySection } from '@/components/home/nearby-section'
 import { Booking, Venue } from '@/lib/supabase/types'
-import { mockVenues, RECOMMENDED_VENUE_IDS, NEW_VENUE_THRESHOLD_DAYS } from '@/lib/mock-data'
+import { NEW_VENUE_THRESHOLD_DAYS } from '@/lib/mock-data'
 
 interface InstructorHomeProps {
   firstName: string
   upcomingBookings: Booking[]
   recentlyVisited: Venue[]
   savedVenues: Venue[]
+  allVenues: Venue[]
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -26,14 +27,11 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'הושלמה',
 }
 
-// Mock: in production these come from DB queries
-const recommendedVenues = mockVenues.filter(v => RECOMMENDED_VENUE_IDS.includes(v.id))
-const newVenues = mockVenues.filter(v => {
-  const created = new Date(v.created_at).getTime()
-  return created > Date.now() - NEW_VENUE_THRESHOLD_DAYS * 86400000
-})
-
-export function InstructorHome({ firstName, upcomingBookings, recentlyVisited, savedVenues }: InstructorHomeProps) {
+export function InstructorHome({ firstName, upcomingBookings, recentlyVisited, savedVenues, allVenues }: InstructorHomeProps) {
+  const newVenues = allVenues.filter(v => {
+    const created = new Date(v.created_at).getTime()
+    return created > Date.now() - NEW_VENUE_THRESHOLD_DAYS * 86400000
+  })
   const nextClass = upcomingBookings[0]
 
   return (
@@ -123,12 +121,12 @@ export function InstructorHome({ firstName, upcomingBookings, recentlyVisited, s
         {/* Geolocation-based nearby (Client Component) */}
         <NearbySection />
 
-        {/* Recommended by platform */}
-        {recommendedVenues.length > 0 && (
+        {/* Recommended by platform — all active venues */}
+        {allVenues.length > 0 && (
           <VenueCarousel
             title="המומלצים שלנו"
             subtitle="נבחרו בקפידה על ידי הצוות שלנו"
-            venues={recommendedVenues}
+            venues={allVenues.slice(0, 8)}
             badgeType="recommended"
             seeAllHref="/venues"
             seeAllLabel="כל החללים"
