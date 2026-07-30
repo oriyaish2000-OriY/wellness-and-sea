@@ -257,19 +257,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'no' }, { status: 401 })
   }
 
-  const client = new Client({
-    connectionString: `postgresql://postgres:${encodeURIComponent('OriY2611$&!')}@db.qfrjvkfrzdsrfxjmxxop.supabase.co:5432/postgres`,
-    ssl: { rejectUnauthorized: false }
-  })
+  const pass = encodeURIComponent('OriY2611$&!')
+  const ref = 'qfrjvkfrzdsrfxjmxxop'
+  const connStrings = [
+    `postgresql://postgres.${ref}:${pass}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.${ref}:${pass}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.${ref}:${pass}@aws-0-eu-west-2.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.${ref}:${pass}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres:${pass}@db.${ref}.supabase.co:5432/postgres`,
+  ]
 
-  try {
-    await client.connect()
-    await client.query(SCHEMA)
-    await client.end()
-    return NextResponse.json({ ok: true, message: 'Schema applied successfully' })
-  } catch (err: unknown) {
-    await client.end().catch(() => {})
-    const msg = err instanceof Error ? err.message : String(err)
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 })
+  for (const connString of connStrings) {
+    const client = new Client({ connectionString: connString, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 })
+    try {
+      await client.connect()
+      await client.query(SCHEMA)
+      await client.end()
+      const host = connString.split('@')[1]?.split(':')[0]
+      return NextResponse.json({ ok: true, message: `Schema applied via ${host}` })
+    } catch (err: unknown) {
+      await client.end().catch(() => {})
+      const msg = err instanceof Error ? err.message : String(err)
+      if (!msg.includes('ENOTFOUND') && !msg.includes('ECONNREFUSED') && !msg.includes('not found')) {
+        return NextResponse.json({ ok: false, error: msg }, { status: 500 })
+      }
+    }
   }
+  return NextResponse.json({ ok: false, error: 'Could not connect to database — all hosts failed' }, { status: 500 })
 }
