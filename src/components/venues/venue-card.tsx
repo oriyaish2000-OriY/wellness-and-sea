@@ -3,6 +3,7 @@ import { MapPin, Users, Star, Waves, Sparkles, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ShareButton } from '@/components/ui/share-button'
 import { Venue } from '@/lib/supabase/types'
 import { amenityLabels, NEW_VENUE_THRESHOLD_DAYS } from '@/lib/mock-data'
 
@@ -130,13 +131,21 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
           </div>
         </div>
 
-        <Button
-          className="w-full mt-3 bg-ocean hover:bg-deep-ocean text-white text-sm font-semibold rounded-full"
-          style={{ height: 38 }}
-          asChild
-        >
-          <Link href={`/venues/${venue.id}`}>לפרטים והזמנה</Link>
-        </Button>
+        <div className="flex gap-2 mt-3">
+          <Button
+            className="flex-1 bg-ocean hover:bg-deep-ocean text-white text-sm font-semibold rounded-full"
+            style={{ height: 38 }}
+            asChild
+          >
+            <Link href={`/venues/${venue.id}`}>לפרטים והזמנה</Link>
+          </Button>
+          <ShareButton
+            url={`${typeof window !== 'undefined' ? window.location.origin : ''}/venues/${venue.id}`}
+            title={`🌊 ${venue.title} — WELLNESS&SEA`}
+            description={`${venue.location_city} | ₪${venue.hourly_price}/שעה`}
+            compact
+          />
+        </div>
       </div>
     </Card>
   )

@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Building2, Users, MapPin, Plus, Waves, Eye, EyeOff } from 'lucide-react'
+import { SharePanel } from '@/components/ui/share-button'
 
 function formatPrice(amount: number) {
   return `₪${amount.toLocaleString('he-IL')}`
@@ -15,7 +16,7 @@ function formatPrice(amount: number) {
 export default async function HostVenuesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string }>
+  searchParams: Promise<{ created?: string; venue_id?: string }>
 }) {
   const supabase = await createClient()
   const {
@@ -31,14 +32,26 @@ export default async function HostVenuesPage({
   ])
 
   const justCreated = params.created === 'true'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://wellness-and-sea.vercel.app'
+  // Find the most recently created venue to get its ID for sharing
+  const newestVenue = justCreated && venues.length > 0 ? venues[0] : null
 
   return (
     <div className="space-y-6">
-      {/* Success banner */}
-      {justCreated && (
-        <div className="flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-medium" style={{ background: 'rgba(92,140,110,0.12)', border: '1.5px solid rgba(92,140,110,0.3)', color: '#1a5c3a' }}>
-          <span className="text-xl">🎉</span>
-          <span>החלל נוצר בהצלחה! ניתן לפרסמו לאחר בדיקת הפרטים.</span>
+      {/* Success banner + share panel */}
+      {justCreated && newestVenue && (
+        <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(92,140,110,0.08)', border: '1.5px solid rgba(92,140,110,0.25)' }}>
+          <div className="flex items-center gap-3 px-5 py-4 text-sm font-medium" style={{ color: '#1a5c3a' }}>
+            <span className="text-xl">🎉</span>
+            <span className="font-semibold">החלל <strong>{newestVenue.title}</strong> פורסם בהצלחה! שתפי את הקישור ברשתות החברתיות:</span>
+          </div>
+          <div className="px-5 pb-5">
+            <SharePanel
+              url={`${appUrl}/venues/${newestVenue.id}`}
+              title={`🌊 ${newestVenue.title} — WELLNESS&SEA`}
+              description={`חלל יוגה ופילאטיס | ${newestVenue.location_city} | ₪${newestVenue.hourly_price}/שעה`}
+            />
+          </div>
         </div>
       )}
       {/* Header */}

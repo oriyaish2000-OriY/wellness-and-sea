@@ -1,9 +1,40 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MapPin, Clock } from 'lucide-react'
+import { ShareButton } from '@/components/ui/share-button'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: instructor } = await supabase
+    .from('profiles')
+    .select('full_name, bio, avatar_url, specialties')
+    .eq('id', id)
+    .eq('role', 'instructor')
+    .single()
+  if (!instructor) return {}
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://wellness-and-sea.vercel.app'
+  const specialtiesStr = instructor.specialties?.join(', ') ?? ''
+  return {
+    title: `${instructor.full_name} | מדריכה — WELLNESS&SEA`,
+    description: instructor.bio ?? `מדריכת ${specialtiesStr} | WELLNESS&SEA`,
+    openGraph: {
+      title: `🌊 ${instructor.full_name} — WELLNESS&SEA`,
+      description: instructor.bio ?? `מדריכת ${specialtiesStr}`,
+      url: `${appUrl}/instructors/${id}`,
+      siteName: 'WELLNESS&SEA',
+      images: instructor.avatar_url
+        ? [{ url: instructor.avatar_url, width: 400, height: 400, alt: instructor.full_name }]
+        : [{ url: `${appUrl}/og-default.png`, width: 1200, height: 630 }],
+      locale: 'he_IL',
+      type: 'profile',
+    },
+  }
+}
 
 export default async function InstructorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -57,6 +88,13 @@ export default async function InstructorProfilePage({ params }: { params: Promis
             <h1 className="font-black text-white text-3xl mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
               {instructor.full_name}
             </h1>
+            <div className="flex justify-center mt-3">
+              <ShareButton
+                url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/instructors/${id}`}
+                title={`🌊 ${instructor.full_name} — WELLNESS&SEA`}
+                description={instructor.bio ?? undefined}
+              />
+            </div>
             {instructor.bio && (
               <p className="text-white/70 text-sm leading-relaxed max-w-md mx-auto">{instructor.bio}</p>
             )}

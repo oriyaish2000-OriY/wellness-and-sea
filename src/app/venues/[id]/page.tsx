@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, MapPin, Users, CheckCircle, Star, Gift, Clock, Waves } from 'lucide-react'
@@ -6,6 +7,7 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { BookingWidget } from './BookingWidget'
 import { ReviewSection } from '@/components/venues/ReviewSection'
+import { ShareButton } from '@/components/ui/share-button'
 import { getVenueById, getVenueReviews, getVenueRatingSummary, getInstructorBookings, hasReviewedBooking } from '@/lib/supabase/queries'
 import { createClient } from '@/lib/supabase/server'
 import { AMENITY_OPTIONS } from '@/lib/constants'
@@ -14,6 +16,34 @@ const amenityLabels = Object.fromEntries(AMENITY_OPTIONS.map(a => [a.key, { labe
 
 interface Props {
   params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const venue = await getVenueById(id)
+  if (!venue) return {}
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://wellness-and-sea.vercel.app'
+  return {
+    title: `${venue.title} | WELLNESS&SEA`,
+    description: `${venue.description} — ${venue.location_city}. ₪${venue.hourly_price} לשעה, עד ${venue.capacity} משתתפים.`,
+    openGraph: {
+      title: `🌊 ${venue.title} — WELLNESS&SEA`,
+      description: `${venue.description} | ${venue.location_city} | ₪${venue.hourly_price}/שעה`,
+      url: `${appUrl}/venues/${id}`,
+      siteName: 'WELLNESS&SEA',
+      images: venue.images?.[0]
+        ? [{ url: venue.images[0], width: 1200, height: 630, alt: venue.title }]
+        : [{ url: `${appUrl}/og-default.png`, width: 1200, height: 630 }],
+      locale: 'he_IL',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${venue.title} | WELLNESS&SEA`,
+      description: venue.description,
+      images: venue.images?.[0] ? [venue.images[0]] : [],
+    },
+  }
 }
 
 export default async function VenueDetailPage({ params }: Props) {
@@ -105,9 +135,16 @@ export default async function VenueDetailPage({ params }: Props) {
             {/* Main content */}
             <div className="lg:col-span-2 space-y-6">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-deep-ocean mb-2">
-                  {venue.title}
-                </h1>
+                <div className="flex items-start justify-between gap-3">
+                  <h1 className="text-2xl md:text-3xl font-bold text-deep-ocean mb-2">
+                    {venue.title}
+                  </h1>
+                  <ShareButton
+                    url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/venues/${venue.id}`}
+                    title={`🌊 ${venue.title} — WELLNESS&SEA`}
+                    description={`${venue.location_city} | ₪${venue.hourly_price}/שעה`}
+                  />
+                </div>
                 <div className="flex items-center gap-2 text-gray-500 text-sm">
                   <MapPin className="w-4 h-4" />
                   <span>{venue.location_address}, {venue.location_city}</span>

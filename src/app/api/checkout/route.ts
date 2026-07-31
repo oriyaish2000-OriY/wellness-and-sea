@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
           amount: verifiedTotal,
           currency: 'ILS',
           description: `WELLNESS&SEA - ${body.venue_title}`,
+          payment_methods: ['credit_card', 'bit', 'google_pay', 'apple_pay'],
           success_url: `${appUrl}/booking/success?booking_id=${body.booking_id}`,
           cancel_url: `${appUrl}/booking/cancelled?booking_id=${body.booking_id}`,
           metadata: {
@@ -65,8 +66,6 @@ export async function POST(request: NextRequest) {
             instructor_id: booking.instructor_id,
             host_payout: verifiedPayout,
           },
-          // Split: platform fee is calculated server-side and NOT exposed here
-          // The webhook handler receives the confirmation and updates booking status
         }),
       })
 
