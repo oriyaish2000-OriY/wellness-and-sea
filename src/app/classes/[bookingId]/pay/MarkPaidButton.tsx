@@ -5,12 +5,6 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
-async function markSelfPaid(enrollmentId: string) {
-  'use server'
-  // This inline server action marks student's enrollment as paid
-  // We'll use a fetch call to an API route instead since inline actions in components have limitations
-}
-
 export function MarkPaidButton({ enrollmentId }: { enrollmentId: string }) {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
