@@ -99,18 +99,11 @@ export async function enrollInClass(
 
   if (!booking) return { error: 'השיעור לא נמצא או לא פתוח להרשמה.' }
 
-  // Check capacity
-  const { count: enrolled } = await supabase
-    .from('class_enrollments')
-    .select('id', { count: 'exact', head: true })
-    .eq('booking_id', bookingId)
-    .neq('payment_status', 'cancelled')
-
-  if (booking.max_students && (enrolled ?? 0) >= booking.max_students) {
-    return { error: 'השיעור מלא.' }
-  }
+  // Instructors cannot enroll in their own class
+  if (booking.instructor_id === user.id) return { error: 'לא ניתן להירשם לשיעור שלך.' }
 
   // Check not already enrolled
+  // (capacity is enforced atomically at the DB layer via trigger — no TOCTOU here)
   const { data: existing } = await supabase
     .from('class_enrollments')
     .select('id')
@@ -134,6 +127,7 @@ export async function enrollInClass(
 
   if (enrollError) {
     if (enrollError.code === '23505') return { error: 'כבר נרשמת לשיעור זה.' }
+    if (enrollError.code === 'P0001') return { error: 'השיעור מלא.' }
     return { error: 'שגיאה בהרשמה. נסי שוב.' }
   }
 

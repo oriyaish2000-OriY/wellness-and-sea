@@ -602,12 +602,10 @@ export async function getOpenClassById(bookingId: string) {
 
 export async function getEnrollmentCountForBooking(bookingId: string): Promise<number> {
   const supabase = await createClient()
-  const { count } = await supabase
-    .from('class_enrollments')
-    .select('id', { count: 'exact', head: true })
-    .eq('booking_id', bookingId)
-    .neq('payment_status', 'cancelled')
-  return count ?? 0
+  // Uses SECURITY DEFINER function — works for unauthenticated visitors on public /classes pages.
+  // Direct table SELECT would be blocked by RLS for anonymous users.
+  const { data } = await supabase.rpc('get_enrollment_count', { p_booking_id: bookingId })
+  return (data as number) ?? 0
 }
 
 // ============================================================
