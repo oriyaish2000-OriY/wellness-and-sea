@@ -59,7 +59,7 @@ function OpenClassPanel({ booking }: { booking: ExtendedBooking }) {
             type="button"
             onClick={() => {
               if (!confirm('לסגור את ההרשמה לתלמידות?')) return
-              startCloseTransition(() => closeClassToStudents(booking.id))
+              startCloseTransition(() => { void closeClassToStudents(booking.id) })
             }}
             disabled={closePending}
             className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1"
