@@ -150,6 +150,58 @@ export async function sendNewBookingEmailToHost(data: BookingEmailData) {
   await sendEmail(data.hostEmail, `הזמנה חדשה ל${data.venueName}! 🎉`, html)
 }
 
+// ============================================================
+// STUDENT ENROLLMENT CONFIRMATION
+// ============================================================
+
+interface EnrollmentEmailData {
+  studentName: string
+  studentEmail: string
+  instructorName: string
+  classType?: string
+  venueName: string
+  venueCity: string
+  bookingDate: string
+  startTime: string
+  endTime: string
+  pricePerStudent: number
+  bookingId: string
+}
+
+export async function sendEnrollmentConfirmationEmail(data: EnrollmentEmailData) {
+  const dateStr = new Date(data.bookingDate).toLocaleDateString('he-IL', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  })
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+  const html = baseLayout(`
+    <h2 style="color:#1a2e3b;margin-top:0">נרשמת לשיעור! 🌊</h2>
+    <p style="color:#555">שלום ${data.studentName},</p>
+    <p style="color:#555">ההרשמה שלך אושרה. כל שנותר הוא לשלוח את התשלום ישירות למדריכה.</p>
+    <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:20px 0">
+      <div class="detail-row"><span class="detail-label">שיעור</span><span class="detail-value">${data.classType ?? 'שיעור'}</span></div>
+      <div class="detail-row"><span class="detail-label">מדריכה</span><span class="detail-value">${data.instructorName}</span></div>
+      <div class="detail-row"><span class="detail-label">מיקום</span><span class="detail-value">${data.venueName} · ${data.venueCity}</span></div>
+      <div class="detail-row"><span class="detail-label">תאריך</span><span class="detail-value">${dateStr}</span></div>
+      <div class="detail-row"><span class="detail-label">שעות</span><span class="detail-value">${data.startTime.slice(0,5)} – ${data.endTime.slice(0,5)}</span></div>
+      <div class="detail-row" style="border:0"><span class="detail-label">לתשלום</span><span class="detail-value" style="color:#1a5f7a;font-size:18px">₪${data.pricePerStudent}</span></div>
+    </div>
+    <div style="background:#fff7ed;border-radius:10px;padding:16px;margin:16px 0;font-size:13px;color:#9a3412">
+      <strong>שלב הבא:</strong> שלחי ₪${data.pricePerStudent} ישירות למדריכה דרך Bit, PayBox, או מזומן.
+    </div>
+    <a href="${appUrl}/classes/${data.bookingId}/pay" class="cta">לדף התשלום ←</a>
+    <p style="font-size:12px;color:#aaa;text-align:center;margin-top:16px">
+      לא נרשמת? פני לתמיכה: support@wellness-sea.co.il
+    </p>
+  `)
+
+  await sendEmail(
+    data.studentEmail,
+    `נרשמת לשיעור ${data.classType ?? ''} עם ${data.instructorName}! 🌊`,
+    html
+  )
+}
+
 export async function sendBookingCancelledEmailToInstructor(data: BookingEmailData, reason?: string) {
   const dateStr = new Date(data.bookingDate).toLocaleDateString('he-IL', {
     weekday: 'long',

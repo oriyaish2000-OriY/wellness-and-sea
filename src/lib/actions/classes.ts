@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { sendEnrollmentConfirmationEmail } from '@/lib/email'
 
 // ============================================================
 // INSTRUCTOR: open a confirmed booking to student enrollment
@@ -88,10 +89,15 @@ export async function enrollInClass(
   const bookingId = formData.get('booking_id') as string
   if (!bookingId) return { error: 'נתונים חסרים.' }
 
-  // Fetch the booking
+  // Fetch the booking — include details needed for confirmation email
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, status, open_to_students, max_students, price_per_student, instructor_id')
+    .select(`
+      id, status, open_to_students, max_students, price_per_student, instructor_id,
+      booking_date, start_time, end_time, class_type,
+      instructor:profiles!bookings_instructor_id_fkey(full_name),
+      venue:venues(title, location_city)
+    `)
     .eq('id', bookingId)
     .eq('open_to_students', true)
     .eq('status', 'confirmed')
@@ -129,6 +135,25 @@ export async function enrollInClass(
     if (enrollError.code === '23505') return { error: 'כבר נרשמת לשיעור זה.' }
     if (enrollError.code === 'P0001') return { error: 'השיעור מלא.' }
     return { error: 'שגיאה בהרשמה. נסי שוב.' }
+  }
+
+  // Send enrollment confirmation email (non-blocking — never fail the action over email)
+  if (user.email) {
+    const instructor = booking.instructor as { full_name?: string } | null
+    const venue = booking.venue as { title?: string; location_city?: string } | null
+    sendEnrollmentConfirmationEmail({
+      studentName: user.user_metadata?.full_name ?? user.email.split('@')[0],
+      studentEmail: user.email,
+      instructorName: instructor?.full_name ?? 'המדריכה',
+      classType: booking.class_type ?? undefined,
+      venueName: venue?.title ?? '',
+      venueCity: venue?.location_city ?? '',
+      bookingDate: booking.booking_date,
+      startTime: booking.start_time,
+      endTime: booking.end_time,
+      pricePerStudent: booking.price_per_student ?? 0,
+      bookingId,
+    }).catch(err => console.error('[email] enrollment confirmation failed:', err))
   }
 
   revalidatePath('/classes')
