@@ -11,11 +11,17 @@ export async function signIn(
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const next = (formData.get('next') as string | null)?.trim()
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     return { error: 'אימייל או סיסמה שגויים. אנא נסי שוב.' }
+  }
+
+  // If a `next` URL was provided (e.g., from booking/class page), redirect there
+  if (next && next.startsWith('/')) {
+    redirect(next)
   }
 
   const role = data.user?.user_metadata?.role as string | undefined
@@ -34,6 +40,7 @@ export async function signUp(
   const password = formData.get('password') as string
   const fullName = formData.get('full_name') as string
   const role = formData.get('role') as 'host' | 'instructor' | 'student'
+  const next = (formData.get('next') as string | null)?.trim()
 
   const termsAccepted = formData.get('terms_accepted')
   if (!termsAccepted) {
@@ -65,6 +72,7 @@ export async function signUp(
     return { error: 'שגיאה בהרשמה. אנא נסי שוב.' }
   }
 
+  if (next && next.startsWith('/')) redirect(next)
   if (role === 'host') redirect('/host-dashboard')
   else if (role === 'instructor') redirect('/instructor-dashboard')
   else redirect('/student-dashboard')

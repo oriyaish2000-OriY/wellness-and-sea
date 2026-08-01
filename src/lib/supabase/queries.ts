@@ -554,6 +554,62 @@ export async function hasReviewedBooking(bookingId: string): Promise<boolean> {
   return !!data
 }
 
+export async function getOpenClasses(limit = 30) {
+  const supabase = await createClient()
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      id, booking_date, start_time, end_time, class_type,
+      participants_count, max_students, price_per_student,
+      venue:venues(id, title, location_city, location_address, images),
+      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, bio, instagram, bit_phone, paybox_phone)
+    `)
+    .eq('open_to_students', true)
+    .eq('status', 'confirmed')
+    .gte('booking_date', today)
+    .order('booking_date')
+    .limit(limit)
+
+  if (error) {
+    console.error('getOpenClasses error:', error)
+    return []
+  }
+  return data ?? []
+}
+
+export async function getOpenClassById(bookingId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      id, booking_date, start_time, end_time, class_type,
+      participants_count, max_students, price_per_student,
+      special_requests,
+      venue:venues(id, title, location_city, location_address, images, hourly_price),
+      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, bio, instagram, bit_phone, paybox_phone)
+    `)
+    .eq('id', bookingId)
+    .eq('open_to_students', true)
+    .eq('status', 'confirmed')
+    .single()
+
+  if (error || !data) return null
+  return data
+}
+
+export async function getEnrollmentCountForBooking(bookingId: string): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('class_enrollments')
+    .select('id', { count: 'exact', head: true })
+    .eq('booking_id', bookingId)
+    .neq('payment_status', 'cancelled')
+  return count ?? 0
+}
+
 // ============================================================
 // STATS (for dashboards)
 // ============================================================

@@ -20,10 +20,11 @@ export default async function BookingFormPage({ params, searchParams }: Props) {
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect(`/auth/login?next=/booking/${venueId}?date=${date}&start=${start}&end=${end}`)
+  if (!user) redirect(`/auth/login?role=instructor&next=/booking/${venueId}?date=${date}&start=${start}&end=${end}`)
 
   const role = user.user_metadata?.role
-  if (role !== 'instructor') redirect('/instructor-dashboard')
+  if (role === 'host') redirect('/host-dashboard')
+  if (role !== 'instructor') redirect(`/venues/${venueId}`)
 
   const venue = await getVenueById(venueId)
   if (!venue) notFound()

@@ -85,6 +85,10 @@ export interface Booking {
   cancelled_at?: string
   cancellation_reason?: string
   created_at: string
+  // student class fields
+  open_to_students?: boolean
+  max_students?: number | null
+  price_per_student?: number | null
   // joined fields
   venue?: Venue
   instructor?: Profile

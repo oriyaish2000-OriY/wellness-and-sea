@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useActionState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cancelBooking } from '@/lib/actions/bookings'
 import { requestRefund } from '@/lib/actions/refunds'
-import { CalendarDays, Clock, Users, MapPin, Loader2, Star, RotateCcw } from 'lucide-react'
+import { openClassToStudents, closeClassToStudents } from '@/lib/actions/classes'
+import { CalendarDays, Clock, Users, MapPin, Loader2, Star, RotateCcw, GraduationCap, X } from 'lucide-react'
 import type { Booking } from '@/lib/supabase/types'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -32,11 +34,109 @@ function formatDate(dateStr: string) {
   })
 }
 
+type ExtendedBooking = Booking & { open_to_students?: boolean; max_students?: number | null; price_per_student?: number | null }
+
+function OpenClassPanel({ booking }: { booking: ExtendedBooking }) {
+  const [openPanel, setOpenPanel] = useState(false)
+  const [closePending, startCloseTransition] = useTransition()
+  const [state, formAction, isPending] = useActionState(openClassToStudents, null)
+
+  if (booking.open_to_students) {
+    return (
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-green-700">
+            <GraduationCap className="w-4 h-4" />
+            <span className="font-semibold">פתוח לתלמידות</span>
+            {booking.price_per_student != null && (
+              <span className="text-xs text-gray-500">· ₪{booking.price_per_student} לשיעור</span>
+            )}
+            {booking.max_students != null && (
+              <span className="text-xs text-gray-500">· עד {booking.max_students}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!confirm('לסגור את ההרשמה לתלמידות?')) return
+              startCloseTransition(() => closeClassToStudents(booking.id))
+            }}
+            disabled={closePending}
+            className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1"
+          >
+            {closePending ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+            סגרי
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      {!openPanel ? (
+        <button
+          type="button"
+          onClick={() => setOpenPanel(true)}
+          className="flex items-center gap-1.5 text-sm font-semibold text-ocean hover:underline"
+        >
+          <GraduationCap className="w-4 h-4" />
+          פתחי לתלמידות
+        </button>
+      ) : (
+        <form action={formAction} className="space-y-3">
+          <input type="hidden" name="booking_id" value={booking.id} />
+          <p className="text-xs font-semibold text-gray-700">פתחי את השיעור להרשמת תלמידות:</p>
+          {state?.error && (
+            <p className="text-xs text-red-600 bg-red-50 rounded p-2">{state.error}</p>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">מחיר לתלמידה (₪)</label>
+              <Input
+                name="price_per_student"
+                type="number"
+                min={0}
+                placeholder="80"
+                required
+                className="text-sm h-9"
+                style={{ background: '#faf5ee', border: '1.5px solid #f0e6d3' }}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">מקסימום תלמידות</label>
+              <Input
+                name="max_students"
+                type="number"
+                min={1}
+                max={100}
+                placeholder="15"
+                required
+                className="text-sm h-9"
+                style={{ background: '#faf5ee', border: '1.5px solid #f0e6d3' }}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400">התשלום יבוצע ישירות אלייך (Bit / PayBox) על פי פרטי התשלום בפרופיל שלך.</p>
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={isPending} className="bg-ocean text-white text-xs h-8 px-3">
+              {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : 'פרסמי שיעור'}
+            </Button>
+            <button type="button" onClick={() => setOpenPanel(false)} className="text-xs text-gray-400 hover:text-gray-600">
+              ביטול
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
 function BookingCard({
   booking,
   onUpdate,
 }: {
-  booking: Booking
+  booking: ExtendedBooking
   onUpdate: (id: string, status: string) => void
 }) {
   const [isPending, startTransition] = useTransition()
@@ -167,12 +267,17 @@ function BookingCard({
             )}
           </div>
         </div>
+
+        {/* Open to students — for confirmed bookings only */}
+        {booking.status === 'confirmed' && (
+          <OpenClassPanel booking={booking} />
+        )}
       </CardContent>
     </Card>
   )
 }
 
-export function InstructorBookingsClient({ bookings: initialBookings }: { bookings: Booking[] }) {
+export function InstructorBookingsClient({ bookings: initialBookings }: { bookings: ExtendedBooking[] }) {
   const [bookings, setBookings] = useState(initialBookings)
 
   const handleUpdate = (id: string, newStatus: string) => {

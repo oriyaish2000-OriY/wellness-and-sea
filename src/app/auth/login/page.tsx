@@ -25,6 +25,7 @@ function GoogleIcon() {
 function LoginForm() {
   const searchParams = useSearchParams()
   const urlRole = searchParams.get('role') ?? 'instructor'
+  const nextUrl = searchParams.get('next') ?? ''
   const [state, action, isPending] = useActionState(signIn, null)
 
   return (
@@ -72,6 +73,7 @@ function LoginForm() {
 
           <Card className="p-6 border-0" style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}>
             <form action={action} className="space-y-4">
+              {nextUrl && <input type="hidden" name="next" value={nextUrl} />}
               {state?.error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 text-right">
                   {state.error}
