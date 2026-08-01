@@ -57,7 +57,9 @@ export default async function BookingConfirmPage({
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
             <h1 className="text-2xl font-bold text-deep-ocean">ההזמנה אושרה!</h1>
-            <p className="text-gray-500 mt-2">פרטי ההזמנה נשלחו לאימייל שלך</p>
+            {process.env.RESEND_API_KEY && (
+              <p className="text-gray-500 mt-2">אישור נשלח לאימייל שלך</p>
+            )}
           </div>
 
           <Card className="p-6 border-0 shadow-xl space-y-4">

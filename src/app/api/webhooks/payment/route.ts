@@ -1,4 +1,3 @@
-import { createHmac } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import {
@@ -7,14 +6,6 @@ import {
   sendBookingCancelledEmailToInstructor,
   sendBookingCancelledEmailToHost,
 } from '@/lib/email'
-
-function verifySignature(body: string, signature: string | null): boolean {
-  const secret = process.env.TRANZILA_WEBHOOK_SECRET
-  if (!secret) return true // dev mode: no secret configured, allow all
-  if (!signature) return false
-  const expected = createHmac('sha256', secret).update(body).digest('hex')
-  return expected === signature
-}
 
 // Uses SERVICE_ROLE_KEY to bypass RLS — only for webhook use
 function createServiceClient() {
@@ -42,44 +33,112 @@ async function getProfileEmail(supabase: ReturnType<typeof createServiceClient>,
   return data?.user?.email ?? ''
 }
 
+/**
+ * Parse Grow webhook body — Grow may send JSON or application/x-www-form-urlencoded.
+ * Returns a plain object with string values.
+ */
+function parsePayload(rawBody: string, contentType: string): Record<string, string> {
+  const ct = contentType.toLowerCase()
+
+  // Try JSON first
+  if (ct.includes('application/json')) {
+    try {
+      return JSON.parse(rawBody) as Record<string, string>
+    } catch {
+      // fall through to form parse
+    }
+  }
+
+  // Try form-encoded
+  if (ct.includes('application/x-www-form-urlencoded') || ct.includes('multipart/form-data')) {
+    const params = new URLSearchParams(rawBody)
+    const obj: Record<string, string> = {}
+    params.forEach((v, k) => { obj[k] = v })
+    return obj
+  }
+
+  // Last resort — try JSON parse on any content type
+  try {
+    return JSON.parse(rawBody) as Record<string, string>
+  } catch {
+    // Try form parse as final fallback
+    const params = new URLSearchParams(rawBody)
+    const obj: Record<string, string> = {}
+    params.forEach((v, k) => { obj[k] = v })
+    return obj
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text()
-    const signature = request.headers.get('x-tranzila-signature')
+    const contentType = request.headers.get('content-type') ?? ''
 
-    if (!verifySignature(rawBody, signature)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    const payload = parsePayload(rawBody, contentType)
+
+    // Verify webhookKey if configured
+    const expectedKey = process.env.GROW_WEBHOOK_KEY
+    if (expectedKey) {
+      const receivedKey = payload.webhookKey ?? payload.webhook_key ?? ''
+      if (receivedKey !== expectedKey) {
+        console.warn('[Grow webhook] Invalid webhookKey — rejecting')
+        return NextResponse.json({ error: 'Invalid webhook key' }, { status: 401 })
+      }
     }
 
-    const body = JSON.parse(rawBody)
     const supabase = createServiceClient()
 
-    if (body.event === 'payment.completed') {
-      const { booking_id, transaction_id } = body.metadata ?? body
+    // --- Payment completed (Grow success event) ---
+    // Grow sends status/event in various fields; check all known patterns
+    const status = payload.status ?? payload.event ?? ''
+    const isSuccess =
+      status === 'payment.completed' ||
+      status === 'completed' ||
+      status === 'success' ||
+      status === 'paid' ||
+      payload.paymentStatus === 'completed' ||
+      payload.paymentStatus === 'success'
 
-      if (!booking_id) {
-        return NextResponse.json({ error: 'Missing booking_id' }, { status: 400 })
+    const isFailed =
+      status === 'payment.failed' ||
+      status === 'payment.cancelled' ||
+      status === 'failed' ||
+      status === 'cancelled' ||
+      payload.paymentStatus === 'failed' ||
+      payload.paymentStatus === 'cancelled'
+
+    if (isSuccess) {
+      const bookingId = payload.cField1
+      const transactionId = payload.transactionCode ?? payload.transaction_id ?? null
+
+      if (!bookingId) {
+        return NextResponse.json({ error: 'Missing booking_id (cField1)' }, { status: 400 })
       }
 
-      const { error } = await supabase
+      const { error: dbError } = await supabase
         .from('bookings')
         .update({
           status: 'confirmed',
-          tranzila_transaction_id: transaction_id ?? null,
+          tranzila_transaction_id: transactionId, // column reused for Grow transaction code
         })
-        .eq('id', booking_id)
+        .eq('id', bookingId)
         .eq('status', 'pending')
 
-      if (error) {
-        console.error('Webhook: failed to confirm booking', booking_id, error)
+      if (dbError) {
+        console.error('[Grow webhook] Failed to confirm booking', bookingId, dbError)
         return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
       }
 
       // Send notification emails (non-blocking)
       try {
-        const booking = await getBookingDetails(supabase, booking_id)
+        const booking = await getBookingDetails(supabase, bookingId)
         if (booking) {
-          const venue = booking.venue as { title?: string; location_address?: string; location_city?: string; host?: { id?: string; full_name?: string } } | null
+          const venue = booking.venue as {
+            title?: string
+            location_address?: string
+            location_city?: string
+            host?: { id?: string; full_name?: string }
+          } | null
           const instructor = booking.instructor as { id?: string; full_name?: string } | null
 
           const [instructorEmail, hostEmail] = await Promise.all([
@@ -102,7 +161,7 @@ export async function POST(request: NextRequest) {
             hostPayout: booking.host_payout,
             classType: booking.class_type ?? undefined,
             participantsCount: booking.participants_count ?? undefined,
-            bookingId: booking_id,
+            bookingId,
           }
 
           await Promise.all([
@@ -111,15 +170,15 @@ export async function POST(request: NextRequest) {
           ])
         }
       } catch (emailErr) {
-        console.error('Email send error (non-fatal):', emailErr)
+        console.error('[Grow webhook] Email send error (non-fatal):', emailErr)
       }
 
-      console.log(`✅ Booking ${booking_id} confirmed via Tranzila webhook`)
+      console.log(`[Grow webhook] Booking ${bookingId} confirmed. Transaction: ${transactionId ?? 'n/a'}`)
     }
 
-    if (body.event === 'payment.failed') {
-      const { booking_id } = body.metadata ?? body
-      if (booking_id) {
+    if (isFailed) {
+      const bookingId = payload.cField1
+      if (bookingId) {
         await supabase
           .from('bookings')
           .update({
@@ -127,14 +186,19 @@ export async function POST(request: NextRequest) {
             cancelled_at: new Date().toISOString(),
             cancellation_reason: 'תשלום נכשל',
           })
-          .eq('id', booking_id)
+          .eq('id', bookingId)
           .eq('status', 'pending')
 
-        // Send cancellation emails
+        // Send cancellation emails (non-blocking)
         try {
-          const booking = await getBookingDetails(supabase, booking_id)
+          const booking = await getBookingDetails(supabase, bookingId)
           if (booking) {
-            const venue = booking.venue as { title?: string; location_address?: string; location_city?: string; host?: { id?: string; full_name?: string } } | null
+            const venue = booking.venue as {
+              title?: string
+              location_address?: string
+              location_city?: string
+              host?: { id?: string; full_name?: string }
+            } | null
             const instructor = booking.instructor as { id?: string; full_name?: string } | null
 
             const [instructorEmail, hostEmail] = await Promise.all([
@@ -155,23 +219,29 @@ export async function POST(request: NextRequest) {
               endTime: booking.end_time,
               totalPrice: booking.total_price,
               hostPayout: booking.host_payout,
-              bookingId: booking_id,
+              bookingId,
             }
 
             await Promise.all([
-              instructorEmail ? sendBookingCancelledEmailToInstructor(emailData, 'תשלום נכשל') : Promise.resolve(),
-              hostEmail ? sendBookingCancelledEmailToHost(emailData, 'תשלום נכשל') : Promise.resolve(),
+              instructorEmail
+                ? sendBookingCancelledEmailToInstructor(emailData, 'תשלום נכשל')
+                : Promise.resolve(),
+              hostEmail
+                ? sendBookingCancelledEmailToHost(emailData, 'תשלום נכשל')
+                : Promise.resolve(),
             ])
           }
         } catch (emailErr) {
-          console.error('Email send error (non-fatal):', emailErr)
+          console.error('[Grow webhook] Cancellation email error (non-fatal):', emailErr)
         }
+
+        console.log(`[Grow webhook] Booking ${bookingId} cancelled due to failed payment`)
       }
     }
 
-    return NextResponse.json({ received: true })
+    return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('Webhook processing error:', e)
+    console.error('[Grow webhook] Processing error:', e)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }

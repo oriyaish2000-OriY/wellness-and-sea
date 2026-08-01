@@ -10,9 +10,13 @@ import { CheckCircle, Calendar, Clock, MapPin, Users, ArrowLeft } from 'lucide-r
 export default async function BookingSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ booking_id?: string; transaction_id?: string }>
+  searchParams: Promise<{
+    booking_id?: string
+    transactionCode?: string   // Grow redirect param
+    transaction_id?: string    // legacy fallback
+  }>
 }) {
-  const { booking_id, transaction_id } = await searchParams
+  const { booking_id, transactionCode, transaction_id } = await searchParams
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -20,13 +24,16 @@ export default async function BookingSuccessPage({
 
   if (!booking_id) redirect('/instructor-dashboard/bookings')
 
-  // Mark booking as confirmed if coming from Tranzila success redirect
-  if (transaction_id) {
+  // Note: for the Grow flow the primary success path is /booking/confirm/{bookingId}
+  // (set as successUrl). This page serves as a fallback if successUrl points here.
+  // Mark booking as confirmed if a transaction code is present in the URL params.
+  const resolvedTransactionCode = transactionCode ?? transaction_id ?? null
+  if (resolvedTransactionCode) {
     await supabase
       .from('bookings')
       .update({
         status: 'confirmed',
-        tranzila_transaction_id: transaction_id,
+        tranzila_transaction_id: resolvedTransactionCode,
       })
       .eq('id', booking_id)
       .eq('status', 'pending')

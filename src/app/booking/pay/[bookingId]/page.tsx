@@ -94,7 +94,7 @@ export default async function BookingPayPage({ params }: Props) {
         {/* Payment options */}
         <div className="space-y-3">
 
-          {/* Tranzila — credit card / Bit / Google Pay */}
+          {/* Grow by Meshulam — credit card / Bit / PayBox / Apple Pay / Google Pay */}
           <PaymentActions
             bookingId={bookingId}
             totalPrice={booking.total_price}
