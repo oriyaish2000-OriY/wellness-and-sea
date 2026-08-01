@@ -33,7 +33,11 @@ export default async function BookingPayPage({ params }: Props) {
 
   const venue = booking.venue as {
     title?: string; location_city?: string; location_address?: string
+    host?: { bit_phone?: string; paybox_phone?: string; phone?: string }
   } | null
+
+  const hostBitPhone = venue?.host?.bit_phone ?? venue?.host?.phone ?? null
+  const hostPayboxPhone = venue?.host?.paybox_phone ?? venue?.host?.phone ?? null
 
   const dateFormatted = new Date(booking.booking_date).toLocaleDateString('he-IL', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -101,6 +105,8 @@ export default async function BookingPayPage({ params }: Props) {
             totalPrice={booking.total_price}
             venueTitle={venue?.title ?? ''}
             hostPayout={booking.host_payout}
+            hostBitPhone={hostBitPhone}
+            hostPayboxPhone={hostPayboxPhone}
           />
 
           {/* Confirmation flow explanation */}
@@ -112,9 +118,9 @@ export default async function BookingPayPage({ params }: Props) {
             <div className="space-y-1">
               <p className="font-semibold">כיצד עובד התהליך:</p>
               <ol className="list-decimal list-inside space-y-0.5 text-green-700">
-                <li>לחצי על כפתור התשלום ובחרי את האמצעי המועדף</li>
-                <li>השלימי את התשלום בדף המאובטח של Grow</li>
-                <li>ההזמנה תאושר אוטומטית ותקבלי אישור במייל</li>
+                <li>בחרי את אמצעי התשלום המועדף</li>
+                <li>Bit / PayBox — פתחי את האפליקציה והעבירי ישירות, לאחר מכן לחצי ״העברתי את התשלום״</li>
+                <li>כרטיס אשראי — תועברי לדף תשלום מאובטח, ההזמנה תאושר אוטומטית</li>
               </ol>
             </div>
           </div>
