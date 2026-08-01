@@ -1,10 +1,11 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Loader2, CheckCircle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { enrollInClass } from '@/lib/actions/classes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   bookingId: string
@@ -15,21 +16,24 @@ interface Props {
 
 export function EnrollButton({ bookingId, isFull, isLoggedIn, alreadyEnrolled }: Props) {
   const [state, formAction, isPending] = useActionState(enrollInClass, null)
+  const router = useRouter()
 
-  if (alreadyEnrolled || state?.success) {
+  // Redirect to payment page after successful enrollment
+  useEffect(() => {
+    if (state?.success) {
+      router.push(`/classes/${bookingId}/pay`)
+    }
+  }, [state?.success, bookingId, router])
+
+  if (alreadyEnrolled) {
     return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: 'rgba(92,140,110,0.08)', border: '1.5px solid rgba(92,140,110,0.25)' }}>
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-          <div>
-            <p className="font-semibold text-green-800 text-sm">נרשמת בהצלחה!</p>
-            <p className="text-xs text-green-700 mt-0.5">כעת שלחי את התשלום למדריכה לפי הפרטים למעלה</p>
-          </div>
-        </div>
-        <Link href="/classes" className="block text-center text-sm text-ocean hover:underline">
-          חזרה לכל השיעורים
-        </Link>
-      </div>
+      <Link
+        href={`/classes/${bookingId}/pay`}
+        className="block w-full text-center py-3.5 rounded-full font-bold text-white text-base"
+        style={{ background: 'linear-gradient(135deg, #c8944a, #e8b870)' }}
+      >
+        להמשיך לתשלום ←
+      </Link>
     )
   }
 

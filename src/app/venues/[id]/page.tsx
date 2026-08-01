@@ -235,7 +235,7 @@ export default async function VenueDetailPage({ params }: Props) {
             {/* Booking Widget */}
             <div className="lg:col-span-1">
               <div className="sticky top-20">
-                <BookingWidget venue={venue} />
+                <BookingWidget venue={venue} userRole={user?.user_metadata?.role ?? null} />
               </div>
             </div>
           </div>

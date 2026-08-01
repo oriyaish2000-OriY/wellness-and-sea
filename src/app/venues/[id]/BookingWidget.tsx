@@ -25,7 +25,7 @@ const TIDE_HOURS = [
   { time: '12:00', label: 'צהריים', emoji: '🏖️' },
 ]
 
-export function BookingWidget({ venue }: { venue: Venue }) {
+export function BookingWidget({ venue, userRole }: { venue: Venue; userRole: string | null }) {
   const recommended = getRecommendedHours(venue.space_size_sqm, venue.capacity)
 
   const [selectedDate, setSelectedDate] = useState('')
@@ -220,27 +220,62 @@ export function BookingWidget({ venue }: { venue: Venue }) {
           </div>
         )}
 
-        {/* CTA */}
-        <Button
-          className="w-full font-bold text-base text-white transition-all"
-          style={{
-            height: 52,
-            borderRadius: 50,
-            background: selectedSlot ? 'linear-gradient(135deg, #c8944a, #e8b870)' : '#d4c5a9',
-            cursor: selectedSlot ? 'pointer' : 'not-allowed',
-            border: 'none',
-          }}
-          disabled={!selectedSlot}
-          asChild={!!selectedSlot}
-        >
-          {selectedSlot ? (
-            <Link href={`/booking/${venue.id}?date=${selectedDate}&start=${selectedSlot.start}&end=${selectedSlot.end}`}>
-              המשך להזמנה ←
+        {/* CTA — varies by auth state / role */}
+        {userRole === 'instructor' ? (
+          <Button
+            className="w-full font-bold text-base text-white transition-all"
+            style={{
+              height: 52,
+              borderRadius: 50,
+              background: selectedSlot ? 'linear-gradient(135deg, #c8944a, #e8b870)' : '#d4c5a9',
+              cursor: selectedSlot ? 'pointer' : 'not-allowed',
+              border: 'none',
+            }}
+            disabled={!selectedSlot}
+            asChild={!!selectedSlot}
+          >
+            {selectedSlot ? (
+              <Link href={`/booking/${venue.id}?date=${selectedDate}&start=${selectedSlot.start}&end=${selectedSlot.end}`}>
+                המשך להזמנה ←
+              </Link>
+            ) : (
+              <span>{selectedDate ? 'בחרי שעה' : 'בחרי תאריך ושעה'}</span>
+            )}
+          </Button>
+        ) : userRole === 'student' ? (
+          <div className="space-y-2">
+            <div className="rounded-xl p-3.5 text-center text-sm" style={{ background: 'rgba(10,74,74,0.05)', border: '1.5px solid rgba(10,74,74,0.12)' }}>
+              <p className="font-semibold text-deep-ocean text-sm mb-1">את מתאמנת / תלמידה?</p>
+              <p className="text-xs text-gray-500 mb-3">מדריכות מארחות שיעורים בחלל זה — הצטרפי לשיעור קיים</p>
+              <Link
+                href="/classes"
+                className="inline-block px-5 py-2 rounded-full text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #c8944a, #e8b870)' }}
+              >
+                לשיעורים פתוחים ←
+              </Link>
+            </div>
+          </div>
+        ) : userRole === 'host' ? (
+          <div className="rounded-xl p-3.5 text-center text-sm" style={{ background: 'rgba(200,148,74,0.06)', border: '1.5px solid rgba(200,148,74,0.2)' }}>
+            <p className="text-xs text-gray-500">זהו חלל של מנהל — הזמנות מתבצעות על ידי מדריכות</p>
+          </div>
+        ) : (
+          /* Not logged in */
+          <div className="space-y-2">
+            <Link
+              href={`/auth/login?role=instructor&next=/venues/${venue.id}`}
+              className="block w-full text-center py-3.5 rounded-full font-bold text-white text-base"
+              style={{ background: 'linear-gradient(135deg, #c8944a, #e8b870)' }}
+            >
+              התחברי כמדריכה להזמנה ←
             </Link>
-          ) : (
-            <span>{selectedDate ? 'בחרי שעה' : 'בחרי תאריך ושעה'}</span>
-          )}
-        </Button>
+            <p className="text-xs text-center text-gray-400">
+              את מתאמנת?{' '}
+              <Link href="/classes" className="text-ocean hover:underline">חפשי שיעורים פתוחים</Link>
+            </p>
+          </div>
+        )}
 
         {/* Trust signals */}
         <div className="flex flex-col gap-2 text-xs" style={{ color: '#6b7c7c' }}>

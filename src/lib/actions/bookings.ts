@@ -101,30 +101,8 @@ export async function createPendingBooking(formData: FormData): Promise<{ error:
     return { error: 'שגיאה ביצירת ההזמנה. אנא נסי שוב.' }
   }
 
-  // Initiate Tranzila payment
-  try {
-    const paymentRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        booking_id: booking.id,
-        venue_title: venue.title,
-        total_price: totalPrice,
-        host_payout: hostPayout,
-        instructor_id: user.id,
-      }),
-    })
-
-    if (paymentRes.ok) {
-      const { checkout_url } = await paymentRes.json()
-      if (checkout_url) redirect(checkout_url)
-    }
-  } catch (e) {
-    console.error('Payment initiation error:', e)
-  }
-
-  // Fallback: redirect to booking confirmation (in dev without real Tranzila)
-  redirect(`/booking/confirm/${booking.id}`)
+  // Redirect to payment hub — user chooses Tranzila / Bit / PayBox
+  redirect(`/booking/pay/${booking.id}`)
 }
 
 export async function cancelBooking(bookingId: string, reason?: string) {

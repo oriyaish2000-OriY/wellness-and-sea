@@ -315,8 +315,8 @@ export async function getBookingById(id: string): Promise<Booking | null> {
     .from('bookings')
     .select(`
       *,
-      venue:venues(*, host:profiles!venues_host_id_fkey(id, full_name, phone)),
-      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, phone)
+      venue:venues(*, host:profiles!venues_host_id_fkey(id, full_name, phone, bit_phone, paybox_phone)),
+      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, phone, bit_phone, paybox_phone)
     `)
     .eq('id', id)
     .single()
