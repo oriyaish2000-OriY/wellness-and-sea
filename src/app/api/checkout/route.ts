@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import {
+  sendBookingConfirmedEmailToInstructor,
+  sendNewBookingEmailToHost,
+} from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -104,13 +109,83 @@ export async function POST(request: NextRequest) {
         console.error('[Grow] Request failed:', growErr)
       }
     } else {
-      if (!growApiKey) console.warn('[Grow] GROW_API_KEY not set — using dev fallback')
+      console.warn('[Grow] GROW_API_KEY not configured — confirming booking directly (no payment gateway)')
     }
 
-    // Fallback for dev / Grow unavailable — jump straight to confirm page
-    console.log(`[Grow] Falling back to dev confirm for booking ${bookingId}`)
+    // ── No Grow configured: confirm booking server-side and redirect to confirm page ──
+    // This is the correct behaviour when no payment gateway is set up (e.g. during
+    // onboarding / testing). The booking is confirmed without charging — the operator
+    // is responsible for collecting payment out-of-band.
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (serviceKey) {
+      try {
+        const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
+
+        // Fetch full booking details for emails
+        const { data: fullBooking } = await admin
+          .from('bookings')
+          .select(`
+            *,
+            venue:venues(title, location_address, location_city,
+              host:profiles!venues_host_id_fkey(id, full_name)),
+            instructor:profiles!bookings_instructor_id_fkey(id, full_name)
+          `)
+          .eq('id', bookingId)
+          .single()
+
+        await admin
+          .from('bookings')
+          .update({ status: 'confirmed' })
+          .eq('id', bookingId)
+          .eq('status', 'pending')
+
+        // Send emails non-blocking
+        if (fullBooking) {
+          const venue = fullBooking.venue as {
+            title?: string; location_address?: string; location_city?: string;
+            host?: { id?: string; full_name?: string }
+          } | null
+          const instructor = fullBooking.instructor as { id?: string; full_name?: string } | null
+
+          let instructorEmail = user.email ?? ''
+          let hostEmail = ''
+          if (venue?.host?.id) {
+            const { data: hostUser } = await admin.auth.admin.getUserById(venue.host.id)
+            hostEmail = hostUser?.user?.email ?? ''
+          }
+
+          const emailData = {
+            instructorName: instructor?.full_name ?? '',
+            instructorEmail,
+            hostName: venue?.host?.full_name ?? '',
+            hostEmail,
+            venueName: venue?.title ?? '',
+            venueAddress: venue?.location_address ?? '',
+            venueCity: venue?.location_city ?? '',
+            bookingDate: fullBooking.booking_date,
+            startTime: fullBooking.start_time,
+            endTime: fullBooking.end_time,
+            totalPrice: fullBooking.total_price,
+            hostPayout: fullBooking.host_payout,
+            classType: fullBooking.class_type ?? undefined,
+            participantsCount: fullBooking.participants_count ?? undefined,
+            bookingId,
+          }
+
+          Promise.all([
+            instructorEmail ? sendBookingConfirmedEmailToInstructor(emailData) : Promise.resolve(),
+            hostEmail ? sendNewBookingEmailToHost(emailData) : Promise.resolve(),
+          ]).catch(err => console.error('[checkout fallback] email error:', err))
+        }
+
+        console.log(`[checkout] Confirmed booking ${bookingId} via fallback (no Grow)`)
+      } catch (fallbackErr) {
+        console.error('[checkout] Fallback confirm failed:', fallbackErr)
+      }
+    }
+
     return NextResponse.json({
-      checkout_url: `${appUrl}/booking/confirm/${bookingId}?dev=true`,
+      checkout_url: `${appUrl}/booking/confirm/${bookingId}`,
     })
 
   } catch (e) {

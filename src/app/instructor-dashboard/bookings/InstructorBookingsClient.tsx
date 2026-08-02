@@ -224,6 +224,11 @@ function BookingCard({
             ₪{booking.total_price.toLocaleString('he-IL')}
           </span>
           <div className="flex items-center gap-2">
+            {booking.status === 'pending' && (
+              <Button size="sm" className="text-xs h-8 px-3 bg-ocean text-white" asChild>
+                <Link href={`/booking/pay/${booking.id}`}>השלם תשלום</Link>
+              </Button>
+            )}
             {canCancel && (
               <Button
                 size="sm"
