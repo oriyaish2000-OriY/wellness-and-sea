@@ -151,8 +151,9 @@ export async function updateVenue(venueId: string, formData: FormData) {
       .insert(availabilities.map(a => ({ ...a, venue_id: venueId })))
   }
 
-  revalidatePath(`/host-dashboard/venues/${venueId}`)
+  revalidatePath('/host-dashboard/venues')
   revalidatePath(`/venues/${venueId}`)
+  revalidatePath('/venues')
   return { success: true }
 }
 
