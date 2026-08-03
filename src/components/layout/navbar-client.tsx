@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, LogOut, LayoutDashboard, ChevronDown } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, ChevronDown, Search, HelpCircle, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/lib/actions/auth'
 
@@ -100,76 +100,96 @@ export function NavbarClient({ user, mobileOnly = false }: NavbarClientProps) {
               onClick={() => setIsOpen(false)}
             />
 
-            {/* Drawer */}
-            <div className="fixed top-[68px] right-0 left-0 z-50 md:hidden bg-white shadow-xl border-t-2 border-ocean/20">
+            {/* Drawer — same card style as desktop dropdown */}
+            <div className="fixed top-[68px] right-0 left-0 z-50 md:hidden bg-white shadow-xl border-t border-gray-100">
+
+              {/* User identity strip (when logged in) */}
+              {user?.fullName && (
+                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                  <div className="flex items-center gap-2.5">
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.fullName} className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full ocean-gradient flex items-center justify-center text-white text-sm font-bold">
+                        {user.fullName[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{user.fullName}</p>
+                      <p className="text-xs text-gray-400">{user.role === 'host' ? 'בעלת עסק' : 'מדריכה'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Nav links */}
-              <nav className="px-5 py-3">
+              <nav className="py-1">
                 <Link
                   href="/venues"
-                  className="flex items-center gap-3 py-4 border-b border-gray-100 text-gray-900 font-semibold text-base active:bg-gray-50 rounded"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="text-xl">🔍</span>
+                  <Search className="w-4 h-4 text-gray-400" />
                   חיפוש חללים
                 </Link>
                 <Link
                   href="/how-it-works"
-                  className="flex items-center gap-3 py-4 border-b border-gray-100 text-gray-900 font-semibold text-base active:bg-gray-50 rounded"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="text-xl">💡</span>
+                  <HelpCircle className="w-4 h-4 text-gray-400" />
                   איך זה עובד
                 </Link>
                 <Link
                   href="/host"
-                  className="flex items-center gap-3 py-4 border-b border-gray-100 text-gray-900 font-semibold text-base active:bg-gray-50 rounded"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="text-xl">🏠</span>
+                  <Building2 className="w-4 h-4 text-gray-400" />
                   להשכיר חלל
                 </Link>
               </nav>
 
+              {/* Divider */}
+              <div className="border-t border-gray-100 my-1" />
+
               {/* Auth section */}
-              <div className="px-5 pt-2 pb-6">
+              <div className="py-1">
                 {user ? (
-                  <div className="space-y-2">
-                    {user.fullName && (
-                      <p className="text-xs text-gray-400 mb-3">מחובר/ת כ: <strong className="text-gray-700">{user.fullName}</strong></p>
-                    )}
+                  <>
                     <Link
                       href={user.dashboardUrl}
-                      className="flex items-center gap-3 w-full bg-ocean/8 hover:bg-ocean/15 text-ocean font-semibold text-base py-3 px-4 rounded-xl transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       onClick={() => setIsOpen(false)}
                     >
-                      <LayoutDashboard className="w-5 h-5" />
+                      <LayoutDashboard className="w-4 h-4 text-gray-400" />
                       {user.role === 'host' ? 'לוח בקרה' : 'האזור שלי'}
                     </Link>
-                    <form action={signOut} className="mt-2">
+                    <form action={signOut}>
                       <button
                         type="submit"
-                        className="flex items-center gap-3 w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-base py-3 px-4 rounded-xl transition-colors border border-red-200"
+                        className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
-                        <LogOut className="w-5 h-5" />
+                        <LogOut className="w-4 h-4" />
                         התנתקות
                       </button>
                     </form>
-                  </div>
+                  </>
                 ) : (
-                  <div className="flex flex-col gap-3">
+                  <div className="px-4 py-3 flex gap-3">
                     <Link
                       href="/auth/login"
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-center w-full border-2 border-ocean text-ocean font-semibold text-base py-3 rounded-xl hover:bg-ocean/5 transition-colors"
+                      className="flex-1 text-center border border-gray-200 text-deep-ocean font-medium text-sm py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
                     >
                       התחברות
                     </Link>
                     <Link
                       href="/auth/signup"
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center justify-center w-full bg-ocean text-white font-semibold text-base py-3 rounded-xl hover:bg-deep-ocean transition-colors shadow-sm"
+                      className="flex-1 text-center bg-ocean text-white font-medium text-sm py-2.5 rounded-xl hover:bg-deep-ocean transition-colors"
                     >
-                      הצטרפות חינמית
+                      הצטרפות
                     </Link>
                   </div>
                 )}
