@@ -40,7 +40,11 @@ export function EditVenueClient({ venue }: Props) {
     avail_start: firstAvail?.start_time ?? '07:00',
     avail_end: firstAvail?.end_time ?? '12:00',
   })
-  const [amenities, setAmenities] = useState<Record<string, boolean>>(venue.amenities ?? {})
+  const [amenities, setAmenities] = useState<Record<string, boolean>>(
+    Object.fromEntries(
+      Object.entries(venue.amenities ?? {}).map(([k, v]) => [k, !!v])
+    )
+  )
   const [availableDays, setAvailableDays] = useState<number[]>(uniqueInitialDays)
 
   const toggleAmenity = (key: string) => setAmenities(prev => ({ ...prev, [key]: !prev[key] }))
