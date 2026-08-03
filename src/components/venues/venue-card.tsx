@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { MapPin, Users, Star, Waves, Sparkles, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -25,18 +25,29 @@ function isNewVenue(createdAt: string): boolean {
 
 export function VenueCard({ venue, compact = false, badgeType, distanceKm }: VenueCardProps) {
   const [imgIndex, setImgIndex] = useState(0)
+  const touchStartX = useRef<number | null>(null)
   const images = venue.images ?? []
   const count = images.length
 
-  const prev = (e: React.MouseEvent) => {
+  const prev = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setImgIndex(i => (i - 1 + count) % count)
   }
-  const next = (e: React.MouseEvent) => {
+  const next = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setImgIndex(i => (i + 1) % count)
+  }
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 35) diff > 0 ? next(e) : prev(e)
+    touchStartX.current = null
   }
 
   const topAmenities = Object.entries(venue.amenities)
@@ -45,60 +56,70 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
     .map(([key]) => amenityLabels[key])
 
   const showNewBadge = badgeType === 'new' || (!badgeType && isNewVenue(venue.created_at))
+  const imgHeight = compact ? 'h-44' : 'h-56'
 
   return (
     <Card
       className={`overflow-hidden group bg-white border-0 venue-card-hover ${compact ? 'rounded-2xl' : ''}`}
       style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}
     >
-      {/* Image area */}
-      <div className={`relative ocean-gradient overflow-hidden ${compact ? 'h-40' : 'h-56'}`}>
+      {/* ── Image carousel area ───────────────────────── */}
+      <div
+        className={`relative ocean-gradient overflow-hidden select-none ${imgHeight}`}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {count > 0 ? (
           <>
+            {/* Slides */}
             {images.map((src, i) => (
               <img
                 key={src}
                 src={src}
-                alt={`${venue.title} — ${i + 1}`}
+                alt={`${venue.title} — תמונה ${i + 1}`}
                 className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
-                  i === imgIndex ? 'opacity-100' : 'opacity-0'
-                } ${count === 1 ? 'group-hover:scale-105 transition-transform duration-300' : ''}`}
+                  i === imgIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+                draggable={false}
               />
             ))}
 
-            {/* Prev / Next arrows — only shown when there are multiple images */}
+            {/* Prev / Next — always visible on mobile, hover on desktop */}
             {count > 1 && (
               <>
                 <button
                   onClick={prev}
                   aria-label="תמונה קודמת"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/45 hover:bg-black/65 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white
+                    md:opacity-0 md:group-hover:opacity-100 md:transition-opacity"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
                 <button
                   onClick={next}
                   aria-label="תמונה הבאה"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/45 hover:bg-black/65 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white
+                    md:opacity-0 md:group-hover:opacity-100 md:transition-opacity"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
 
                 {/* Dot indicators */}
-                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-10">
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
                   {images.slice(0, 8).map((_, i) => (
                     <button
                       key={i}
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setImgIndex(i) }}
+                      aria-label={`תמונה ${i + 1}`}
                       className={`w-1.5 h-1.5 rounded-full transition-all ${
-                        i === imgIndex ? 'bg-white scale-125' : 'bg-white/50'
+                        i === imgIndex ? 'bg-white scale-125' : 'bg-white/55 hover:bg-white/80'
                       }`}
                     />
                   ))}
                 </div>
 
-                {/* Image counter */}
-                <div className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full z-10">
+                {/* Counter */}
+                <div className="absolute top-2 left-2 z-10 bg-black/55 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
                   {imgIndex + 1}/{count}
                 </div>
               </>
@@ -110,36 +131,30 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent pointer-events-none" />
 
         {/* Top badges */}
         <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
           {venue.bonus_offer && (
-            <Badge className="bg-golden text-white border-0 text-xs shadow">
-              🎁 {venue.bonus_offer}
-            </Badge>
+            <Badge className="bg-golden text-white border-0 text-xs shadow">🎁 {venue.bonus_offer}</Badge>
           )}
           {showNewBadge && (
-            <Badge className="bg-coral text-white border-0 text-xs shadow">
-              ✨ חדש
-            </Badge>
+            <Badge className="bg-coral text-white border-0 text-xs shadow">✨ חדש</Badge>
           )}
           {badgeType === 'recommended' && (
             <Badge className="bg-ocean text-white border-0 text-xs shadow flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              מומלץ
+              <Sparkles className="w-3 h-3" />מומלץ
             </Badge>
           )}
           {badgeType === 'visited' && (
             <Badge className="bg-teal text-white border-0 text-xs shadow flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              ביקרת כאן
+              <Clock className="w-3 h-3" />ביקרת כאן
             </Badge>
           )}
         </div>
 
         {/* Bottom: rating + distance */}
-        <div className="absolute bottom-3 right-3 left-3 flex items-center justify-between z-10 pointer-events-none">
+        <div className="absolute bottom-6 right-3 left-3 flex items-center justify-between z-10 pointer-events-none">
           <div className="flex items-center gap-1 text-white">
             <Star className="w-3.5 h-3.5 fill-golden text-golden" />
             <span className="text-sm font-medium">4.9</span>
@@ -153,7 +168,7 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Content ───────────────────────────────────── */}
       <div className="p-5">
         <h3 className="font-bold text-dark group-hover:text-ocean transition-colors line-clamp-1 text-right mb-1.5" style={{ fontSize: 16 }}>
           {venue.title}
