@@ -1,5 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
-import { MapPin, Users, Star, Waves, Sparkles, Clock } from 'lucide-react'
+import { MapPin, Users, Star, Waves, Sparkles, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,11 +12,8 @@ import { amenityLabels, NEW_VENUE_THRESHOLD_DAYS } from '@/lib/mock-data'
 
 interface VenueCardProps {
   venue: Venue
-  /** compact: narrower card for carousel use */
   compact?: boolean
-  /** badgeType: auto-assigns a contextual badge */
   badgeType?: 'new' | 'recommended' | 'nearby' | 'visited'
-  /** distance in km to show when in nearby mode */
   distanceKm?: number
 }
 
@@ -24,6 +24,21 @@ function isNewVenue(createdAt: string): boolean {
 }
 
 export function VenueCard({ venue, compact = false, badgeType, distanceKm }: VenueCardProps) {
+  const [imgIndex, setImgIndex] = useState(0)
+  const images = venue.images ?? []
+  const count = images.length
+
+  const prev = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setImgIndex(i => (i - 1 + count) % count)
+  }
+  const next = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setImgIndex(i => (i + 1) % count)
+  }
+
   const topAmenities = Object.entries(venue.amenities)
     .filter(([, value]) => value)
     .slice(0, compact ? 2 : 4)
@@ -32,24 +47,73 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
   const showNewBadge = badgeType === 'new' || (!badgeType && isNewVenue(venue.created_at))
 
   return (
-    <Card className={`overflow-hidden group bg-white border-0 venue-card-hover ${compact ? 'rounded-2xl' : ''}`} style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}>
-      {/* Image / visual area */}
+    <Card
+      className={`overflow-hidden group bg-white border-0 venue-card-hover ${compact ? 'rounded-2xl' : ''}`}
+      style={{ boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius)' }}
+    >
+      {/* Image area */}
       <div className={`relative ocean-gradient overflow-hidden ${compact ? 'h-40' : 'h-56'}`}>
-        {venue.images?.[0] ? (
-          <img
-            src={venue.images[0]}
-            alt={venue.title}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+        {count > 0 ? (
+          <>
+            {images.map((src, i) => (
+              <img
+                key={src}
+                src={src}
+                alt={`${venue.title} — ${i + 1}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
+                  i === imgIndex ? 'opacity-100' : 'opacity-0'
+                } ${count === 1 ? 'group-hover:scale-105 transition-transform duration-300' : ''}`}
+              />
+            ))}
+
+            {/* Prev / Next arrows — only shown when there are multiple images */}
+            {count > 1 && (
+              <>
+                <button
+                  onClick={prev}
+                  aria-label="תמונה קודמת"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/45 hover:bg-black/65 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={next}
+                  aria-label="תמונה הבאה"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/45 hover:bg-black/65 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Dot indicators */}
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-10">
+                  {images.slice(0, 8).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setImgIndex(i) }}
+                      className={`w-1.5 h-1.5 rounded-full transition-all ${
+                        i === imgIndex ? 'bg-white scale-125' : 'bg-white/50'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Image counter */}
+                <div className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full z-10">
+                  {imgIndex + 1}/{count}
+                </div>
+              </>
+            )}
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <Waves className="w-16 h-16 text-white/20" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,74,74,0.6) 0%, transparent 60%)' }} />
 
-        {/* Top badges row */}
-        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+
+        {/* Top badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
           {venue.bonus_offer && (
             <Badge className="bg-golden text-white border-0 text-xs shadow">
               🎁 {venue.bonus_offer}
@@ -74,8 +138,8 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
           )}
         </div>
 
-        {/* Bottom row: rating + distance */}
-        <div className="absolute bottom-3 right-3 left-3 flex items-center justify-between">
+        {/* Bottom: rating + distance */}
+        <div className="absolute bottom-3 right-3 left-3 flex items-center justify-between z-10 pointer-events-none">
           <div className="flex items-center gap-1 text-white">
             <Star className="w-3.5 h-3.5 fill-golden text-golden" />
             <span className="text-sm font-medium">4.9</span>
@@ -106,7 +170,6 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
           </p>
         )}
 
-        {/* Amenities */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {topAmenities.map((amenity) => amenity && (
             <span
@@ -119,7 +182,6 @@ export function VenueCard({ venue, compact = false, badgeType, distanceKm }: Ven
           ))}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid #f0e6d3' }}>
           <div>
             <span className="font-black text-ocean" style={{ fontSize: 20 }}>₪{venue.hourly_price}</span>

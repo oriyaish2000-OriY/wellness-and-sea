@@ -6,7 +6,7 @@ import { publishVenue, pauseVenue } from '@/lib/actions/venues'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, Users, MapPin, Plus, Waves, Eye, EyeOff } from 'lucide-react'
+import { Building2, Users, MapPin, Plus, Waves, Eye, EyeOff, Images } from 'lucide-react'
 import { SharePanel } from '@/components/ui/share-button'
 
 function formatPrice(amount: number) {
@@ -151,6 +151,17 @@ export default async function HostVenuesPage({
                 </div>
 
                 {/* Action buttons */}
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" className="flex-1 text-sm border-ocean/30 text-ocean hover:bg-ocean/5" asChild>
+                    <Link href={`/host-dashboard/venues/images?venue_id=${venue.id}`}>
+                      <Images className="w-3.5 h-3.5 ml-1.5" />
+                      תמונות
+                      {venue.images && venue.images.length > 0 && (
+                        <span className="mr-1 text-xs text-gray-400">({venue.images.length})</span>
+                      )}
+                    </Link>
+                  </Button>
+                </div>
                 <div className="flex gap-2">
                   {venue.is_active ? (
                     <form

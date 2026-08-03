@@ -11,6 +11,7 @@ import { ShareButton } from '@/components/ui/share-button'
 import { getVenueById, getVenueReviews, getVenueRatingSummary, getInstructorBookings, hasReviewedBooking } from '@/lib/supabase/queries'
 import { createClient } from '@/lib/supabase/server'
 import { AMENITY_OPTIONS } from '@/lib/constants'
+import { VenueImageCarousel } from '@/components/venues/VenueImageCarousel'
 
 const amenityLabels = Object.fromEntries(AMENITY_OPTIONS.map(a => [a.key, { label: a.label, icon: a.icon }]))
 
@@ -83,49 +84,34 @@ export default async function VenueDetailPage({ params }: Props) {
       <Navbar />
 
       <div className="pt-16">
-        {/* Hero Image */}
-        <div className="relative h-72 md:h-96 ocean-gradient overflow-hidden">
-          {venue.images && venue.images.length > 0 ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={venue.images[0]}
-              alt={venue.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Waves className="w-32 h-32 text-white/20" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          <div className="absolute bottom-6 right-6 left-6 flex justify-between items-end">
-            <Link
-              href="/venues"
-              className="flex items-center gap-1 text-white text-sm bg-black/30 backdrop-blur rounded-full px-3 py-1.5"
-            >
-              <ArrowRight className="w-4 h-4" />
-              חזרה לחיפוש
-            </Link>
-            {displayRating !== null ? (
-              <div className="flex items-center gap-1 bg-black/30 backdrop-blur text-white rounded-full px-3 py-1.5 text-sm">
-                <Star className="w-4 h-4 fill-golden text-golden" />
-                <span>{displayRating.toFixed(1)}</span>
-                <span className="text-white/60">({ratingSummary.count} ביקורות)</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 bg-black/30 backdrop-blur text-white rounded-full px-3 py-1.5 text-sm">
-                <Star className="w-4 h-4 text-white/60" />
-                <span className="text-white/60">אין ביקורות עדיין</span>
-              </div>
-            )}
+        {/* Hero — image carousel or fallback */}
+        {venue.images && venue.images.length > 0 ? (
+          <VenueImageCarousel images={venue.images} title={venue.title} />
+        ) : (
+          <div className="relative h-72 md:h-96 ocean-gradient overflow-hidden flex items-center justify-center">
+            <Waves className="w-32 h-32 text-white/20" />
           </div>
+        )}
 
-          {/* Image gallery dots */}
-          {venue.images && venue.images.length > 1 && (
-            <div className="absolute bottom-16 left-0 right-0 flex justify-center gap-1.5">
-              {venue.images.slice(0, 8).map((_, i) => (
-                <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/40'}`} />
-              ))}
+        {/* Navigation + rating bar below the carousel */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-100 px-4 py-2.5 flex justify-between items-center text-sm">
+          <Link
+            href="/venues"
+            className="flex items-center gap-1 text-gray-600 hover:text-ocean transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+            חזרה לחיפוש
+          </Link>
+          {displayRating !== null ? (
+            <div className="flex items-center gap-1 text-gray-700">
+              <Star className="w-4 h-4 fill-golden text-golden" />
+              <span className="font-semibold">{displayRating.toFixed(1)}</span>
+              <span className="text-gray-400">({ratingSummary.count} ביקורות)</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-gray-400">
+              <Star className="w-4 h-4" />
+              <span>אין ביקורות עדיין</span>
             </div>
           )}
         </div>

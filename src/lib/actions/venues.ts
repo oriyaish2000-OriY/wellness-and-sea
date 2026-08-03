@@ -243,3 +243,23 @@ export async function deleteVenue(venueId: string) {
 
 // For platform fee calculation (used in booking actions too)
 export { calculatePlatformFee }
+
+export async function updateVenueImages(venueId: string, images: string[]): Promise<{ error?: string; success?: boolean }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'לא מחוברת.' }
+  if (user.user_metadata?.role !== 'host') return { error: 'גישה נדחתה.' }
+  if (!Array.isArray(images) || images.length > 20) return { error: 'נתונים לא תקינים.' }
+
+  const { error } = await supabase
+    .from('venues')
+    .update({ images })
+    .eq('id', venueId)
+    .eq('host_id', user.id)
+
+  if (error) return { error: 'שגיאה בשמירת התמונות.' }
+
+  revalidatePath('/host-dashboard/venues')
+  revalidatePath(`/venues/${venueId}`)
+  return { success: true }
+}
