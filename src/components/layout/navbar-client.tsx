@@ -100,23 +100,23 @@ export function NavbarClient({ user, mobileOnly = false }: NavbarClientProps) {
               onClick={() => setIsOpen(false)}
             />
 
-            {/* Drawer — same card style as desktop dropdown */}
+            {/* Drawer */}
             <div className="fixed top-[68px] right-0 left-0 z-50 md:hidden bg-white shadow-xl border-t border-gray-100">
 
               {/* User identity strip (when logged in) */}
               {user?.fullName && (
-                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                <div className="px-4 py-3 border-b border-sand" style={{ background: 'linear-gradient(135deg, rgba(13,110,110,0.06), rgba(200,148,74,0.06))' }}>
                   <div className="flex items-center gap-2.5">
                     {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt={user.fullName} className="w-8 h-8 rounded-full object-cover" />
+                      <img src={user.avatarUrl} alt={user.fullName} className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full ocean-gradient flex items-center justify-center text-white text-sm font-bold">
+                      <div className="w-9 h-9 rounded-full ocean-gradient flex items-center justify-center text-white text-sm font-bold shadow-sm">
                         {user.fullName[0].toUpperCase()}
                       </div>
                     )}
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">{user.fullName}</p>
-                      <p className="text-xs text-gray-400">{user.role === 'host' ? 'בעלת עסק' : 'מדריכה'}</p>
+                      <p className="text-sm font-bold text-deep-ocean">{user.fullName}</p>
+                      <p className="text-xs text-golden font-medium">{user.role === 'host' ? 'בעל/ת עסק' : 'מדריך/ה'}</p>
                     </div>
                   </div>
                 </div>
@@ -124,34 +124,25 @@ export function NavbarClient({ user, mobileOnly = false }: NavbarClientProps) {
 
               {/* Nav links */}
               <nav className="py-1">
-                <Link
-                  href="/venues"
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Search className="w-4 h-4 text-gray-400" />
-                  חיפוש חללים
-                </Link>
-                <Link
-                  href="/how-it-works"
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <HelpCircle className="w-4 h-4 text-gray-400" />
-                  איך זה עובד
-                </Link>
-                <Link
-                  href="/host"
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Building2 className="w-4 h-4 text-gray-400" />
-                  להשכיר חלל
-                </Link>
+                {[
+                  { href: '/venues',       icon: Search,      label: 'חיפוש חללים' },
+                  { href: '/how-it-works', icon: HelpCircle,  label: 'איך זה עובד' },
+                  { href: '/host',         icon: Building2,   label: 'להשכיר חלל'  },
+                ].map(({ href, icon: Icon, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-deep-ocean hover:bg-sand/60 active:bg-sand transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Icon className="w-4 h-4 text-ocean" />
+                    {label}
+                  </Link>
+                ))}
               </nav>
 
               {/* Divider */}
-              <div className="border-t border-gray-100 my-1" />
+              <div className="mx-4 border-t border-sand" />
 
               {/* Auth section */}
               <div className="py-1">
@@ -159,16 +150,16 @@ export function NavbarClient({ user, mobileOnly = false }: NavbarClientProps) {
                   <>
                     <Link
                       href={user.dashboardUrl}
-                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-deep-ocean hover:bg-sand/60 transition-colors"
                       onClick={() => setIsOpen(false)}
                     >
-                      <LayoutDashboard className="w-4 h-4 text-gray-400" />
+                      <LayoutDashboard className="w-4 h-4 text-ocean" />
                       {user.role === 'host' ? 'לוח בקרה' : 'האזור שלי'}
                     </Link>
                     <form action={signOut}>
                       <button
                         type="submit"
-                        className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="flex items-center gap-3 w-full px-4 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
                         התנתקות
@@ -180,14 +171,14 @@ export function NavbarClient({ user, mobileOnly = false }: NavbarClientProps) {
                     <Link
                       href="/auth/login"
                       onClick={() => setIsOpen(false)}
-                      className="flex-1 text-center border border-gray-200 text-deep-ocean font-medium text-sm py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                      className="flex-1 text-center border-2 border-ocean text-ocean font-semibold text-sm py-2.5 rounded-xl hover:bg-ocean/5 transition-colors"
                     >
                       התחברות
                     </Link>
                     <Link
                       href="/auth/signup"
                       onClick={() => setIsOpen(false)}
-                      className="flex-1 text-center bg-ocean text-white font-medium text-sm py-2.5 rounded-xl hover:bg-deep-ocean transition-colors"
+                      className="flex-1 text-center bg-ocean text-white font-semibold text-sm py-2.5 rounded-xl hover:bg-deep-ocean transition-colors shadow-sm"
                     >
                       הצטרפות
                     </Link>

@@ -8,26 +8,26 @@ const instructorSteps = [
   {
     icon: Search,
     num: '1',
-    title: 'חפשי חלל',
-    desc: 'סננו לפי עיר, קיבולת, שעות ומתקנים. כל חלל מציג תמונות, מחיר ומה כלול.',
+    title: 'חיפוש חלל',
+    desc: 'מסננים לפי עיר, קיבולת, שעות ומתקנים. כל חלל מציג תמונות, מחיר ומה כלול.',
   },
   {
     icon: CalendarCheck,
     num: '2',
-    title: 'בחרי תאריך ושעה',
-    desc: 'בחרו יום ושעה פנויים ישירות מלוח הזמינות של החלל.',
+    title: 'בחירת תאריך ושעה',
+    desc: 'בוחרים יום ושעה פנויים ישירות מלוח הזמינות של החלל.',
   },
   {
     icon: CreditCard,
     num: '3',
-    title: 'שלמי ואשרי',
-    desc: 'תשלום מאובטח. לאחר האישור תקבלי אישור במייל עם כל פרטי ההזמנה.',
+    title: 'תשלום ואישור',
+    desc: 'תשלום מאובטח. לאחר האישור מגיע אישור במייל עם כל פרטי ההזמנה.',
   },
   {
     icon: Waves,
     num: '4',
-    title: 'תנהיגי שיעור מדהים',
-    desc: 'הגיעי לחלל, תנהיגי שיעור עם נוף לים, והמשתתפים יחזרו שוב ושוב.',
+    title: 'שיעור מדהים',
+    desc: 'מגיעים לחלל, מנהיגים שיעור עם נוף לים — והמשתתפים חוזרים שוב ושוב.',
   },
 ]
 
@@ -35,26 +35,26 @@ const hostSteps = [
   {
     icon: Building2,
     num: '1',
-    title: 'פרסמי את החלל',
-    desc: 'רישום חינמי ב-5 דקות. העלי תמונות, קבעי מחיר ושעות זמינות.',
+    title: 'פרסום החלל',
+    desc: 'רישום חינמי ב-5 דקות. מעלים תמונות, קובעים מחיר ושעות זמינות.',
   },
   {
     icon: CalendarCheck,
     num: '2',
-    title: 'קבלי הזמנות',
-    desc: 'מדריכות מוצאות את החלל שלך ומזמינות ישירות דרך הפלטפורמה.',
+    title: 'קבלת הזמנות',
+    desc: 'מדריכים ומדריכות מוצאים את החלל ומזמינים ישירות דרך הפלטפורמה.',
   },
   {
     icon: CreditCard,
     num: '3',
-    title: 'קבלי תשלום',
-    desc: 'התשלום עובר אלייך אוטומטית לאחר כל שיעור מאושר. ללא טרחה.',
+    title: 'קבלת תשלום',
+    desc: 'התשלום עובר אוטומטית לאחר כל שיעור מאושר. ללא טרחה.',
   },
   {
     icon: Star,
     num: '4',
-    title: 'בני מוניטין',
-    desc: 'חללים עם ביקורות טובות מושכים יותר מדריכות ומניבים הכנסה קבועה.',
+    title: 'בניית מוניטין',
+    desc: 'חללים עם דירוג גבוה מושכים יותר מדריכים ומניבים הכנסה קבועה.',
   },
 ]
 
@@ -82,8 +82,8 @@ export default function HowItWorksPage() {
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <span className="inline-block bg-ocean/10 text-ocean font-semibold text-sm px-4 py-1.5 rounded-full mb-3">למדריכות</span>
-            <h2 className="text-2xl font-bold text-deep-ocean">מצאי את חלל השיעור שלך</h2>
+            <span className="inline-block bg-ocean/10 text-ocean font-semibold text-sm px-4 py-1.5 rounded-full mb-3">למדריכים ומדריכות</span>
+            <h2 className="text-2xl font-bold text-deep-ocean">מצאו את חלל השיעור שלכם</h2>
             <p className="text-gray-500 text-sm mt-2">מבחר חללים עם נוף לים בערים הגדולות בישראל</p>
           </div>
 
@@ -106,7 +106,7 @@ export default function HowItWorksPage() {
 
           <div className="text-center mt-8">
             <Button className="bg-ocean hover:bg-deep-ocean text-white px-8 rounded-full" asChild>
-              <Link href="/venues">חיפוש חללים עכשיו</Link>
+              <Link href="/venues">לחיפוש חללים</Link>
             </Button>
           </div>
         </div>
@@ -119,8 +119,8 @@ export default function HowItWorksPage() {
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <span className="inline-block bg-golden/15 text-golden font-semibold text-sm px-4 py-1.5 rounded-full mb-3">לבעלי עסקים</span>
-            <h2 className="text-2xl font-bold text-deep-ocean">הפכי שעות בוקר ריקות להכנסה</h2>
+            <span className="inline-block bg-golden/15 text-golden font-semibold text-sm px-4 py-1.5 rounded-full mb-3">לבעלי ובעלות עסקים</span>
+            <h2 className="text-2xl font-bold text-deep-ocean">הפכו שעות בוקר ריקות להכנסה</h2>
             <p className="text-gray-500 text-sm mt-2">ממוצע ₪280/שעה, ללא עמלות מראש</p>
           </div>
 
@@ -143,7 +143,7 @@ export default function HowItWorksPage() {
 
           <div className="text-center mt-8">
             <Button className="text-white px-8 rounded-full" style={{ background: 'linear-gradient(135deg, #c9a84c, #e8c86d)' }} asChild>
-              <Link href="/host/list-space">רשמי את החלל שלך חינם</Link>
+              <Link href="/host/list-space">רישום החלל — חינמי</Link>
             </Button>
           </div>
         </div>
@@ -154,10 +154,10 @@ export default function HowItWorksPage() {
         <div className="max-w-2xl mx-auto space-y-5">
           <h2 className="text-xl font-bold text-deep-ocean text-center mb-8">שאלות נפוצות</h2>
           {[
-            { q: 'כמה עולה להצטרף?', a: 'הצטרפות חינמית לחלוטין. עמלת הפלטפורמה נגבית רק כשהזמנה מאושרת.' },
-            { q: 'האם צריך ביטוח?', a: 'כן. כל מדריכה נדרשת להציג ביטוח אחריות מקצועית בתוקף לפני ביצוע הזמנה.' },
-            { q: 'מה שעות הזמינות?', a: 'החללים פתוחים בדרך כלל בין 06:00–12:00. כל בעל חלל קובע את שעותיו.' },
-            { q: 'איך בוטלת הזמנה?', a: 'ביטול עד 24 שעות לפני השיעור מחזיר 100% מהתשלום.' },
+            { q: 'כמה עולה להצטרף?', a: 'הצטרפות חינמית לחלוטין. עמלת הפלטפורמה נגבית רק כאשר הזמנה מאושרת.' },
+            { q: 'האם צריך ביטוח?', a: 'כן. כל מדריך/ת נדרש/ת להציג ביטוח אחריות מקצועית בתוקף לפני ביצוע הזמנה.' },
+            { q: 'מה שעות הזמינות?', a: 'החללים פתוחים בדרך כלל בין 06:00–12:00. כל בעל/ת חלל קובע/ת את שעותיו.' },
+            { q: 'כיצד מבטלים הזמנה?', a: 'ביטול עד 24 שעות לפני השיעור מחזיר 100% מהתשלום.' },
           ].map(({ q, a }) => (
             <div key={q} className="border-b border-gray-100 pb-5">
               <p className="font-semibold text-gray-900 mb-1">{q}</p>
