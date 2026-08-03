@@ -85,55 +85,97 @@ export function NavbarClient({ user, mobileOnly = false }: NavbarClientProps) {
     return (
       <>
         <button
-          className="md:hidden p-2"
+          className="md:hidden p-2 text-gray-700"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="תפריט"
         >
-          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
 
         {isOpen && (
-          <div className="fixed inset-0 top-16 z-40 md:hidden bg-white/98 backdrop-blur border-t border-gray-100 px-4 py-4 space-y-2">
-            <Link href="/venues" className="block text-sm text-gray-600 py-3 border-b border-gray-100" onClick={() => setIsOpen(false)}>
-              חיפוש חללים
-            </Link>
-            <Link href="/how-it-works" className="block text-sm text-gray-600 py-3 border-b border-gray-100" onClick={() => setIsOpen(false)}>
-              איך זה עובד
-            </Link>
-            <Link href="/host" className="block text-sm text-gray-600 py-3 border-b border-gray-100" onClick={() => setIsOpen(false)}>
-              להשכיר חלל
-            </Link>
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 top-[68px] z-40 bg-black/40 md:hidden"
+              onClick={() => setIsOpen(false)}
+            />
 
-            <div className="pt-2">
-              {user ? (
-                <div className="space-y-2">
-                  <Link
-                    href={user.dashboardUrl}
-                    className="flex items-center gap-2 text-sm text-ocean font-medium py-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <LayoutDashboard className="w-4 h-4" />
-                    {user.role === 'host' ? 'לוח בקרה' : 'האזור שלי'}
-                  </Link>
-                  <form action={signOut}>
-                    <button type="submit" className="flex items-center gap-2 text-sm text-red-500 py-2">
-                      <LogOut className="w-4 h-4" />
-                      התנתקות
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <div className="flex gap-3">
-                  <Button variant="outline" size="sm" className="flex-1" asChild>
-                    <Link href="/auth/login" onClick={() => setIsOpen(false)}>התחברות</Link>
-                  </Button>
-                  <Button size="sm" className="flex-1 bg-ocean hover:bg-deep-ocean text-white" asChild>
-                    <Link href="/auth/signup" onClick={() => setIsOpen(false)}>הצטרפות</Link>
-                  </Button>
-                </div>
-              )}
+            {/* Drawer */}
+            <div className="fixed top-[68px] right-0 left-0 z-50 md:hidden bg-white shadow-xl border-t-2 border-ocean/20">
+              {/* Nav links */}
+              <nav className="px-5 py-3">
+                <Link
+                  href="/venues"
+                  className="flex items-center gap-3 py-4 border-b border-gray-100 text-gray-900 font-semibold text-base active:bg-gray-50 rounded"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="text-xl">🔍</span>
+                  חיפוש חללים
+                </Link>
+                <Link
+                  href="/how-it-works"
+                  className="flex items-center gap-3 py-4 border-b border-gray-100 text-gray-900 font-semibold text-base active:bg-gray-50 rounded"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="text-xl">💡</span>
+                  איך זה עובד
+                </Link>
+                <Link
+                  href="/host"
+                  className="flex items-center gap-3 py-4 border-b border-gray-100 text-gray-900 font-semibold text-base active:bg-gray-50 rounded"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="text-xl">🏠</span>
+                  להשכיר חלל
+                </Link>
+              </nav>
+
+              {/* Auth section */}
+              <div className="px-5 pt-2 pb-6">
+                {user ? (
+                  <div className="space-y-2">
+                    {user.fullName && (
+                      <p className="text-xs text-gray-400 mb-3">מחובר/ת כ: <strong className="text-gray-700">{user.fullName}</strong></p>
+                    )}
+                    <Link
+                      href={user.dashboardUrl}
+                      className="flex items-center gap-3 w-full bg-ocean/8 hover:bg-ocean/15 text-ocean font-semibold text-base py-3 px-4 rounded-xl transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <LayoutDashboard className="w-5 h-5" />
+                      {user.role === 'host' ? 'לוח בקרה' : 'האזור שלי'}
+                    </Link>
+                    <form action={signOut} className="mt-2">
+                      <button
+                        type="submit"
+                        className="flex items-center gap-3 w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-base py-3 px-4 rounded-xl transition-colors border border-red-200"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        התנתקות
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <Link
+                      href="/auth/login"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center w-full border-2 border-ocean text-ocean font-semibold text-base py-3 rounded-xl hover:bg-ocean/5 transition-colors"
+                    >
+                      התחברות
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-center w-full bg-ocean text-white font-semibold text-base py-3 rounded-xl hover:bg-deep-ocean transition-colors shadow-sm"
+                    >
+                      הצטרפות חינמית
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </>
     )
