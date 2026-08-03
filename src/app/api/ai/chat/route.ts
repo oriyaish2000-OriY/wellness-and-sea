@@ -1,294 +1,239 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getVenues, getHappeningNowVenues } from '@/lib/supabase/queries'
+import { getVenues, getHappeningNowVenues, getInstructorBookings, getRecentlyVisitedVenues } from '@/lib/supabase/queries'
+import type { Venue } from '@/lib/supabase/types'
 
 export const runtime = 'nodejs'
-export const maxDuration = 30
 
-const SYSTEM_PROMPT = `אתה סוכן AI של פלטפורמת WELLNESS&SEA — מרקטפלייס המחבר מסעדות חוף עם מדריכות יוגה ופילאטיס.
-אתה מדבר עברית בלבד, בטון חברותי, מקצועי וחם.
+// ─── Intent detection ────────────────────────────────────────────────────────
 
-## מה שאתה יכול לעשות:
-1. **חיפוש חללים** — לפי עיר, קיבולת, תקציב, שעה, ציוד
-2. **שיעורים מתרחשים עכשיו** — להציג חללים עם שיעורים פעילים ברגע זה
-3. **המלצת שעות שכירות** — לפי גודל החלל ומספר משתתפים
-4. **חיפוש לפי מיקום** — כשהמשתמשת שותפת מיקום
+type Intent =
+  | 'happening_now'
+  | 'nearby'
+  | 'morning'
+  | 'my_history'
+  | 'recommendation'
+  | 'small_group'
+  | 'large_group'
+  | 'budget'
+  | 'all'
 
-## כללי התנהגות:
-- כשמדריכה מחפשת חלל: שאלי על עיר, משתתפים, תקציב, ושעה
-- כשיש מספיק מידע — קראי ל-search_venues
-- כשמשתמשת שואלת "מה קורה עכשיו" / "שיעורים פעילים" — קראי ל-get_happening_now
-- כשמשתמשת שולחת מיקום — השתמשי ב-city שמסופק לחיפוש קרוב
-- המלצות שעות: < 50מ"ר → שעה, 50-80מ"ר → 1.5 שעות, > 80מ"ר → 2 שעות
-
-## בידול WELLNESS&SEA:
-- אנחנו היחידים שמתמחים במרחבי חוף וים בישראל
-- כל חלל עם גישה לחוף, נוף לים, מאוורר טבעי
-- בונוסים בלעדיים לסיום השיעור (מיץ, קפה, פרי)
-- מחיר שקוף — ללא עמלות נסתרות`
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
+function detectIntent(msg: string): Intent {
+  const m = msg.toLowerCase()
+  if (/עכשיו|פעיל|מתרחש|קורה/.test(m)) return 'happening_now'
+  if (/קרוב|ליד|מיקום|סביב/.test(m)) return 'nearby'
+  if (/בוקר|morning|07|08|09|06/.test(m)) return 'morning'
+  if (/היסטוריה|הזמנות שלי|ביקרתי|קודם/.test(m)) return 'my_history'
+  if (/המלצ|בשביל|מתאים|אישי/.test(m)) return 'recommendation'
+  if (/קטנ|עד 10|עד 8|עד 5|2 אנשים|3 אנשים|5 אנשים/.test(m)) return 'small_group'
+  if (/גדול|20\+|30\+|קבוצה גדול|הרבה אנשים/.test(m)) return 'large_group'
+  if (/זול|תקציב|מחיר נוח|저렴|cheap|budget/.test(m)) return 'budget'
+  return 'all'
 }
 
-interface ToolUse {
-  type: 'tool_use'
-  id: string
-  name: string
-  input: Record<string, unknown>
+// ─── Personalization helpers ─────────────────────────────────────────────────
+
+async function getUserProfile(userId: string): Promise<{ preferredCity?: string; typicalCapacity?: number }> {
+  try {
+    const bookings = await getInstructorBookings(userId)
+    if (!bookings.length) return {}
+
+    // Most frequent city from bookings
+    const cityCounts: Record<string, number> = {}
+    const capacities: number[] = []
+
+    for (const b of bookings) {
+      const city = (b.venue as unknown as Venue)?.location_city
+      if (city) cityCounts[city] = (cityCounts[city] ?? 0) + 1
+
+      // Estimate group size from class type or just track booking counts
+      const cap = (b.venue as unknown as Venue)?.capacity
+      if (cap) capacities.push(cap)
+    }
+
+    const preferredCity = Object.entries(cityCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+    const typicalCapacity = capacities.length
+      ? Math.round(capacities.reduce((a, b) => a + b, 0) / capacities.length)
+      : undefined
+
+    return { preferredCity, typicalCapacity }
+  } catch {
+    return {}
+  }
 }
 
-interface ContentBlock {
-  type: 'text' | 'tool_use'
-  text?: string
-  id?: string
-  name?: string
-  input?: Record<string, unknown>
+// ─── Intent handlers ─────────────────────────────────────────────────────────
+
+async function handleHappeningNow(): Promise<{ reply: string; venues: Venue[] }> {
+  const venues = await getHappeningNowVenues(6)
+  if (!venues.length) {
+    return { reply: 'כרגע אין שיעורים פעילים. נסי לחפש חלל לשיעור בשעות הבאות 🕐', venues: [] }
+  }
+  return {
+    reply: `🔴 ${venues.length} שיעורים מתרחשים עכשיו:`,
+    venues: venues as Venue[],
+  }
 }
 
-async function searchVenues(input: Record<string, unknown>) {
+async function handleNearby(userCity?: string): Promise<{ reply: string; venues: Venue[] }> {
+  if (!userCity) {
+    return { reply: 'כדי למצוא חללים קרובים אלייך, לחצי על כפתור המיקום 📍 בראש החלון.', venues: [] }
+  }
+  const venues = await getVenues({ city: userCity })
+  if (!venues.length) {
+    return { reply: `לא נמצאו חללים ב${userCity} כרגע. נסי עיר אחרת?`, venues: [] }
+  }
+  return {
+    reply: `📍 ${venues.length} חללים ב${userCity}:`,
+    venues: venues.slice(0, 6),
+  }
+}
+
+async function handleMorning(): Promise<{ reply: string; venues: Venue[] }> {
+  const today = new Date().toISOString().split('T')[0]
+  const venues = await getVenues({ date: today, startTime: '07:00' })
+  if (!venues.length) {
+    const allVenues = await getVenues()
+    return {
+      reply: 'לא נמצאו חללים פנויים לשיעורי בוקר מוקדם. הנה חללים שיכולים להתאים:',
+      venues: allVenues.slice(0, 5),
+    }
+  }
+  return {
+    reply: `🌅 ${venues.length} חללים זמינים לשיעורי בוקר:`,
+    venues: venues.slice(0, 6),
+  }
+}
+
+async function handleMyHistory(userId: string): Promise<{ reply: string; venues: Venue[] }> {
+  const visited = await getRecentlyVisitedVenues(userId, 5)
+  if (!visited.length) {
+    return { reply: 'עדיין אין לך היסטוריית הזמנות. בואי נמצא לך חלל ראשון! 🌊', venues: [] }
+  }
+  return {
+    reply: `📋 החללים שהזמנת בעבר (${visited.length}):`,
+    venues: visited,
+  }
+}
+
+async function handleRecommendation(userId: string, userCity?: string): Promise<{ reply: string; venues: Venue[] }> {
+  const profile = await getUserProfile(userId)
+  const city = userCity ?? profile.preferredCity
+  const minCap = profile.typicalCapacity ? Math.max(1, Math.round(profile.typicalCapacity * 0.5)) : undefined
+
   const venues = await getVenues({
-    city: input.city as string | undefined,
-    minCapacity: input.min_capacity as number | undefined,
-    maxPrice: input.max_price as number | undefined,
-    date: input.date as string | undefined,
-    startTime: input.start_time as string | undefined,
-    amenities: input.amenities as string[] | undefined,
+    city,
+    minCapacity: minCap,
   })
-  return venues.slice(0, 6)
+
+  if (!venues.length) {
+    const fallback = await getVenues()
+    return {
+      reply: 'לא מצאתי חללים שמתאימים בדיוק, אבל אלה ימצאו חן בעינייך:',
+      venues: fallback.slice(0, 5),
+    }
+  }
+
+  const cityNote = city ? ` ב${city}` : ''
+  const capNote = minCap ? ` לקבוצה של ${minCap}+ משתתפים` : ''
+  return {
+    reply: `⭐ המלצות אישיות בשבילייך${cityNote}${capNote}:`,
+    venues: venues.slice(0, 5),
+  }
 }
 
-async function getHappeningNow() {
-  return getHappeningNowVenues(6)
+async function handleSmallGroup(): Promise<{ reply: string; venues: Venue[] }> {
+  const venues = await getVenues({ minCapacity: 1, maxPrice: 400 })
+  const small = venues.filter(v => v.capacity <= 15).slice(0, 6)
+  if (!small.length) {
+    return { reply: 'לא נמצאו חללים לקבוצות קטנות כרגע.', venues: [] }
+  }
+  return {
+    reply: `👥 ${small.length} חללים מתאימים לקבוצות קטנות (עד 15 משתתפים):`,
+    venues: small,
+  }
 }
 
-function getRecommendedHours(input: Record<string, unknown>) {
-  const sqm = (input.space_size_sqm as number) ?? 0
-  const cap = (input.capacity as number) ?? 0
-  if (sqm > 80 || cap > 20) return { hours: 2, label: '2 שעות', reason: 'חלל גדול — אידיאלי לקבוצות גדולות' }
-  if (sqm >= 50 || cap >= 10) return { hours: 1.5, label: '1.5 שעות', reason: 'חלל בינוני — הזמן המאוזן ביותר' }
-  return { hours: 1, label: 'שעה', reason: 'חלל קטן — אינטנסיבי וממוקד' }
+async function handleLargeGroup(): Promise<{ reply: string; venues: Venue[] }> {
+  const venues = await getVenues({ minCapacity: 20 })
+  if (!venues.length) {
+    return { reply: 'לא נמצאו חללים לקבוצות גדולות כרגע. נסי לחפש בלי סינון קיבולת.', venues: [] }
+  }
+  return {
+    reply: `👥👥 ${venues.length} חללים לקבוצות גדולות (20+ משתתפים):`,
+    venues: venues.slice(0, 6),
+  }
 }
 
-const TOOLS = [
-  {
-    name: 'search_venues',
-    description: 'חיפוש חללים זמינים. השתמשי כשיש מספיק מידע ממשתמש.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        city: { type: 'string', description: 'עיר החיפוש (ת"א, חיפה, הרצליה...)' },
-        min_capacity: { type: 'number', description: 'מינימום משתתפים' },
-        max_price: { type: 'number', description: 'מחיר מקסימלי לשעה ₪' },
-        date: { type: 'string', description: 'תאריך YYYY-MM-DD' },
-        start_time: { type: 'string', description: 'שעת התחלה HH:MM' },
-        amenities: { type: 'array', items: { type: 'string' }, description: 'מתקנים נדרשים (ac, shower, sea_view...)' },
-      },
-    },
-  },
-  {
-    name: 'get_happening_now',
-    description: 'מחזיר חללים עם שיעורים פעילים ברגע זה. קרא כשמשתמשת שואלת מה קורה עכשיו.',
-    input_schema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'get_recommended_hours',
-    description: 'המלץ על משך שכירות מיטבי לפי גודל חלל וקיבולת.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        space_size_sqm: { type: 'number', description: 'שטח החלל במ"ר' },
-        capacity: { type: 'number', description: 'קיבולת מקסימלית' },
-      },
-    },
-  },
-]
+async function handleBudget(): Promise<{ reply: string; venues: Venue[] }> {
+  const venues = await getVenues({ maxPrice: 250 })
+  if (!venues.length) {
+    return { reply: 'אין כרגע חללים מתחת ל-₪250 לשעה. הנה האפשרויות הזולות ביותר:',
+      venues: (await getVenues()).sort((a, b) => a.hourly_price - b.hourly_price).slice(0, 5) }
+  }
+  return {
+    reply: `💰 ${venues.length} חללים במחיר עד ₪250/שעה:`,
+    venues: venues.sort((a, b) => a.hourly_price - b.hourly_price).slice(0, 6),
+  }
+}
+
+async function handleAll(userCity?: string): Promise<{ reply: string; venues: Venue[] }> {
+  const venues = await getVenues({ city: userCity })
+  return {
+    reply: venues.length
+      ? `🌊 הנה כל החללים הזמינים (${venues.length}):`
+      : 'לא נמצאו חללים פעילים כרגע.',
+    venues: venues.slice(0, 6),
+  }
+}
+
+// ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await req.json()
-  const messages: Message[] = body.messages ?? []
-  // Optional: user's location city passed from client
+  const message: string = body.message ?? body.messages?.at(-1)?.content ?? ''
   const userCity: string | undefined = body.userCity
+  const intentOverride: Intent | undefined = body.intent
 
-  if (!messages.length) {
-    return new Response(JSON.stringify({ error: 'No messages' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+  const intent = intentOverride ?? detectIntent(message)
+
+  let result: { reply: string; venues: Venue[] }
+
+  switch (intent) {
+    case 'happening_now':
+      result = await handleHappeningNow()
+      break
+    case 'nearby':
+      result = await handleNearby(userCity)
+      break
+    case 'morning':
+      result = await handleMorning()
+      break
+    case 'my_history':
+      result = await handleMyHistory(user.id)
+      break
+    case 'recommendation':
+      result = await handleRecommendation(user.id, userCity)
+      break
+    case 'small_group':
+      result = await handleSmallGroup()
+      break
+    case 'large_group':
+      result = await handleLargeGroup()
+      break
+    case 'budget':
+      result = await handleBudget()
+      break
+    default:
+      result = await handleAll(userCity)
   }
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
-  if (!anthropicKey) {
-    return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
-  }
-  const apiKey: string = anthropicKey
-
-  // Inject location context into the last user message if available
-  const enrichedMessages = userCity
-    ? messages.map((m, i) =>
-        i === messages.length - 1 && m.role === 'user'
-          ? { ...m, content: `[מיקום המשתמשת: ${userCity}]\n${m.content}` }
-          : m
-      )
-    : messages
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder()
-
-      function send(event: string, data: string) {
-        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${data}\n\n`))
-      }
-
-      function sendText(text: string) {
-        send('message', `0:${JSON.stringify(text)}`)
-      }
-
-      async function callAnthropic(msgs: Message[]) {
-        return fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1024,
-            system: SYSTEM_PROMPT,
-            messages: msgs,
-            tools: TOOLS,
-          }),
-        })
-      }
-
-      try {
-        const firstResponse = await callAnthropic(enrichedMessages)
-
-        if (!firstResponse.ok) {
-          sendText('מצטערת, אירעה שגיאה. אנא נסי שוב.')
-          controller.close()
-          return
-        }
-
-        const firstData = await firstResponse.json()
-
-        const toolUseBlock = firstData.content?.find(
-          (b: ContentBlock) => b.type === 'tool_use'
-        ) as ToolUse | undefined
-
-        if (toolUseBlock) {
-          let toolResult: unknown
-
-          if (toolUseBlock.name === 'search_venues') {
-            const venueResults = await searchVenues(toolUseBlock.input)
-
-            const secondResponse = await callAnthropic([
-              ...enrichedMessages,
-              { role: 'assistant', content: firstData.content },
-              {
-                role: 'user',
-                content: [{
-                  type: 'tool_result',
-                  tool_use_id: toolUseBlock.id,
-                  content: JSON.stringify({ venues: venueResults, count: venueResults.length }),
-                }],
-              },
-            ] as Message[])
-
-            if (!secondResponse.ok) {
-              sendText('מצטערת, אירעה שגיאה בחיפוש. אנא נסי שוב.')
-              controller.close()
-              return
-            }
-
-            const secondData = await secondResponse.json()
-            const responseText = secondData.content?.find((b: ContentBlock) => b.type === 'text')?.text ?? ''
-            sendText(responseText)
-
-            if (venueResults.length > 0) {
-              sendText(`\n__VENUES_JSON__${JSON.stringify(venueResults)}__VENUES_END__`)
-            }
-          } else if (toolUseBlock.name === 'get_happening_now') {
-            const nowVenues = await getHappeningNow()
-            toolResult = { venues: nowVenues, count: nowVenues.length }
-
-            const secondResponse = await callAnthropic([
-              ...enrichedMessages,
-              { role: 'assistant', content: firstData.content },
-              {
-                role: 'user',
-                content: [{
-                  type: 'tool_result',
-                  tool_use_id: toolUseBlock.id,
-                  content: JSON.stringify(toolResult),
-                }],
-              },
-            ] as Message[])
-
-            if (!secondResponse.ok) {
-              sendText('מצטערת, אירעה שגיאה. אנא נסי שוב.')
-              controller.close()
-              return
-            }
-
-            const secondData = await secondResponse.json()
-            const responseText = secondData.content?.find((b: ContentBlock) => b.type === 'text')?.text ?? ''
-            sendText(responseText)
-
-            if (nowVenues.length > 0) {
-              sendText(`\n__VENUES_JSON__${JSON.stringify(nowVenues)}__VENUES_END__`)
-            }
-          } else if (toolUseBlock.name === 'get_recommended_hours') {
-            toolResult = getRecommendedHours(toolUseBlock.input)
-
-            const secondResponse = await callAnthropic([
-              ...enrichedMessages,
-              { role: 'assistant', content: firstData.content },
-              {
-                role: 'user',
-                content: [{
-                  type: 'tool_result',
-                  tool_use_id: toolUseBlock.id,
-                  content: JSON.stringify(toolResult),
-                }],
-              },
-            ] as Message[])
-
-            const secondData = await secondResponse.json()
-            const responseText = secondData.content?.find((b: ContentBlock) => b.type === 'text')?.text ?? ''
-            sendText(responseText)
-          }
-        } else {
-          const textContent = firstData.content?.find((b: ContentBlock) => b.type === 'text')?.text ?? ''
-          sendText(textContent)
-        }
-
-        send('message', 'd:{"finishReason":"stop"}')
-      } catch (err) {
-        console.error('AI chat error:', err)
-        sendText('מצטערת, אירעה שגיאה. אנא נסי שוב.')
-        send('message', 'd:{"finishReason":"error"}')
-      } finally {
-        controller.close()
-      }
-    },
-  })
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  })
+  return Response.json(result)
 }

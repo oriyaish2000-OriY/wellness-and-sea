@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { VenueCard } from '@/components/venues/venue-card'
 import type { Venue } from '@/lib/supabase/types'
-import { MessageCircle, X, Send, Bot, Loader2, Waves, Navigation, Radio, Clock } from 'lucide-react'
+import {
+  MessageCircle, X, Bot, Loader2, Waves,
+  Navigation, Radio, Clock, Users, Star, DollarSign, History, Search
+} from 'lucide-react'
 
 interface ChatMessage {
   id: string
@@ -41,28 +44,30 @@ function nearestCity(lat: number, lng: number): string {
   return best.city
 }
 
-const QUICK_ACTIONS = [
-  { icon: Radio, label: 'שיעורים עכשיו', message: 'אילו שיעורים מתרחשים עכשיו?' },
-  { icon: Navigation, label: 'קרוב אלי', message: 'מצאי חלל קרוב אלי' },
-  { icon: Clock, label: 'בוקר מחר', message: 'אני מחפשת חלל לשיעור בוקר מחר ב-08:00' },
+type Intent = 'happening_now' | 'nearby' | 'morning' | 'my_history' | 'recommendation' | 'small_group' | 'large_group' | 'budget' | 'all'
+
+interface QuickAction {
+  icon: React.ElementType
+  label: string
+  intent: Intent
+  message: string
+}
+
+const QUICK_ACTIONS: QuickAction[] = [
+  { icon: Radio,      label: 'שיעורים עכשיו',        intent: 'happening_now',  message: 'אילו שיעורים מתרחשים עכשיו?' },
+  { icon: Navigation, label: 'קרוב אלי',              intent: 'nearby',         message: 'חללים קרובים אלי' },
+  { icon: Clock,      label: 'שיעורי בוקר',           intent: 'morning',        message: 'חלל לשיעור בוקר' },
+  { icon: Star,       label: 'המלצה אישית',           intent: 'recommendation', message: 'המלצה אישית בשבילי' },
+  { icon: History,    label: 'ביקרתי בעבר',           intent: 'my_history',     message: 'ההזמנות הקודמות שלי' },
+  { icon: Users,      label: 'קבוצה קטנה (עד 15)',   intent: 'small_group',    message: 'חלל לקבוצה קטנה' },
+  { icon: Users,      label: 'קבוצה גדולה (20+)',    intent: 'large_group',    message: 'חלל לקבוצה גדולה' },
+  { icon: DollarSign, label: 'מחיר נוח',              intent: 'budget',         message: 'חללים במחיר נוח' },
 ]
 
 const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  content: 'שלום! אני עוזרת WELLNESS&SEA 🌊\n\nאני יכולה לעזור לך למצוא חללים, לראות שיעורים פעילים עכשיו, ולהמליץ על משך שכירות מתאים. מה תרצי לעשות?',
-}
-
-function parseVenuesFromText(text: string): { cleanText: string; venues: Venue[] | null } {
-  const match = text.match(/__VENUES_JSON__([\s\S]*?)__VENUES_END__/)
-  if (!match) return { cleanText: text, venues: null }
-  try {
-    const venues = JSON.parse(match[1]) as Venue[]
-    const cleanText = text.replace(/__VENUES_JSON__[\s\S]*?__VENUES_END__/, '').trim()
-    return { cleanText, venues }
-  } catch {
-    return { cleanText: text.replace(/__VENUES_JSON__[\s\S]*?__VENUES_END__/, '').trim(), venues: null }
-  }
+  content: 'שלום! אני עוזרת WELLNESS&SEA 🌊\n\nבחרי מהשאלות המוכנות או שתפי מיקום לחיפוש מדויק:',
 }
 
 function MessageBubble({ message }: { message: ChatMessage }) {
@@ -90,7 +95,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             <div className="space-y-3 max-h-96 overflow-y-auto pl-1">
               {message.venues.map((venue) => (
                 <div key={venue.id} className="scale-95 origin-right">
-                  <VenueCard venue={venue} />
+                  <VenueCard venue={venue} compact />
                 </div>
               ))}
             </div>
@@ -104,20 +109,15 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
-  const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [userCity, setUserCity] = useState<string | undefined>()
   const [locating, setLocating] = useState(false)
+  const [inputText, setInputText] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isOpen])
-
-  useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100)
-  }, [isOpen])
 
   function shareLocation() {
     if (!navigator.geolocation || locating) return
@@ -127,95 +127,89 @@ export function ChatWidget() {
         const city = nearestCity(pos.coords.latitude, pos.coords.longitude)
         setUserCity(city)
         setLocating(false)
-        // Insert a system-style message
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: `📍 מיקום אוכן — אני אחפש חללים קרובים ל${city}`,
-          },
-        ])
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `📍 מיקום אותר — ${city}. עכשיו לחצי על "קרוב אלי" לחיפוש חללים באזורך.`,
+        }])
       },
-      () => setLocating(false),
+      () => {
+        setLocating(false)
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'לא הצלחתי לגשת למיקום. אנא אפשרי גישה למיקום בהגדרות הדפדפן.',
+        }])
+      },
       { timeout: 8000 }
     )
   }
 
-  const sendMessage = useCallback(async (overrideText?: string) => {
-    const trimmed = (overrideText ?? input).trim()
-    if (!trimmed || isLoading) return
+  async function sendIntent(intent: Intent, userMessage: string) {
+    if (isLoading) return
 
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: trimmed,
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInput('')
+    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: userMessage }
+    setMessages(prev => [...prev, userMsg])
     setIsLoading(true)
 
-    const apiMessages = [...messages, userMessage]
-      .filter((m) => m.id !== 'welcome')
-      .map((m) => ({ role: m.role, content: m.content }))
-
-    const payload = apiMessages.length === 1
-      ? [{ role: 'user' as const, content: trimmed }]
-      : apiMessages
-
     try {
-      const response = await fetch('/api/ai/chat', {
+      const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: payload, userCity }),
+        body: JSON.stringify({ intent, message: userMessage, userCity }),
       })
 
-      if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`)
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let accumulated = ''
-      const assistantMessageId = crypto.randomUUID()
-
-      setMessages((prev) => [...prev, { id: assistantMessageId, role: 'assistant', content: '' }])
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value, { stream: true })
-        for (const line of chunk.split('\n')) {
-          if (line.startsWith('data: ')) {
-            const match = line.slice(6).match(/^0:(.+)$/)
-            if (match) {
-              try {
-                accumulated += JSON.parse(match[1]) as string
-                setMessages((prev) =>
-                  prev.map((m) => m.id === assistantMessageId ? { ...m, content: accumulated } : m)
-                )
-              } catch { /* skip */ }
-            }
-          }
+      if (!res.ok) {
+        if (res.status === 401) {
+          setMessages(prev => [...prev, {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: 'יש להתחבר לחשבון כדי להשתמש בעוזרת. 🔐',
+          }])
+          return
         }
+        throw new Error(`HTTP ${res.status}`)
       }
 
-      const { cleanText, venues } = parseVenuesFromText(accumulated)
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMessageId ? { ...m, content: cleanText, venues: venues ?? undefined } : m
-        )
-      )
-    } catch (err) {
-      console.error('Chat error:', err)
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'מצטערת, אירעה שגיאה. אנא נסי שוב.' }])
+      const data = await res.json() as { reply: string; venues?: Venue[] }
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: data.reply,
+        venues: data.venues?.length ? data.venues : undefined,
+      }])
+    } catch {
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'אירעה שגיאה. אנא נסי שוב.',
+      }])
     } finally {
       setIsLoading(false)
     }
-  }, [input, isLoading, messages, userCity])
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
   }
+
+  async function handleFreeText() {
+    const text = inputText.trim()
+    if (!text || isLoading) return
+    setInputText('')
+
+    // Simple keyword → intent map
+    const m = text.toLowerCase()
+    let intent: Intent = 'all'
+    if (/עכשיו|פעיל|מתרחש/.test(m)) intent = 'happening_now'
+    else if (/קרוב|ליד|מיקום/.test(m)) intent = 'nearby'
+    else if (/בוקר|07|08|09/.test(m)) intent = 'morning'
+    else if (/היסטוריה|הזמנות שלי/.test(m)) intent = 'my_history'
+    else if (/המלצ|בשביל|מתאים/.test(m)) intent = 'recommendation'
+    else if (/קטנ|עד 10|עד 15/.test(m)) intent = 'small_group'
+    else if (/גדול|20\+|קבוצה גדול/.test(m)) intent = 'large_group'
+    else if (/זול|תקציב|מחיר נוח/.test(m)) intent = 'budget'
+
+    await sendIntent(intent, text)
+  }
+
+  const showQuickActions = messages.length <= 1 && !isLoading
 
   return (
     <>
@@ -229,7 +223,8 @@ export function ChatWidget() {
         }`}
         dir="rtl"
       >
-        <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-200 flex flex-col h-[75vh] sm:h-[560px] overflow-hidden">
+        <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-200 flex flex-col h-[75vh] sm:h-[580px] overflow-hidden">
+
           {/* Header */}
           <div className="ocean-gradient px-4 py-3.5 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2.5">
@@ -237,35 +232,27 @@ export function ChatWidget() {
                 <Waves className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-white text-sm">סוכן WELLNESS&SEA</p>
+                <p className="font-semibold text-white text-sm">עוזרת WELLNESS&SEA</p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse" />
-                  <span className="text-white/70 text-xs">פעיל · יכול לחפש, להמליץ ולאתר</span>
+                  <span className="text-white/70 text-xs">פעילה · מחפשת חללים בשבילך</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* Location share button */}
               <button
                 onClick={shareLocation}
                 disabled={locating || !!userCity}
                 title={userCity ? `מיקום: ${userCity}` : 'שתפי מיקום'}
                 className={`p-1.5 rounded-full transition-colors ${
-                  userCity
-                    ? 'text-green-300 cursor-default'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                  userCity ? 'text-green-300 cursor-default' : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
-                {locating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Navigation className="w-4 h-4" />
-                )}
+                {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-white/70 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
-                aria-label="סגור"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -293,63 +280,84 @@ export function ChatWidget() {
                 </div>
                 <div className="bg-white shadow-sm border border-gray-100 rounded-2xl rounded-tl-sm px-3.5 py-3 flex items-center gap-2">
                   <Loader2 className="w-3.5 h-3.5 text-ocean animate-spin" />
-                  <span className="text-xs text-gray-400">חושבת...</span>
+                  <span className="text-xs text-gray-400">מחפשת...</span>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick actions */}
-          {messages.length <= 1 && !isLoading && (
-            <div className="px-3 pb-2 flex gap-2 overflow-x-auto flex-shrink-0">
-              {QUICK_ACTIONS.map(({ icon: Icon, label, message }) => (
-                <button
-                  key={label}
-                  onClick={() => sendMessage(message)}
-                  className="flex items-center gap-1.5 bg-ocean/8 hover:bg-ocean/15 text-ocean text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors border border-ocean/20 flex-shrink-0"
-                >
-                  <Icon className="w-3 h-3" />
-                  {label}
-                </button>
-              ))}
+          {/* Quick action buttons grid */}
+          {showQuickActions && (
+            <div className="px-3 pb-2 flex-shrink-0">
+              <p className="text-xs text-gray-400 mb-2 text-center">בחרי שאלה מהרשימה:</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {QUICK_ACTIONS.map(({ icon: Icon, label, intent, message }) => (
+                  <button
+                    key={label}
+                    onClick={() => sendIntent(intent, message)}
+                    className="flex items-center gap-1.5 bg-ocean/6 hover:bg-ocean/12 text-ocean text-xs px-2.5 py-2 rounded-xl transition-colors border border-ocean/15 text-right"
+                  >
+                    <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Input area */}
-          <div className="border-t border-gray-100 p-3 flex-shrink-0 bg-white">
-            <div className="flex items-end gap-2">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="שאלי על חללים, שיעורים פעילים..."
-                rows={1}
-                disabled={isLoading}
-                className="flex-1 resize-none text-sm text-right border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:border-ocean transition-all placeholder-gray-400 disabled:opacity-50 max-h-24 overflow-y-auto"
-                dir="rtl"
-                style={{ minHeight: '40px' }}
-              />
-              <button
-                onClick={() => sendMessage()}
-                disabled={!input.trim() || isLoading}
-                className="w-10 h-10 rounded-xl ocean-gradient flex items-center justify-center flex-shrink-0 disabled:opacity-40 hover:opacity-90 transition-opacity shadow-sm"
-                aria-label="שלח"
-              >
-                <Send className="w-4 h-4 text-white rotate-180" />
-              </button>
+          {/* Free text input (after first interaction) */}
+          {!showQuickActions && (
+            <div className="border-t border-gray-100 p-3 flex-shrink-0 bg-white">
+              {/* Re-show quick actions as small chips */}
+              <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2">
+                {QUICK_ACTIONS.slice(0, 4).map(({ icon: Icon, label, intent, message }) => (
+                  <button
+                    key={label}
+                    onClick={() => sendIntent(intent, message)}
+                    disabled={isLoading}
+                    className="flex items-center gap-1 bg-gray-100 hover:bg-ocean/10 text-gray-600 hover:text-ocean text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 disabled:opacity-40"
+                  >
+                    <Icon className="w-3 h-3" />
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setMessages([WELCOME_MESSAGE])}
+                  className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-500 text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0"
+                >
+                  <Search className="w-3 h-3" />
+                  כל האפשרויות
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  value={inputText}
+                  onChange={e => setInputText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleFreeText() }}
+                  placeholder="הקלידי שאלה חופשית..."
+                  disabled={isLoading}
+                  className="flex-1 text-sm text-right border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:border-ocean placeholder-gray-400 disabled:opacity-50"
+                  dir="rtl"
+                />
+                <button
+                  onClick={handleFreeText}
+                  disabled={!inputText.trim() || isLoading}
+                  className="w-9 h-9 rounded-xl ocean-gradient flex items-center justify-center flex-shrink-0 disabled:opacity-40 hover:opacity-90 shadow-sm"
+                >
+                  <Search className="w-4 h-4 text-white" />
+                </button>
+              </div>
             </div>
-            <p className="text-center text-xs text-gray-300 mt-2">Enter לשליחה · Shift+Enter שורה חדשה</p>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Floating toggle */}
       <button
-        onClick={() => setIsOpen((o) => !o)}
-        className={`fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full ocean-gradient shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 ${isOpen ? 'rotate-180' : ''}`}
-        aria-label={isOpen ? 'סגור עוזרת' : 'פתחי עוזרת AI'}
+        onClick={() => setIsOpen(o => !o)}
+        className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full ocean-gradient shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95"
+        aria-label={isOpen ? 'סגור עוזרת' : 'פתחי עוזרת'}
       >
         {isOpen ? <X className="w-6 h-6 text-white" /> : <MessageCircle className="w-6 h-6 text-white" />}
       </button>
