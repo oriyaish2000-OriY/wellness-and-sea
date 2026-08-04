@@ -1,6 +1,28 @@
+/**
+ * POST /api/checkout
+ *
+ * Flow 1 — Space Rental (Instructor → Space Owner)
+ * Creates a Grow Marketplace payment link with split:
+ *   - Host sub-merchant receives hostPayoutAgorot
+ *   - Platform main account receives the rest (= 10% of base price)
+ *
+ * Commission model:
+ *   Instructor pays: base_price + 5%
+ *   Host receives:   base_price − 5%
+ *   Platform earns:  10% of base_price
+ *
+ * The booking's total_price / host_payout / platform_fee are set during booking
+ * creation (see booking actions). This route reads those server-side values and
+ * never trusts amounts from the client.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import {
+  isGrowConfigured,
+  createSpaceRentalPaymentLink,
+} from '@/lib/grow/growPaymentService'
 import {
   sendBookingConfirmedEmailToInstructor,
   sendNewBookingEmailToHost,
@@ -11,185 +33,143 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const bookingId: string = body.booking_id
 
-    // Auth check — must be a logged-in user
+    // ── Auth ──────────────────────────────────────────────────────────────
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!bookingId) return NextResponse.json({ error: 'Missing booking_id' }, { status: 400 })
 
-    if (!bookingId) {
-      return NextResponse.json({ error: 'Missing booking_id' }, { status: 400 })
-    }
-
-    // Fetch booking with venue — verify it belongs to this user and is still pending
+    // ── Load booking (server-verified amounts only) ────────────────────────
     const { data: booking } = await supabase
       .from('bookings')
-      .select('id, total_price, host_payout, platform_fee, instructor_id, venue:venues(title)')
+      .select(`
+        id, total_price, host_payout, platform_fee, instructor_id,
+        venue:venues(
+          id, title,
+          host:profiles!venues_host_id_fkey(id, full_name, grow_merchant_id)
+        )
+      `)
       .eq('id', bookingId)
       .eq('instructor_id', user.id)
       .eq('status', 'pending')
       .single()
 
     if (!booking) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Booking not found or already processed' }, { status: 404 })
     }
 
-    // Use server-verified values — never trust client-supplied amounts
-    const verifiedTotal = booking.total_price
-    const verifiedPayout = booking.host_payout
+    const venue = booking.venue as {
+      id?: string
+      title?: string
+      host?: { id?: string; full_name?: string; grow_merchant_id?: string }
+    } | null
 
-    if (!verifiedTotal) {
-      return NextResponse.json({ error: 'Invalid booking amount' }, { status: 400 })
+    const totalILS      = booking.total_price   // what instructor pays (base + 5%)
+    const hostPayoutILS = booking.host_payout    // what host receives (base − 5%)
+    const appUrl        = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+    if (!totalILS || !hostPayoutILS) {
+      return NextResponse.json({ error: 'Invalid booking amounts' }, { status: 400 })
     }
 
-    const growApiKey = process.env.GROW_API_KEY
-    const growUserId = process.env.GROW_USER_ID
-    const growPageCode = process.env.GROW_PAGE_CODE
-    const growApiBase = process.env.GROW_API_BASE ?? 'http://sandboxapi.grow.link/api/light/server/1.0'
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const hostGrowMerchantId = venue?.host?.grow_merchant_id ?? ''
 
-    const venue = booking.venue as { title?: string } | null
-    const venueName = venue?.title ?? 'חלל'
-
-    if (growApiKey && growUserId && growPageCode) {
+    // ── Grow configured + host has sub-merchant ID → use split payment link ─
+    if (isGrowConfigured() && hostGrowMerchantId) {
       try {
-        // Build multipart/form-data — Grow requires server-side form-data
-        const formData = new FormData()
-        formData.append('userId', growUserId)
-        formData.append('pageCode', growPageCode)
-        formData.append('title', `WELLNESS&SEA — ${venueName}`)
-        formData.append('products[data][0][name]', `הזמנת חלל: ${venueName}`)
-        formData.append('products[data][0][price]', String(verifiedTotal * 100)) // agorot
-        formData.append('products[data][0][quantity]', '1')
-        formData.append('products[data][0][vatType]', '3') // VAT exempt for fitness
-        formData.append('transactionType[0]', '1')  // credit card
-        formData.append('transactionType[1]', '5')  // PayBox
-        formData.append('transactionType[2]', '6')  // Bit
-        formData.append('transactionType[3]', '13') // Apple Pay
-        formData.append('transactionType[4]', '14') // Google Pay
-        formData.append('paymentLinkType', '2')     // one-time link
-        formData.append('isActive', '1')
-        formData.append('successUrl', `${appUrl}/booking/confirm/${bookingId}`)
-        formData.append('notifyUrl', `${appUrl}/api/webhooks/payment`)
-        formData.append('cField1', bookingId)
-        formData.append('cField2', booking.instructor_id)
-        formData.append('cField3', String(verifiedPayout))
-
-        const growRes = await fetch(`${growApiBase}/CreatePaymentLink`, {
-          method: 'POST',
-          headers: {
-            'x-api-key': growApiKey,
-          },
-          body: formData,
+        const { checkoutUrl } = await createSpaceRentalPaymentLink({
+          bookingId,
+          instructorId:       booking.instructor_id,
+          totalILS,
+          totalAgorot:        Math.round(totalILS * 100),
+          hostPayoutAgorot:   Math.round(hostPayoutILS * 100),
+          hostGrowMerchantId,
+          venueName:          venue?.title ?? 'חלל',
         })
 
-        if (growRes.ok) {
-          const growData = await growRes.json()
-          // Grow may return the URL under different keys — try all known variants
-          const checkoutUrl: string | undefined =
-            growData?.data?.url ??
-            growData?.data?.link ??
-            growData?.url ??
-            growData?.link ??
-            growData?.paymentLink ??
-            growData?.data?.paymentLink
-
-          if (checkoutUrl) {
-            console.log(`[Grow] Payment link created for booking ${bookingId}: ${checkoutUrl}`)
-            return NextResponse.json({ checkout_url: checkoutUrl })
-          } else {
-            console.error('[Grow] Unexpected response shape:', JSON.stringify(growData))
-          }
-        } else {
-          const errText = await growRes.text()
-          console.error(`[Grow] API error ${growRes.status}:`, errText)
-        }
+        console.log(`[Grow Flow1] Payment link created for booking ${bookingId}`)
+        return NextResponse.json({ checkout_url: checkoutUrl })
       } catch (growErr) {
-        console.error('[Grow] Request failed:', growErr)
+        // Log but fall through to fallback — never leave instructor stuck
+        console.error('[Grow Flow1] CreatePaymentLink failed:', growErr)
       }
-    } else {
-      console.warn('[Grow] GROW_API_KEY not configured — confirming booking directly (no payment gateway)')
     }
 
-    // ── No Grow configured: confirm booking server-side and redirect to confirm page ──
-    // This is the correct behaviour when no payment gateway is set up (e.g. during
-    // onboarding / testing). The booking is confirmed without charging — the operator
-    // is responsible for collecting payment out-of-band.
+    // ── Grow configured but host not yet onboarded → direct payment link ───
+    if (isGrowConfigured() && !hostGrowMerchantId) {
+      console.warn(
+        `[Grow Flow1] Host ${venue?.host?.id} has no grow_merchant_id — ` +
+        'falling back to no-split link. Host must complete KYC at /host-dashboard/kyc'
+      )
+      // TODO: create a non-split link or prompt host to complete KYC
+    }
+
+    // ── Fallback: no Grow / link creation failed → confirm server-side ──────
+    console.warn('[checkout] Falling back to direct confirmation (no gateway)')
+
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (serviceKey) {
-      try {
-        const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
+      const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
 
-        // Fetch full booking details for emails
-        const { data: fullBooking } = await admin
-          .from('bookings')
-          .select(`
-            *,
-            venue:venues(title, location_address, location_city,
-              host:profiles!venues_host_id_fkey(id, full_name)),
-            instructor:profiles!bookings_instructor_id_fkey(id, full_name)
-          `)
-          .eq('id', bookingId)
-          .single()
+      const { data: fullBooking } = await admin
+        .from('bookings')
+        .select(`
+          *,
+          venue:venues(title, location_address, location_city,
+            host:profiles!venues_host_id_fkey(id, full_name)),
+          instructor:profiles!bookings_instructor_id_fkey(id, full_name)
+        `)
+        .eq('id', bookingId)
+        .single()
 
-        await admin
-          .from('bookings')
-          .update({ status: 'confirmed' })
-          .eq('id', bookingId)
-          .eq('status', 'pending')
+      await admin
+        .from('bookings')
+        .update({ status: 'confirmed' })
+        .eq('id', bookingId)
+        .eq('status', 'pending')
 
-        // Send emails non-blocking
-        if (fullBooking) {
-          const venue = fullBooking.venue as {
-            title?: string; location_address?: string; location_city?: string;
-            host?: { id?: string; full_name?: string }
-          } | null
-          const instructor = fullBooking.instructor as { id?: string; full_name?: string } | null
+      if (fullBooking) {
+        const fVenue = fullBooking.venue as {
+          title?: string; location_address?: string; location_city?: string
+          host?: { id?: string; full_name?: string }
+        } | null
+        const fInstructor = fullBooking.instructor as { id?: string; full_name?: string } | null
 
-          let instructorEmail = user.email ?? ''
-          let hostEmail = ''
-          if (venue?.host?.id) {
-            const { data: hostUser } = await admin.auth.admin.getUserById(venue.host.id)
-            hostEmail = hostUser?.user?.email ?? ''
-          }
-
-          const emailData = {
-            instructorName: instructor?.full_name ?? '',
-            instructorEmail,
-            hostName: venue?.host?.full_name ?? '',
-            hostEmail,
-            venueName: venue?.title ?? '',
-            venueAddress: venue?.location_address ?? '',
-            venueCity: venue?.location_city ?? '',
-            bookingDate: fullBooking.booking_date,
-            startTime: fullBooking.start_time,
-            endTime: fullBooking.end_time,
-            totalPrice: fullBooking.total_price,
-            hostPayout: fullBooking.host_payout,
-            classType: fullBooking.class_type ?? undefined,
-            participantsCount: fullBooking.participants_count ?? undefined,
-            bookingId,
-          }
-
-          Promise.all([
-            instructorEmail ? sendBookingConfirmedEmailToInstructor(emailData) : Promise.resolve(),
-            hostEmail ? sendNewBookingEmailToHost(emailData) : Promise.resolve(),
-          ]).catch(err => console.error('[checkout fallback] email error:', err))
+        let instructorEmail = user.email ?? ''
+        let hostEmail = ''
+        if (fVenue?.host?.id) {
+          const { data: hostUser } = await admin.auth.admin.getUserById(fVenue.host.id)
+          hostEmail = hostUser?.user?.email ?? ''
         }
 
-        console.log(`[checkout] Confirmed booking ${bookingId} via fallback (no Grow)`)
-      } catch (fallbackErr) {
-        console.error('[checkout] Fallback confirm failed:', fallbackErr)
+        const emailData = {
+          instructorName: fInstructor?.full_name ?? '',
+          instructorEmail,
+          hostName:       fVenue?.host?.full_name ?? '',
+          hostEmail,
+          venueName:      fVenue?.title ?? '',
+          venueAddress:   fVenue?.location_address ?? '',
+          venueCity:      fVenue?.location_city ?? '',
+          bookingDate:    fullBooking.booking_date,
+          startTime:      fullBooking.start_time,
+          endTime:        fullBooking.end_time,
+          totalPrice:     fullBooking.total_price,
+          hostPayout:     fullBooking.host_payout,
+          classType:      fullBooking.class_type ?? undefined,
+          participantsCount: fullBooking.participants_count ?? undefined,
+          bookingId,
+        }
+
+        Promise.all([
+          instructorEmail ? sendBookingConfirmedEmailToInstructor(emailData) : Promise.resolve(),
+          hostEmail       ? sendNewBookingEmailToHost(emailData)             : Promise.resolve(),
+        ]).catch(err => console.error('[checkout fallback] email error:', err))
       }
     }
 
-    return NextResponse.json({
-      checkout_url: `${appUrl}/booking/confirm/${bookingId}`,
-    })
-
+    return NextResponse.json({ checkout_url: `${appUrl}/booking/confirm/${bookingId}` })
   } catch (e) {
-    console.error('Checkout error:', e)
+    console.error('[checkout] Unhandled error:', e)
     return NextResponse.json({ error: 'Checkout failed' }, { status: 500 })
   }
 }

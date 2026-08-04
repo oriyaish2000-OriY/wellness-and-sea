@@ -18,6 +18,8 @@ export interface Profile {
   bank_account?: string
   specialties?: string[]
   instagram?: string
+  /** Grow sub-merchant user ID — set after KYC via /api/grow/register-merchant */
+  grow_merchant_id?: string
 }
 
 export interface VenueAmenities {
@@ -126,6 +128,11 @@ export interface ClassEnrollment {
   id: string
   booking_id: string
   student_id: string
+  /** 'pending_direct' | 'paid' | 'cancelled' */
+  payment_status: string
+  /** 'direct' | 'bit' | 'paybox' | 'cash' | 'grow' */
+  payment_method?: string
+  amount_paid: number
   enrolled_at: string
   booking?: Booking
 }
