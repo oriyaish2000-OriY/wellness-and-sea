@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/footer'
 import { Card } from '@/components/ui/card'
 import { MapPin, Clock, Calendar, CheckCircle, ArrowRight } from 'lucide-react'
 import { MarkPaidButton } from './MarkPaidButton'
+import { GrowPayButton } from './GrowPayButton'
 
 interface Props {
   params: Promise<{ bookingId: string }>
@@ -36,7 +37,9 @@ export default async function ClassPayPage({ params }: Props) {
   const alreadyPaid = enrollment.payment_status === 'paid'
 
   const venue = cls.venue as { id?: string; title?: string; location_city?: string; location_address?: string } | null
-  const instructor = cls.instructor as { id?: string; full_name?: string; avatar_url?: string; bit_phone?: string; paybox_phone?: string; instagram?: string } | null
+  const instructor = cls.instructor as { id?: string; full_name?: string; avatar_url?: string; bit_phone?: string; paybox_phone?: string; instagram?: string; grow_merchant_id?: string } | null
+
+  const hasGrow = !!instructor?.grow_merchant_id
 
   const dateFormatted = new Date(cls.booking_date).toLocaleDateString('he-IL', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -82,7 +85,9 @@ export default async function ClassPayPage({ params }: Props) {
         ) : (
           <>
             <h1 className="text-2xl font-black text-deep-ocean mb-1">תשלום לשיעור</h1>
-            <p className="text-sm text-gray-500 mb-6">שלחי את התשלום ישירות למדריכה</p>
+            <p className="text-sm text-gray-500 mb-6">
+              {hasGrow ? 'תשלום מאובטח בכרטיס אשראי' : 'שלחו את התשלום ישירות למדריכ/ה'}
+            </p>
 
             {/* Class summary */}
             <Card className="p-5 border-0 mb-5" style={{ boxShadow: '0 2px 16px rgba(10,74,74,0.08)' }}>
@@ -124,56 +129,71 @@ export default async function ClassPayPage({ params }: Props) {
 
             {/* Payment methods */}
             <div className="space-y-3">
-              {bitLink && (
-                <a
-                  href={bitLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 rounded-2xl hover:scale-[1.01] transition-all"
-                  style={{ background: 'linear-gradient(135deg, #1a6ef5, #0d56d8)', boxShadow: '0 4px 16px rgba(26,110,245,0.3)' }}
-                >
-                  <span className="text-3xl">💙</span>
-                  <div className="flex-1">
-                    <p className="font-black text-white text-base">שלמי ב-Bit</p>
-                    <p className="text-white/70 text-sm">למדריכה: {instructor?.bit_phone}</p>
-                    <p className="text-white/90 text-base font-bold mt-0.5">₪{amount}</p>
-                  </div>
-                  <span className="text-white/60 text-xs">פתח אפליקציה →</span>
-                </a>
+
+              {/* ── Grow (card payment) — shown when instructor is onboarded ── */}
+              {hasGrow && (
+                <GrowPayButton enrollmentId={enrollment.id} amount={amount} />
               )}
 
-              {payboxLink && (
-                <a
-                  href={payboxLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 rounded-2xl hover:scale-[1.01] transition-all"
-                  style={{ background: 'linear-gradient(135deg, #f5a623, #e8901a)', boxShadow: '0 4px 16px rgba(245,166,35,0.3)' }}
-                >
-                  <span className="text-3xl">💛</span>
-                  <div className="flex-1">
-                    <p className="font-black text-white text-base">שלמי ב-PayBox</p>
-                    <p className="text-white/70 text-sm">למדריכה: {instructor?.paybox_phone}</p>
-                    <p className="text-white/90 text-base font-bold mt-0.5">₪{amount}</p>
-                  </div>
-                  <span className="text-white/60 text-xs">פתח אפליקציה →</span>
-                </a>
-              )}
-
-              {!bitLink && !payboxLink && (
-                <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(10,74,74,0.05)', border: '1.5px dashed rgba(10,74,74,0.2)' }}>
-                  <p className="text-sm font-semibold text-gray-700 mb-1">תשלום בהעברה בנקאית / מזומן</p>
-                  <p className="text-xs text-gray-500">פנה למדריכה ישירות לפרטי תשלום</p>
-                  {instructor?.id && (
-                    <Link href={`/instructors/${instructor.id}`} className="inline-block mt-3 text-sm text-ocean hover:underline">
-                      הפרופיל של {instructor.full_name}
-                    </Link>
+              {/* ── Direct payment apps (fallback or secondary) ── */}
+              {(!hasGrow || bitLink || payboxLink) && (
+                <>
+                  {hasGrow && (bitLink || payboxLink) && (
+                    <p className="text-xs text-center text-gray-400 pt-1">או תשלום ישיר למדריכ/ה:</p>
                   )}
-                </div>
+
+                  {bitLink && (
+                    <a
+                      href={bitLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 rounded-2xl hover:scale-[1.01] transition-all"
+                      style={{ background: 'linear-gradient(135deg, #1a6ef5, #0d56d8)', boxShadow: '0 4px 16px rgba(26,110,245,0.3)' }}
+                    >
+                      <span className="text-3xl">💙</span>
+                      <div className="flex-1">
+                        <p className="font-black text-white text-base">שלמו ב-Bit</p>
+                        <p className="text-white/70 text-sm">למדריכ/ה: {instructor?.bit_phone}</p>
+                        <p className="text-white/90 text-base font-bold mt-0.5">₪{amount}</p>
+                      </div>
+                      <span className="text-white/60 text-xs">פתח אפליקציה →</span>
+                    </a>
+                  )}
+
+                  {payboxLink && (
+                    <a
+                      href={payboxLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 rounded-2xl hover:scale-[1.01] transition-all"
+                      style={{ background: 'linear-gradient(135deg, #f5a623, #e8901a)', boxShadow: '0 4px 16px rgba(245,166,35,0.3)' }}
+                    >
+                      <span className="text-3xl">💛</span>
+                      <div className="flex-1">
+                        <p className="font-black text-white text-base">שלמו ב-PayBox</p>
+                        <p className="text-white/70 text-sm">למדריכ/ה: {instructor?.paybox_phone}</p>
+                        <p className="text-white/90 text-base font-bold mt-0.5">₪{amount}</p>
+                      </div>
+                      <span className="text-white/60 text-xs">פתח אפליקציה →</span>
+                    </a>
+                  )}
+
+                  {!hasGrow && !bitLink && !payboxLink && (
+                    <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(10,74,74,0.05)', border: '1.5px dashed rgba(10,74,74,0.2)' }}>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">תשלום בהעברה בנקאית / מזומן</p>
+                      <p className="text-xs text-gray-500">פנו למדריכ/ה ישירות לפרטי תשלום</p>
+                      {instructor?.id && (
+                        <Link href={`/instructors/${instructor.id}`} className="inline-block mt-3 text-sm text-ocean hover:underline">
+                          הפרופיל של {instructor.full_name}
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
-              {/* WhatsApp confirmation */}
-              {waConfirm && (
+              {/* WhatsApp confirmation — only for direct payment flows */}
+              {!hasGrow && waConfirm && (
                 <a
                   href={waConfirm}
                   target="_blank"
@@ -182,15 +202,17 @@ export default async function ClassPayPage({ params }: Props) {
                   style={{ background: '#25D366', color: 'white' }}
                 >
                   <span className="text-xl">💬</span>
-                  <span>שלחי אישור תשלום למדריכה בוואטסאפ</span>
+                  <span>שלחו אישור תשלום למדריכ/ה בוואטסאפ</span>
                 </a>
               )}
 
-              {/* Mark as paid manually */}
-              <div style={{ borderTop: '1px solid #f0e6d3', paddingTop: 16, marginTop: 8 }}>
-                <p className="text-xs text-gray-400 text-center mb-3">לאחר ששלחת את התשלום, סמני כאן:</p>
-                <MarkPaidButton enrollmentId={enrollment.id} />
-              </div>
+              {/* Mark as paid manually — only for direct payment flows */}
+              {!hasGrow && (
+                <div style={{ borderTop: '1px solid #f0e6d3', paddingTop: 16, marginTop: 8 }}>
+                  <p className="text-xs text-gray-400 text-center mb-3">לאחר ששלחתם את התשלום, סמנו כאן:</p>
+                  <MarkPaidButton enrollmentId={enrollment.id} />
+                </div>
+              )}
             </div>
           </>
         )}

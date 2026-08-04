@@ -589,7 +589,7 @@ export async function getOpenClassById(bookingId: string) {
       participants_count, max_students, price_per_student,
       special_requests,
       venue:venues(id, title, location_city, location_address, images, hourly_price),
-      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, bio, instagram, bit_phone, paybox_phone)
+      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, bio, instagram, bit_phone, paybox_phone, grow_merchant_id)
     `)
     .eq('id', bookingId)
     .eq('open_to_students', true)
