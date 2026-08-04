@@ -2,8 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUserProfile } from '@/lib/supabase/queries'
 import { Card, CardContent } from '@/components/ui/card'
-import { UserCircle, Camera } from 'lucide-react'
+import { UserCircle, Camera, CreditCard } from 'lucide-react'
 import { ProfileForm } from './ProfileForm'
+import { GrowKycForm } from '@/components/payments/GrowKycForm'
 
 export default async function HostProfilePage() {
   const supabase = await createClient()
@@ -70,6 +71,21 @@ export default async function HostProfilePage() {
               bit_phone: profile.bit_phone ?? '',
               paybox_phone: profile.paybox_phone ?? '',
             }}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Grow KYC — payment onboarding */}
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CreditCard className="w-5 h-5 text-ocean" />
+            <h2 className="text-base font-bold text-deep-ocean">קבלת תשלומים בכרטיס אשראי</h2>
+          </div>
+          <GrowKycForm
+            initialFullName={profile.full_name}
+            initialPhone={profile.phone ?? ''}
+            existingMerchantId={profile.grow_merchant_id}
           />
         </CardContent>
       </Card>
