@@ -27,7 +27,17 @@ export default function TermsPage() {
         <h1 className="text-3xl font-black text-deep-ocean mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
           תנאי שימוש
         </h1>
-        <p className="text-sm text-gray-400 mb-10">עדכון אחרון: יולי 2026</p>
+        <p className="text-sm text-gray-400 mb-4">עדכון אחרון: יולי 2026</p>
+        <div className="mb-8 p-4 bg-ocean/5 rounded-xl border border-ocean/20 text-sm">
+          <span className="text-gray-600">ראו גם: </span>
+          <Link href="/terms/payment" className="text-ocean font-semibold hover:underline">
+            מדיניות תשלומים ועמלות ←
+          </Link>
+          {' · '}
+          <Link href="/privacy-policy" className="text-ocean hover:underline">
+            מדיניות פרטיות
+          </Link>
+        </div>
 
         <div className="space-y-8 text-gray-700 leading-relaxed">
 

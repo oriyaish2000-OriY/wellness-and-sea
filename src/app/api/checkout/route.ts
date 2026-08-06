@@ -116,12 +116,14 @@ export async function POST(request: NextRequest) {
           instructor:profiles!bookings_instructor_id_fkey(id, full_name)
         `)
         .eq('id', bookingId)
+        .eq('instructor_id', user.id)   // defence-in-depth: re-assert ownership
         .single()
 
       await admin
         .from('bookings')
         .update({ status: 'confirmed' })
         .eq('id', bookingId)
+        .eq('instructor_id', user.id)
         .eq('status', 'pending')
 
       if (fullBooking) {
