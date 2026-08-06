@@ -5,24 +5,22 @@
  *
  * Commission model (symmetric — platform earns 10% of base):
  *   Instructor pays:  base_price × 1.05  (5% markup)
- *   Host receives:    base_price × 0.95  (5% deduction)
- *   Platform earns:   10% of base_price  (not held — intermediary model)
+ *   Host receives:    base_price × 0.95  (5% deduction, via Cardcom Meaged dashboard config)
+ *   Platform earns:   10% of base_price
  *
- * The booking's total_price / host_payout are set during booking creation and
- * are never trusted from the client body.
+ * Amounts (total_price / host_payout) are set during booking creation — never trusted from client.
  *
  * Returns { checkout_url } on success.
- * Falls back to direct confirmation when Summit is not yet configured or
- * the host has not completed KYC.
+ * Falls back to direct confirmation when Cardcom is not configured or host has no Sapak number.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import {
-  isSummitConfigured,
+  isCardcomConfigured,
   createSpaceRentalPayment,
-} from '@/lib/payments/summitPaymentService'
+} from '@/lib/payments/cardcomPaymentService'
 import {
   sendBookingConfirmedEmailToInstructor,
   sendNewBookingEmailToHost,
@@ -64,41 +62,45 @@ export async function POST(request: NextRequest) {
       host?: { id?: string; full_name?: string; grow_merchant_id?: string }
     } | null
 
-    // Amounts already stored correctly in DB from booking creation
-    const totalILS         = booking.total_price   // instructor pays (base + 5%)
-    const hostPayoutILS    = booking.host_payout    // host receives  (base − 5%)
-    const hostMerchantId   = venue?.host?.grow_merchant_id ?? ''  // reused field for Summit ID
+    // Amounts stored correctly in DB from booking creation
+    const totalILS       = booking.total_price   // instructor pays (base + 5%)
+    const hostPayoutILS  = booking.host_payout   // host receives  (base − 5%)
+    // grow_merchant_id stores Cardcom Sapak number
+    const hostSapakNumber = venue?.host?.grow_merchant_id ?? ''
 
     if (!totalILS || !hostPayoutILS) {
       return NextResponse.json({ error: 'Invalid booking amounts' }, { status: 400 })
     }
 
-    // ── Summit configured + host onboarded → split payment ────────────────────
-    if (isSummitConfigured() && hostMerchantId) {
+    // ── Cardcom configured + host has Sapak → LowProfile payment ─────────────
+    if (isCardcomConfigured() && hostSapakNumber) {
       try {
         const { checkoutUrl } = await createSpaceRentalPayment({
           bookingId,
-          instructorId:      booking.instructor_id,
+          instructorId:    booking.instructor_id,
           totalILS,
-          hostPayoutAgorot:  Math.round(hostPayoutILS * 100),
-          hostMerchantId,
-          venueName:         venue?.title ?? 'חלל',
+          hostSapakNumber,
+          venueName:       venue?.title ?? 'חלל',
         })
 
-        console.log(`[Summit Flow1] Payment created for booking ${bookingId}. ` +
-          `Instructor pays ₪${totalILS}, Host receives ₪${hostPayoutILS}`)
+        console.log(
+          `[Cardcom Flow1] LowProfile created for booking ${bookingId}. ` +
+          `Instructor pays ₪${totalILS}, Host receives ₪${hostPayoutILS}`
+        )
         return NextResponse.json({ checkout_url: checkoutUrl })
       } catch (err) {
-        console.error('[Summit Flow1] createSpaceRentalPayment failed:', err)
+        console.error('[Cardcom Flow1] createSpaceRentalPayment failed:', err)
         // Fall through to direct fallback
       }
     }
 
-    if (isSummitConfigured() && !hostMerchantId) {
-      console.warn(`[Summit Flow1] Host ${venue?.host?.id ?? 'unknown'} has no merchant ID — needs KYC`)
+    if (isCardcomConfigured() && !hostSapakNumber) {
+      console.warn(
+        `[Cardcom Flow1] Host ${venue?.host?.id ?? 'unknown'} has no Sapak number — needs KYC registration`
+      )
     }
 
-    // ── Fallback: confirm directly (pre-production / host not onboarded) ───────
+    // ── Fallback: confirm directly (host not onboarded / Cardcom not configured) ──
     console.warn('[checkout] Falling back to direct confirmation')
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

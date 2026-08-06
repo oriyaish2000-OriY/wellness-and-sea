@@ -4,25 +4,21 @@
  * Flow 2 — Class Booking (Student → Instructor)
  *
  * Commission model (symmetric — platform earns 10% of base):
- *   Student pays:      base_price × 1.05  (5% service fee added)
- *   Instructor gets:   base_price × 0.95  (5% deducted from their payout)
- *   Platform earns:    10% of base_price  (not held — intermediary model)
- *
- * Platform issues an invoice only for its commission (10% of base),
- * NOT for the full transaction. The remainder is routed directly to the instructor.
+ *   Student pays:      base_price × 1.05  (5% service fee)
+ *   Instructor gets:   base_price × 0.95  (5% deducted via Cardcom Meaged dashboard)
+ *   Platform earns:    10% of base_price
  *
  * Body: { enrollment_id: string }
  * Returns: { checkout_url: string } on success
- *          { checkout_url: null, fallback: 'direct', studentPays, instructorPayout, ... }
- *          when instructor has not completed KYC or Summit is not configured.
+ *          { checkout_url: null, fallback: 'direct', ... } when instructor has no Sapak
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
-  isSummitConfigured,
+  isCardcomConfigured,
   createClassBookingPayment,
-} from '@/lib/payments/summitPaymentService'
+} from '@/lib/payments/cardcomPaymentService'
 import { calcClassBookingSplit } from '@/lib/payments/commissionUtils'
 
 export async function POST(request: NextRequest) {
@@ -33,7 +29,7 @@ export async function POST(request: NextRequest) {
     // ── Auth ──────────────────────────────────────────────────────────────────
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user)        return NextResponse.json({ error: 'Unauthorized' },         { status: 401 })
+    if (!user)         return NextResponse.json({ error: 'Unauthorized' },          { status: 401 })
     if (!enrollmentId) return NextResponse.json({ error: 'Missing enrollment_id' }, { status: 400 })
 
     // ── Load enrollment + class details ───────────────────────────────────────
@@ -69,65 +65,63 @@ export async function POST(request: NextRequest) {
       instructor?: { id?: string; full_name?: string; grow_merchant_id?: string }
     } | null
 
-    // base price = what the instructor set (price_per_student)
     const basePriceILS = booking?.price_per_student ?? 0
 
     if (basePriceILS <= 0) {
       return NextResponse.json({ error: 'Invalid class price' }, { status: 400 })
     }
 
-    // ── Commission split ───────────────────────────────────────────────────────
+    // ── Commission split ──────────────────────────────────────────────────────
     const split = calcClassBookingSplit(basePriceILS)
     // split.studentPays      = base × 1.05  (charged to student)
-    // split.instructorPayout = base × 0.95  (routed to instructor)
+    // split.instructorPayout = base × 0.95  (configured in Cardcom dashboard)
     // split.platformRevenue  = base × 0.10  (kept by platform)
 
-    const instructorMerchantId = booking?.instructor?.grow_merchant_id ?? ''
+    // grow_merchant_id stores Cardcom Sapak number
+    const instructorSapakNumber = booking?.instructor?.grow_merchant_id ?? ''
 
-    // ── Summit + instructor onboarded → split payment ─────────────────────────
-    if (isSummitConfigured() && instructorMerchantId) {
+    // ── Cardcom + instructor has Sapak → LowProfile payment ──────────────────
+    if (isCardcomConfigured() && instructorSapakNumber) {
       try {
         const { checkoutUrl } = await createClassBookingPayment({
           enrollmentId,
-          studentId:             user.id,
-          studentPaysILS:        split.studentPays,
-          instructorPayoutAgorot: split.instructorPayoutAgorot,
-          instructorMerchantId,
-          className:             booking?.class_type ?? 'שיעור',
-          bookingDate:           booking?.booking_date ?? '',
+          studentId:            user.id,
+          studentPaysILS:       split.studentPays,
+          instructorSapakNumber,
+          className:            booking?.class_type ?? 'שיעור',
+          bookingDate:          booking?.booking_date ?? '',
         })
 
         console.log(
-          `[Summit Flow2] Class payment created for enrollment ${enrollmentId}. ` +
-          `Student pays ₪${split.studentPays} (incl. 5% fee), ` +
-          `Instructor gets ₪${split.instructorPayout} (after 5% deduction), ` +
+          `[Cardcom Flow2] LowProfile created for enrollment ${enrollmentId}. ` +
+          `Student pays ₪${split.studentPays}, ` +
+          `Instructor gets ₪${split.instructorPayout}, ` +
           `Platform earns ₪${split.platformRevenue}`
         )
 
         return NextResponse.json({ checkout_url: checkoutUrl })
       } catch (err) {
-        console.error('[Summit Flow2] createClassBookingPayment failed:', err)
+        console.error('[Cardcom Flow2] createClassBookingPayment failed:', err)
         // Fall through to direct fallback
       }
     }
 
-    // ── Instructor not onboarded or Summit not configured → fallback ──────────
+    // ── Instructor not onboarded or Cardcom not configured → fallback ─────────
     console.warn(
-      `[Summit Flow2] Instructor ${booking?.instructor?.id ?? 'unknown'} ` +
-      (instructorMerchantId ? 'Summit call failed' : 'has no merchant ID') +
+      `[Cardcom Flow2] Instructor ${booking?.instructor?.id ?? 'unknown'} ` +
+      (instructorSapakNumber ? 'Cardcom call failed' : 'has no Sapak number') +
       ' — returning direct payment fallback'
     )
 
     return NextResponse.json({
-      checkout_url:      null,
-      fallback:          'direct',
-      // Amounts for the client to display correctly
+      checkout_url:     null,
+      fallback:         'direct',
       basePriceILS,
-      studentPays:       split.studentPays,        // what student should pay (base + 5%)
-      instructorPayout:  split.instructorPayout,   // what instructor expects to receive
-      platformRevenue:   split.platformRevenue,
-      className:         booking?.class_type,
-      bookingDate:       booking?.booking_date,
+      studentPays:      split.studentPays,
+      instructorPayout: split.instructorPayout,
+      platformRevenue:  split.platformRevenue,
+      className:        booking?.class_type,
+      bookingDate:      booking?.booking_date,
     })
   } catch (e) {
     console.error('[checkout/class] Unhandled error:', e)
