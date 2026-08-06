@@ -1,48 +1,56 @@
 /**
- * WELLNESS&SEA — Summit Payment Gateway Service
+ * WELLNESS&SEA — SUMIT Payment Gateway Service
  *
- * Marketplace split-payment integration.
+ * Marketplace split-payment integration via sumit.co.il
  * Platform model: intermediary only — invoices commission alone,
  * routes the remainder directly to the beneficiary.
  *
  * Environment variables:
- *   SUMMIT_API_KEY        — platform API key
- *   SUMMIT_API_BASE       — base URL  (e.g. https://api.summit-pay.co.il/v1)
+ *   SUMMIT_API_ID         — account API ID   (public,  from SUMIT dashboard)
+ *   SUMMIT_API_KEY        — account API key  (secret,  from SUMIT dashboard)
  *   SUMMIT_WEBHOOK_SECRET — secret for webhook HMAC verification
  *   NEXT_PUBLIC_APP_URL   — canonical app URL for callbacks
+ *
+ * Confirmed:
+ *   Base URL : https://app.sumit.co.il
+ *   Auth     : headers  account-api-id: {id}   account-api-key: {key}
+ *   Charge   : POST /clearing/v1/charge
  */
 
 // ─── Env ─────────────────────────────────────────────────────────────────────
 
 function summitEnv() {
   return {
+    apiId:         process.env.SUMMIT_API_ID  ?? '',
     apiKey:        process.env.SUMMIT_API_KEY ?? '',
-    apiBase:       process.env.SUMMIT_API_BASE ?? '',
     webhookSecret: process.env.SUMMIT_WEBHOOK_SECRET ?? '',
     appUrl:        process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
   }
 }
 
 export function isSummitConfigured(): boolean {
-  const { apiKey, apiBase } = summitEnv()
-  return Boolean(apiKey && apiBase)
+  const { apiId, apiKey } = summitEnv()
+  return Boolean(apiId && apiKey)
 }
 
 // ─── Shared request helper ────────────────────────────────────────────────────
 
-async function callSummit(
-  endpoint: string,
+async function callSumit(
+  path: string,
   body: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
-  const { apiKey, apiBase } = summitEnv()
-  if (!apiKey)  throw new Error('SUMMIT_API_KEY not configured')
-  if (!apiBase) throw new Error('SUMMIT_API_BASE not configured')
+  const { apiId, apiKey } = summitEnv()
+  if (!apiId)  throw new Error('SUMMIT_API_ID not configured')
+  if (!apiKey) throw new Error('SUMMIT_API_KEY not configured')
 
-  const res = await fetch(`${apiBase}/${endpoint}`, {
+  const url = `https://app.sumit.co.il/${path}`
+
+  const res = await fetch(url, {
     method:  'POST',
     headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type':   'application/json',
+      'account-api-id': apiId,
+      'account-api-key': apiKey,
     },
     body: JSON.stringify(body),
   })
@@ -50,19 +58,20 @@ async function callSummit(
   const text = await res.text()
 
   if (!res.ok) {
-    throw new Error(`Summit ${endpoint} HTTP ${res.status}: ${text}`)
+    throw new Error(`SUMIT ${path} HTTP ${res.status}: ${text}`)
   }
 
   let json: Record<string, unknown>
   try {
     json = JSON.parse(text) as Record<string, unknown>
   } catch {
-    throw new Error(`Summit ${endpoint} non-JSON: ${text}`)
+    throw new Error(`SUMIT ${path} non-JSON response: ${text}`)
   }
 
-  // Summit returns { success: false, error: "..." } on logical failure
-  if (json.success === false) {
-    throw new Error(`Summit ${endpoint} error: ${json.error ?? JSON.stringify(json)}`)
+  // SUMIT returns { Success: false, ErrorMessage: "..." } on logical failure
+  if (json.Success === false || json.success === false) {
+    const msg = (json.ErrorMessage ?? json.error ?? JSON.stringify(json)) as string
+    throw new Error(`SUMIT ${path} error: ${msg}`)
   }
 
   return json
@@ -83,7 +92,7 @@ export interface SpaceRentalParams {
   totalILS:           number
   /** Host's payout (base − 5%) in agorot */
   hostPayoutAgorot:   number
-  /** Host's Summit merchant ID */
+  /** Host's SUMIT sub-merchant ID */
   hostMerchantId:     string
   venueName:          string
 }
@@ -95,7 +104,7 @@ export interface ClassBookingParams {
   studentPaysILS:          number
   /** Instructor's payout (base − 5%) in agorot */
   instructorPayoutAgorot:  number
-  /** Instructor's Summit merchant ID */
+  /** Instructor's SUMIT sub-merchant ID */
   instructorMerchantId:    string
   className:               string
   bookingDate:             string
@@ -104,43 +113,58 @@ export interface ClassBookingParams {
 // ─── Flow 1: Space Rental ─────────────────────────────────────────────────────
 
 /**
- * Creates a payment session for a space-rental booking.
+ * Creates a hosted-payment session for a space-rental booking.
  *
  * Split:
- *   hostPayoutAgorot → routed to host sub-merchant
- *   remainder        → stays with platform (= 10% of base)
+ *   hostPayoutAgorot → routed to host sub-merchant (base − 5%)
+ *   remainder        → stays with platform (10% of base)
  */
 export async function createSpaceRentalPayment(
   params: SpaceRentalParams
 ): Promise<SummitPaymentResult> {
   const { appUrl } = summitEnv()
 
-  const data = await callSummit('payments/create', {
-    amount:      Math.round(params.totalILS * 100),   // agorot
-    currency:    'ILS',
-    description: `WELLNESS&SEA — הזמנת חלל: ${params.venueName}`,
-    successUrl:  `${appUrl}/booking/confirm/${params.bookingId}`,
-    cancelUrl:   `${appUrl}/booking/${params.bookingId}`,
-    notifyUrl:   `${appUrl}/api/webhooks/payment`,
+  const amountAgorot = Math.round(params.totalILS * 100)
+
+  const data = await callSumit('clearing/v1/charge', {
+    Amount:      amountAgorot,          // agorot
+    Currency:    'ILS',
+    Description: `WELLNESS&SEA — הזמנת חלל: ${params.venueName}`,
+    SuccessURL:  `${appUrl}/booking/confirm/${params.bookingId}`,
+    FailureURL:  `${appUrl}/booking/${params.bookingId}`,
+    NotifyURL:   `${appUrl}/api/webhooks/payment`,
 
     // Marketplace split — host receives their payout
-    split: {
-      merchantId: params.hostMerchantId,
-      amount:     params.hostPayoutAgorot,   // agorot
+    Split: {
+      SellerId: params.hostMerchantId,
+      Amount:   params.hostPayoutAgorot,  // agorot
     },
 
     // Custom fields for webhook correlation
-    metadata: {
+    CustomFields: {
+      Field1: params.bookingId,       // cField1 in webhook
+      Field3: 'space_rental',         // cField3 — flow discriminator
+    },
+
+    // Also pass as metadata for JSON webhooks
+    Metadata: {
       bookingId:    params.bookingId,
       instructorId: params.instructorId,
       flowType:     'space_rental',
     },
   })
 
-  const checkoutUrl = (data.checkoutUrl ?? data.url ?? data.paymentUrl) as string | undefined
-  const paymentId   = (data.paymentId  ?? data.id) as string | undefined
+  // SUMIT may return URL in different casing
+  const checkoutUrl = (
+    data.CheckoutUrl ?? data.checkoutUrl ?? data.Url ?? data.url ?? data.PaymentUrl ?? data.paymentUrl
+  ) as string | undefined
+  const paymentId = (
+    data.PaymentId ?? data.paymentId ?? data.Id ?? data.id
+  ) as string | undefined
 
-  if (!checkoutUrl) throw new Error(`Summit createSpaceRentalPayment: no checkout URL — ${JSON.stringify(data)}`)
+  if (!checkoutUrl) {
+    throw new Error(`SUMIT createSpaceRentalPayment: no checkout URL in response — ${JSON.stringify(data)}`)
+  }
 
   return { checkoutUrl, paymentId: paymentId ?? '', rawResponse: data }
 }
@@ -148,46 +172,59 @@ export async function createSpaceRentalPayment(
 // ─── Flow 2: Class Booking ────────────────────────────────────────────────────
 
 /**
- * Creates a payment session for a student enrolling in a class.
+ * Creates a hosted-payment session for a student enrolling in a class.
  *
  * Split:
  *   instructorPayoutAgorot → routed to instructor sub-merchant (base − 5%)
  *   remainder              → stays with platform (10% of base)
  *
- * Student is charged base + 5% (studentPaysILS).
+ * Student is charged base + 5%.
  * Instructor receives base − 5%.
- * Platform nets base × 10%.
+ * Platform nets 10% of base.
  */
 export async function createClassBookingPayment(
   params: ClassBookingParams
 ): Promise<SummitPaymentResult> {
   const { appUrl } = summitEnv()
 
-  const data = await callSummit('payments/create', {
-    amount:      Math.round(params.studentPaysILS * 100),  // agorot
-    currency:    'ILS',
-    description: `WELLNESS&SEA — שיעור: ${params.className} (${params.bookingDate})`,
-    successUrl:  `${appUrl}/classes/${params.enrollmentId}/success`,
-    cancelUrl:   `${appUrl}/classes`,
-    notifyUrl:   `${appUrl}/api/webhooks/payment`,
+  const amountAgorot = Math.round(params.studentPaysILS * 100)
+
+  const data = await callSumit('clearing/v1/charge', {
+    Amount:      amountAgorot,           // agorot
+    Currency:    'ILS',
+    Description: `WELLNESS&SEA — שיעור: ${params.className} (${params.bookingDate})`,
+    SuccessURL:  `${appUrl}/classes/${params.enrollmentId}/success`,
+    FailureURL:  `${appUrl}/classes`,
+    NotifyURL:   `${appUrl}/api/webhooks/payment`,
 
     // Marketplace split — instructor receives their payout
-    split: {
-      merchantId: params.instructorMerchantId,
-      amount:     params.instructorPayoutAgorot,  // agorot
+    Split: {
+      SellerId: params.instructorMerchantId,
+      Amount:   params.instructorPayoutAgorot,  // agorot
     },
 
-    metadata: {
+    CustomFields: {
+      Field1: params.enrollmentId,   // cField1 in webhook
+      Field3: 'class_booking',       // cField3 — flow discriminator
+    },
+
+    Metadata: {
       enrollmentId: params.enrollmentId,
       studentId:    params.studentId,
       flowType:     'class_booking',
     },
   })
 
-  const checkoutUrl = (data.checkoutUrl ?? data.url ?? data.paymentUrl) as string | undefined
-  const paymentId   = (data.paymentId  ?? data.id) as string | undefined
+  const checkoutUrl = (
+    data.CheckoutUrl ?? data.checkoutUrl ?? data.Url ?? data.url ?? data.PaymentUrl ?? data.paymentUrl
+  ) as string | undefined
+  const paymentId = (
+    data.PaymentId ?? data.paymentId ?? data.Id ?? data.id
+  ) as string | undefined
 
-  if (!checkoutUrl) throw new Error(`Summit createClassBookingPayment: no checkout URL — ${JSON.stringify(data)}`)
+  if (!checkoutUrl) {
+    throw new Error(`SUMIT createClassBookingPayment: no checkout URL in response — ${JSON.stringify(data)}`)
+  }
 
   return { checkoutUrl, paymentId: paymentId ?? '', rawResponse: data }
 }
@@ -216,25 +253,27 @@ export interface SubMerchantResult {
 export async function registerSubMerchant(
   params: SubMerchantParams
 ): Promise<SubMerchantResult> {
-  const data = await callSummit('merchants/register', {
-    businessType:  params.businessType,
-    idNumber:      params.idNumber,
-    fullName:      params.fullName,
-    businessName:  params.businessName,
-    email:         params.email,
-    phone:         params.phone.replace(/\D/g, ''),
-    bankDetails: {
-      bankCode:      params.bankCode,
-      branchNumber:  params.branchNumber,
-      accountNumber: params.accountNumber,
+  const data = await callSumit('sellers/v1/register', {
+    BusinessType:  params.businessType,
+    IdNumber:      params.idNumber,
+    FullName:      params.fullName,
+    BusinessName:  params.businessName,
+    Email:         params.email,
+    Phone:         params.phone.replace(/\D/g, ''),
+    BankDetails: {
+      BankCode:      params.bankCode,
+      BranchNumber:  params.branchNumber,
+      AccountNumber: params.accountNumber,
     },
   })
 
   const merchantId = (
-    data.merchantId ?? data.subMerchantId ?? data.id
+    data.SellerId ?? data.MerchantId ?? data.merchantId ?? data.subMerchantId ?? data.Id ?? data.id
   ) as string | undefined
 
-  if (!merchantId) throw new Error(`Summit registerSubMerchant: no merchantId — ${JSON.stringify(data)}`)
+  if (!merchantId) {
+    throw new Error(`SUMIT registerSubMerchant: no seller/merchant ID in response — ${JSON.stringify(data)}`)
+  }
 
   return { merchantId, rawResponse: data }
 }
@@ -242,8 +281,7 @@ export async function registerSubMerchant(
 // ─── Webhook verification ─────────────────────────────────────────────────────
 
 /**
- * Verify the HMAC signature on incoming Summit webhooks.
- * Call this at the top of the webhook handler.
+ * Verify the HMAC signature on incoming SUMIT webhooks.
  */
 export function verifySummitWebhook(
   rawBody: string,
@@ -252,9 +290,14 @@ export function verifySummitWebhook(
   const { webhookSecret } = summitEnv()
   if (!webhookSecret) return true  // Not configured — skip in dev
 
-  // TODO: implement HMAC-SHA256 verification once Summit confirms the exact header name
-  // and hashing algorithm. Typical pattern:
-  //   const hmac = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex')
-  //   return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signatureHeader))
-  return true
+  // Implemented in the webhook route handler (crypto.createHmac)
+  // This function kept for backwards-compatibility
+  const { createHmac, timingSafeEqual } = require('crypto') as typeof import('crypto')
+  try {
+    const expected = createHmac('sha256', webhookSecret).update(rawBody).digest('hex')
+    const received = signatureHeader.replace(/^sha256=/, '')
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(received))
+  } catch {
+    return false
+  }
 }
