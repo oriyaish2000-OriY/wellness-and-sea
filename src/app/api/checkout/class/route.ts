@@ -2,40 +2,41 @@
  * POST /api/checkout/class
  *
  * Flow 2 — Class Booking (Student → Instructor)
- * Creates a Grow Marketplace payment link with split:
- *   - Instructor sub-merchant receives 90% of price_per_student
- *   - Platform main account receives 10%
+ *
+ * Commission model (symmetric — platform earns 10% of base):
+ *   Student pays:      base_price × 1.05  (5% service fee added)
+ *   Instructor gets:   base_price × 0.95  (5% deducted from their payout)
+ *   Platform earns:    10% of base_price  (not held — intermediary model)
+ *
+ * Platform issues an invoice only for its commission (10% of base),
+ * NOT for the full transaction. The remainder is routed directly to the instructor.
  *
  * Body: { enrollment_id: string }
- *
- * On success returns { checkout_url: string }
- * On failure (Grow not configured / instructor not onboarded) returns
- * { checkout_url: null, fallback: 'direct' } so the client can show
- * the manual Bit/PayBox payment flow instead.
+ * Returns: { checkout_url: string } on success
+ *          { checkout_url: null, fallback: 'direct', studentPays, instructorPayout, ... }
+ *          when instructor has not completed KYC or Summit is not configured.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
-  isGrowConfigured,
-  createClassPaymentLink,
-} from '@/lib/grow/growPaymentService'
-import { calcClassBookingSplit } from '@/lib/grow/commissionUtils'
+  isSummitConfigured,
+  createClassBookingPayment,
+} from '@/lib/payments/summitPaymentService'
+import { calcClassBookingSplit } from '@/lib/payments/commissionUtils'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const enrollmentId: string = body.enrollment_id
+    const body         = await request.json()
+    const enrollmentId = body.enrollment_id as string
 
-    // ── Auth ──────────────────────────────────────────────────────────────
+    // ── Auth ──────────────────────────────────────────────────────────────────
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (!enrollmentId) {
-      return NextResponse.json({ error: 'Missing enrollment_id' }, { status: 400 })
-    }
+    if (!user)        return NextResponse.json({ error: 'Unauthorized' },         { status: 401 })
+    if (!enrollmentId) return NextResponse.json({ error: 'Missing enrollment_id' }, { status: 400 })
 
-    // ── Load enrollment + class details ───────────────────────────────────
+    // ── Load enrollment + class details ───────────────────────────────────────
     const { data: enrollment } = await supabase
       .from('class_enrollments')
       .select(`
@@ -68,57 +69,65 @@ export async function POST(request: NextRequest) {
       instructor?: { id?: string; full_name?: string; grow_merchant_id?: string }
     } | null
 
-    const priceILS = booking?.price_per_student ?? 0
+    // base price = what the instructor set (price_per_student)
+    const basePriceILS = booking?.price_per_student ?? 0
 
-    if (priceILS <= 0) {
+    if (basePriceILS <= 0) {
       return NextResponse.json({ error: 'Invalid class price' }, { status: 400 })
     }
 
-    const split                  = calcClassBookingSplit(priceILS)
-    const instructorGrowMerchantId = booking?.instructor?.grow_merchant_id ?? ''
-    const appUrl                 = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    // ── Commission split ───────────────────────────────────────────────────────
+    const split = calcClassBookingSplit(basePriceILS)
+    // split.studentPays      = base × 1.05  (charged to student)
+    // split.instructorPayout = base × 0.95  (routed to instructor)
+    // split.platformRevenue  = base × 0.10  (kept by platform)
 
-    // ── Grow configured + instructor onboarded → use split payment link ───
-    if (isGrowConfigured() && instructorGrowMerchantId) {
+    const instructorMerchantId = booking?.instructor?.grow_merchant_id ?? ''
+
+    // ── Summit + instructor onboarded → split payment ─────────────────────────
+    if (isSummitConfigured() && instructorMerchantId) {
       try {
-        const { checkoutUrl } = await createClassPaymentLink({
+        const { checkoutUrl } = await createClassBookingPayment({
           enrollmentId,
-          studentId:                user.id,
-          priceILS,
-          priceAgorot:              split.studentPaysAgorot,
-          instructorPayoutAgorot:   split.instructorPayoutAgorot,
-          instructorGrowMerchantId,
-          className:                booking?.class_type ?? 'שיעור',
-          bookingDate:              booking?.booking_date ?? '',
+          studentId:             user.id,
+          studentPaysILS:        split.studentPays,
+          instructorPayoutAgorot: split.instructorPayoutAgorot,
+          instructorMerchantId,
+          className:             booking?.class_type ?? 'שיעור',
+          bookingDate:           booking?.booking_date ?? '',
         })
 
         console.log(
-          `[Grow Flow2] Class payment link created for enrollment ${enrollmentId}. ` +
-          `Student pays ₪${split.studentPays}, Instructor gets ₪${split.instructorPayout}, ` +
-          `Platform gets ₪${split.platformRevenue}`
+          `[Summit Flow2] Class payment created for enrollment ${enrollmentId}. ` +
+          `Student pays ₪${split.studentPays} (incl. 5% fee), ` +
+          `Instructor gets ₪${split.instructorPayout} (after 5% deduction), ` +
+          `Platform earns ₪${split.platformRevenue}`
         )
+
         return NextResponse.json({ checkout_url: checkoutUrl })
-      } catch (growErr) {
-        console.error('[Grow Flow2] CreatePaymentLink failed:', growErr)
-        // Fall through to manual fallback
+      } catch (err) {
+        console.error('[Summit Flow2] createClassBookingPayment failed:', err)
+        // Fall through to direct fallback
       }
     }
 
-    // ── Instructor not yet onboarded or Grow not configured ───────────────
-    // Return fallback signal — client shows Bit/PayBox deep links
+    // ── Instructor not onboarded or Summit not configured → fallback ──────────
     console.warn(
-      `[Grow Flow2] Instructor ${booking?.instructor?.id ?? 'unknown'} ` +
-      (instructorGrowMerchantId ? 'Grow call failed' : 'has no grow_merchant_id') +
+      `[Summit Flow2] Instructor ${booking?.instructor?.id ?? 'unknown'} ` +
+      (instructorMerchantId ? 'Summit call failed' : 'has no merchant ID') +
       ' — returning direct payment fallback'
     )
 
     return NextResponse.json({
-      checkout_url: null,
-      fallback: 'direct',
-      // Client can use these to show Bit/PayBox links
-      priceILS,
-      className:   booking?.class_type,
-      bookingDate: booking?.booking_date,
+      checkout_url:      null,
+      fallback:          'direct',
+      // Amounts for the client to display correctly
+      basePriceILS,
+      studentPays:       split.studentPays,        // what student should pay (base + 5%)
+      instructorPayout:  split.instructorPayout,   // what instructor expects to receive
+      platformRevenue:   split.platformRevenue,
+      className:         booking?.class_type,
+      bookingDate:       booking?.booking_date,
     })
   } catch (e) {
     console.error('[checkout/class] Unhandled error:', e)

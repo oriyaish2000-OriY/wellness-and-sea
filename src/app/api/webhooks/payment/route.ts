@@ -1,20 +1,21 @@
 /**
  * POST /api/webhooks/payment
  *
- * Grow (Meshulam) webhook handler for both payment flows.
+ * Summit payment webhook handler for both flows.
  *
- * Distinguishes flows via cField3:
- *   cField3 = 'space_rental'  → Flow 1: update bookings.status
- *   cField3 = 'class_booking' → Flow 2: update class_enrollments.payment_status
+ * Flow discrimination via metadata.flowType (JSON) or flowType (form):
+ *   'space_rental'  → update bookings.status
+ *   'class_booking' → update class_enrollments.payment_status
  *
- * Security: validates webhookKey header/field against GROW_WEBHOOK_KEY env var.
+ * Security: HMAC-SHA256 verification via SUMMIT_WEBHOOK_SECRET.
  *
- * Grow may POST as application/json OR application/x-www-form-urlencoded.
- * Both are handled.
+ * Summit may POST as application/json OR application/x-www-form-urlencoded.
+ * Both are handled for maximum compatibility.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createHmac, timingSafeEqual } from 'crypto'
 import {
   sendBookingConfirmedEmailToInstructor,
   sendNewBookingEmailToHost,
@@ -22,7 +23,7 @@ import {
   sendBookingCancelledEmailToHost,
 } from '@/lib/email'
 
-// ─── Supabase service client (bypasses RLS) ───────────────────────────────────
+// ─── Supabase admin client (bypasses RLS) ─────────────────────────────────────
 
 function adminClient() {
   return createClient(
@@ -36,32 +37,55 @@ function adminClient() {
 function parsePayload(rawBody: string, contentType: string): Record<string, string> {
   const ct = contentType.toLowerCase()
   if (ct.includes('application/json')) {
-    try { return JSON.parse(rawBody) as Record<string, string> } catch { /* fall */ }
+    try {
+      const parsed = JSON.parse(rawBody) as Record<string, unknown>
+      // Flatten metadata into top-level for easier access
+      const meta = parsed.metadata as Record<string, string> | undefined
+      return { ...parsed, ...(meta ?? {}) } as Record<string, string>
+    } catch { /* fall through */ }
   }
   if (ct.includes('urlencoded') || ct.includes('form-data')) {
     const out: Record<string, string> = {}
     new URLSearchParams(rawBody).forEach((v, k) => { out[k] = v })
     return out
   }
-  // Last resort
-  try { return JSON.parse(rawBody) as Record<string, string> }
-  catch {
+  // Last resort — try JSON then form
+  try {
+    const parsed = JSON.parse(rawBody) as Record<string, unknown>
+    const meta = parsed.metadata as Record<string, string> | undefined
+    return { ...parsed, ...(meta ?? {}) } as Record<string, string>
+  } catch {
     const out: Record<string, string> = {}
     new URLSearchParams(rawBody).forEach((v, k) => { out[k] = v })
     return out
   }
 }
 
-// ─── Status detection helpers ─────────────────────────────────────────────────
+// ─── Webhook signature verification ──────────────────────────────────────────
+
+function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
+  const secret = process.env.SUMMIT_WEBHOOK_SECRET
+  if (!secret || !signatureHeader) return !secret  // skip if not configured
+
+  try {
+    const expected = createHmac('sha256', secret).update(rawBody).digest('hex')
+    const received = signatureHeader.replace(/^sha256=/, '')
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(received))
+  } catch {
+    return false
+  }
+}
+
+// ─── Status detection ─────────────────────────────────────────────────────────
 
 function isSuccess(p: Record<string, string>): boolean {
   const s = p.status ?? p.event ?? p.paymentStatus ?? ''
-  return ['payment.completed', 'completed', 'success', 'paid'].includes(s)
+  return ['payment.completed', 'completed', 'success', 'paid', 'approved'].includes(s.toLowerCase())
 }
 
 function isFailed(p: Record<string, string>): boolean {
   const s = p.status ?? p.event ?? p.paymentStatus ?? ''
-  return ['payment.failed', 'payment.cancelled', 'failed', 'cancelled'].includes(s)
+  return ['payment.failed', 'payment.cancelled', 'failed', 'cancelled', 'declined'].includes(s.toLowerCase())
 }
 
 // ─── Email helpers ────────────────────────────────────────────────────────────
@@ -74,13 +98,14 @@ async function getEmail(supabase: ReturnType<typeof adminClient>, userId: string
 // ─── Flow 1: Space Rental ─────────────────────────────────────────────────────
 
 async function handleSpaceRentalSuccess(
-  supabase:      ReturnType<typeof adminClient>,
-  payload:       Record<string, string>
+  supabase: ReturnType<typeof adminClient>,
+  payload:  Record<string, string>
 ): Promise<void> {
-  const bookingId     = payload.cField1
-  const transactionId = payload.transactionCode ?? payload.transaction_id ?? null
+  // bookingId comes from metadata.bookingId (flattened) or legacy cField1
+  const bookingId     = payload.bookingId ?? payload.cField1
+  const transactionId = payload.paymentId ?? payload.transactionCode ?? payload.transaction_id ?? null
 
-  if (!bookingId) throw new Error('cField1 (bookingId) missing from space_rental webhook')
+  if (!bookingId) throw new Error('bookingId missing from space_rental webhook')
 
   const { error } = await supabase
     .from('bookings')
@@ -90,7 +115,6 @@ async function handleSpaceRentalSuccess(
 
   if (error) throw new Error(`DB update failed for booking ${bookingId}: ${error.message}`)
 
-  // Fetch full booking for emails
   const { data: booking } = await supabase
     .from('bookings')
     .select(`
@@ -108,8 +132,8 @@ async function handleSpaceRentalSuccess(
   const instructor = booking.instructor as { id?: string; full_name?: string } | null
 
   const [instructorEmail, hostEmail] = await Promise.all([
-    instructor?.id ? getEmail(supabase, instructor.id) : Promise.resolve(''),
-    venue?.host?.id ? getEmail(supabase, venue.host.id) : Promise.resolve(''),
+    instructor?.id   ? getEmail(supabase, instructor.id)   : Promise.resolve(''),
+    venue?.host?.id  ? getEmail(supabase, venue.host.id)   : Promise.resolve(''),
   ])
 
   const emailData = {
@@ -142,7 +166,7 @@ async function handleSpaceRentalFailure(
   supabase: ReturnType<typeof adminClient>,
   payload:  Record<string, string>
 ): Promise<void> {
-  const bookingId = payload.cField1
+  const bookingId = payload.bookingId ?? payload.cField1
   if (!bookingId) return
 
   await supabase
@@ -202,12 +226,11 @@ async function handleClassBookingSuccess(
   supabase: ReturnType<typeof adminClient>,
   payload:  Record<string, string>
 ): Promise<void> {
-  const enrollmentId  = payload.cField1
-  const transactionId = payload.transactionCode ?? payload.transaction_id ?? null
+  const enrollmentId  = payload.enrollmentId ?? payload.cField1
+  const transactionId = payload.paymentId ?? payload.transactionCode ?? payload.transaction_id ?? null
 
-  if (!enrollmentId) throw new Error('cField1 (enrollmentId) missing from class_booking webhook')
+  if (!enrollmentId) throw new Error('enrollmentId missing from class_booking webhook')
 
-  // Fetch enrollment to get amount
   const { data: enrollment } = await supabase
     .from('class_enrollments')
     .select('id, booking_id, student_id, booking:bookings(price_per_student)')
@@ -216,22 +239,24 @@ async function handleClassBookingSuccess(
 
   if (!enrollment) throw new Error(`Enrollment ${enrollmentId} not found`)
 
+  // amount_paid = what the student actually paid (base × 1.05)
   const booking    = enrollment.booking as { price_per_student?: number } | null
-  const amountPaid = booking?.price_per_student ?? 0
+  const basePrice  = booking?.price_per_student ?? 0
+  const amountPaid = Math.round(basePrice * 1.05 * 100) / 100  // base + 5%
 
   const { error } = await supabase
     .from('class_enrollments')
     .update({
       payment_status: 'paid',
-      payment_method: 'grow',
+      payment_method: 'summit',
       amount_paid:    amountPaid,
+      ...(transactionId ? { grow_transaction_id: transactionId } : {}),
     })
     .eq('id', enrollmentId)
     .neq('payment_status', 'cancelled')
 
   if (error) throw new Error(`DB update failed for enrollment ${enrollmentId}: ${error.message}`)
 
-  // Optionally store grow transaction ID on the parent booking
   if (transactionId) {
     await supabase
       .from('bookings')
@@ -239,7 +264,7 @@ async function handleClassBookingSuccess(
       .eq('id', enrollment.booking_id)
   }
 
-  console.log(`[webhook:class_booking] Enrollment ${enrollmentId} marked paid. Tx: ${transactionId ?? 'n/a'}`)
+  console.log(`[webhook:class_booking] Enrollment ${enrollmentId} marked paid (₪${amountPaid}). Tx: ${transactionId ?? 'n/a'}`)
   // TODO: send student + instructor confirmation emails
 }
 
@@ -247,7 +272,7 @@ async function handleClassBookingFailure(
   supabase: ReturnType<typeof adminClient>,
   payload:  Record<string, string>
 ): Promise<void> {
-  const enrollmentId = payload.cField1
+  const enrollmentId = payload.enrollmentId ?? payload.cField1
   if (!enrollmentId) return
 
   await supabase
@@ -265,34 +290,34 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody     = await request.text()
     const contentType = request.headers.get('content-type') ?? ''
-    const payload     = parsePayload(rawBody, contentType)
+    const signature   = request.headers.get('x-summit-signature')
+                     ?? request.headers.get('x-webhook-signature')
+                     ?? null
 
-    // ── Webhook key verification ─────────────────────────────────────────
-    const expectedKey = process.env.GROW_WEBHOOK_KEY
-    if (expectedKey) {
-      const receivedKey = payload.webhookKey ?? payload.webhook_key ?? ''
-      if (receivedKey !== expectedKey) {
-        console.warn('[webhook] Invalid webhookKey — rejecting')
-        return NextResponse.json({ error: 'Invalid webhook key' }, { status: 401 })
-      }
+    // ── Signature verification ───────────────────────────────────────────────
+    if (!verifySignature(rawBody, signature)) {
+      console.warn('[webhook] Invalid signature — rejecting')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    const supabase  = adminClient()
-    const flowType  = payload.cField3 ?? 'space_rental' // default for legacy webhooks
+    const payload  = parsePayload(rawBody, contentType)
+
+    // flowType comes from metadata (JSON) or direct field (form/legacy)
+    const flowType = payload.flowType ?? payload.cField3 ?? 'space_rental'
     const succeeded = isSuccess(payload)
     const failed    = isFailed(payload)
 
     if (!succeeded && !failed) {
-      // Unknown event — acknowledge without processing (e.g. 'pending' status)
-      console.log(`[webhook] Unhandled status: ${payload.status ?? 'unknown'} — ignoring`)
+      console.log(`[webhook] Unhandled status: ${payload.status ?? 'unknown'} — acknowledging`)
       return NextResponse.json({ ok: true })
     }
+
+    const supabase = adminClient()
 
     if (flowType === 'class_booking') {
       if (succeeded) await handleClassBookingSuccess(supabase, payload)
       if (failed)    await handleClassBookingFailure(supabase, payload)
     } else {
-      // space_rental (default, covers legacy webhooks without cField3)
       if (succeeded) await handleSpaceRentalSuccess(supabase, payload)
       if (failed)    await handleSpaceRentalFailure(supabase, payload)
     }
