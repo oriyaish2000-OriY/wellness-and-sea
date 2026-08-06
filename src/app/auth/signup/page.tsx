@@ -155,7 +155,12 @@ function SignupForm() {
                 disabled={isPending}
               />
               <label htmlFor="terms_accepted" className="text-xs text-gray-500 text-right leading-relaxed">
-                קראתי ומסכימה ל<Link href="/terms" className="underline text-ocean">תנאי השימוש</Link> ו<Link href="/privacy-policy" className="underline text-ocean">מדיניות הפרטיות</Link>
+                קראתי ומסכימ/ה ל
+                <Link href="/terms" className="underline text-ocean"> תנאי השימוש</Link>
+                {', '}
+                <Link href="/privacy-policy" className="underline text-ocean">מדיניות הפרטיות</Link>
+                {' ו'}
+                <Link href="/terms/payment" className="underline text-ocean font-medium">מדיניות התשלומים ועמלות השירות</Link>
               </label>
             </div>
 

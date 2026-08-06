@@ -46,7 +46,7 @@ export function PaymentActions({
     return `https://payboxapp.page.link/?phone=${clean}&amount=${totalPrice}`
   }
 
-  // ─── Credit card via Grow ──────────────────────────────────────────────────
+  // ─── Credit card via Cardcom ──────────────────────────────────────────────
   async function handleCreditPay() {
     setCreditLoading(true)
     setCreditError(null)
@@ -261,7 +261,7 @@ export function PaymentActions({
     return (
       <div className="rounded-2xl border-2 border-gray-200 bg-white p-4 space-y-3">
         <p className="text-sm text-gray-600">
-          תועברי לדף תשלום מאובטח של <strong>Grow by Meshulam</strong> לתשלום ב:
+          תועברי לדף תשלום מאובטח לתשלום ב:
         </p>
         <div className="flex flex-wrap gap-2 text-xs text-gray-500">
           {[['💳', 'כרטיס אשראי'], ['🍎', 'Apple Pay'], ['🔍', 'Google Pay']].map(([icon, label]) => (
@@ -288,7 +288,7 @@ export function PaymentActions({
             <><Lock className="w-4 h-4" /> תשלום מאובטח — ₪{amountFmt}</>
           )}
         </button>
-        <p className="text-center text-xs text-gray-400">מוצפן ומאובטח · Grow by Meshulam</p>
+        <p className="text-center text-xs text-gray-400">מוצפן ומאובטח · Cardcom PCI DSS</p>
       </div>
     )
   }
@@ -327,7 +327,7 @@ export function PaymentActions({
           id="credit"
           icon="💳"
           label="כרטיס אשראי / Apple Pay / Google Pay"
-          sublabel="תשלום מאובטח דרך Grow"
+          sublabel="תשלום מאובטח דרך Cardcom"
           available={true}
         />
         {selected === 'credit' && <div className="mt-2"><CreditPanel /></div>}
