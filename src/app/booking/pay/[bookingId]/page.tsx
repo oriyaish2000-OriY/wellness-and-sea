@@ -33,11 +33,7 @@ export default async function BookingPayPage({ params }: Props) {
 
   const venue = booking.venue as {
     title?: string; location_city?: string; location_address?: string
-    host?: { bit_phone?: string; paybox_phone?: string; phone?: string }
   } | null
-
-  const hostBitPhone = venue?.host?.bit_phone ?? venue?.host?.phone ?? null
-  const hostPayboxPhone = venue?.host?.paybox_phone ?? venue?.host?.phone ?? null
 
   const dateFormatted = new Date(booking.booking_date).toLocaleDateString('he-IL', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -98,31 +94,20 @@ export default async function BookingPayPage({ params }: Props) {
           </div>
         </Card>
 
-        {/* Payment — Grow by Meshulam handles ALL methods (credit, Bit, PayBox, Apple/Google Pay) */}
         <div className="space-y-3">
           <PaymentActions
             bookingId={bookingId}
             totalPrice={booking.total_price}
             venueTitle={venue?.title ?? ''}
             hostPayout={booking.host_payout}
-            hostBitPhone={hostBitPhone}
-            hostPayboxPhone={hostPayboxPhone}
           />
 
-          {/* Confirmation flow explanation */}
           <div
             className="flex items-start gap-2.5 p-4 rounded-xl text-xs text-green-800"
             style={{ background: 'rgba(5,150,105,0.07)', border: '1px solid rgba(5,150,105,0.15)' }}
           >
             <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-700" />
-            <div className="space-y-1">
-              <p className="font-semibold">כיצד עובד התהליך:</p>
-              <ol className="list-decimal list-inside space-y-0.5 text-green-700">
-                <li>בחרי את אמצעי התשלום המועדף</li>
-                <li>Bit / PayBox — פתחי את האפליקציה והעבירי ישירות, לאחר מכן לחצי ״העברתי את התשלום״</li>
-                <li>כרטיס אשראי — תועברי לדף תשלום מאובטח, ההזמנה תאושר אוטומטית</li>
-              </ol>
-            </div>
+            <p className="text-green-700">לחצי על הכפתור לעמוד תשלום מאובטח. לאחר השלמת התשלום ההזמנה תאושר אוטומטית ותופיע ביומן שלך.</p>
           </div>
         </div>
       </div>

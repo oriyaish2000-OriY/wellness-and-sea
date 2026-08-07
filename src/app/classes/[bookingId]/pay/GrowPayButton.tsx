@@ -54,7 +54,7 @@ export function GrowPayButton({ enrollmentId, amount }: { enrollmentId: string; 
             <span className="text-3xl">💳</span>
             <div className="flex-1 text-right">
               <p className="font-black text-white text-base">תשלום מאובטח</p>
-              <p className="text-white/70 text-sm">כרטיס אשראי / Bit / PayBox</p>
+              <p className="text-white/70 text-sm">כרטיס אשראי · Apple Pay · Google Pay</p>
               <p className="text-white/90 text-base font-bold mt-0.5">₪{amount}</p>
             </div>
             <CreditCard className="w-5 h-5 text-white/60" />
