@@ -56,16 +56,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Booking not found or already processed' }, { status: 404 })
     }
 
+    // Load instructor profile for Document customer info
+    const { data: instructorProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
     const venue = booking.venue as {
       id?: string
       title?: string
       host?: { id?: string; full_name?: string; grow_merchant_id?: string }
     } | null
 
-    // Amounts stored correctly in DB from booking creation
-    const totalILS       = booking.total_price   // instructor pays (base + 5%)
-    const hostPayoutILS  = booking.host_payout   // host receives  (base − 5%)
-    // grow_merchant_id stores Cardcom Sapak number
+    const totalILS        = booking.total_price  // instructor pays (base + 5%)
+    const hostPayoutILS   = booking.host_payout  // host receives  (base − 5%)
     const hostSapakNumber = venue?.host?.grow_merchant_id ?? ''
 
     if (!totalILS || !hostPayoutILS) {
@@ -75,16 +80,30 @@ export async function POST(request: NextRequest) {
     // ── Cardcom configured + host has Sapak → LowProfile payment ─────────────
     if (isCardcomConfigured() && hostSapakNumber) {
       try {
-        const { checkoutUrl } = await createSpaceRentalPayment({
+        const { checkoutUrl, lowProfileId } = await createSpaceRentalPayment({
           bookingId,
           instructorId:    booking.instructor_id,
           totalILS,
           hostSapakNumber,
           venueName:       venue?.title ?? 'חלל',
+          customerName:    instructorProfile?.full_name ?? '',
+          customerEmail:   user.email ?? '',
         })
 
+        // Save LowProfileId to DB — must be done before redirecting buyer
+        if (lowProfileId) {
+          const serviceClient = createServiceClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          )
+          await serviceClient
+            .from('bookings')
+            .update({ cardcom_low_profile_id: lowProfileId })
+            .eq('id', bookingId)
+        }
+
         console.log(
-          `[Cardcom Flow1] LowProfile created for booking ${bookingId}. ` +
+          `[Cardcom Flow1] LowProfile ${lowProfileId} created for booking ${bookingId}. ` +
           `Instructor pays ₪${totalILS}, Host receives ₪${hostPayoutILS}`
         )
         return NextResponse.json({ checkout_url: checkoutUrl })
@@ -116,7 +135,7 @@ export async function POST(request: NextRequest) {
           instructor:profiles!bookings_instructor_id_fkey(id, full_name)
         `)
         .eq('id', bookingId)
-        .eq('instructor_id', user.id)   // defence-in-depth: re-assert ownership
+        .eq('instructor_id', user.id)
         .single()
 
       await admin

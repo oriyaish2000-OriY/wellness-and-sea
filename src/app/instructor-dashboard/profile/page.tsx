@@ -3,21 +3,32 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentUserProfile } from '@/lib/supabase/queries'
 import { ProfileForm } from './ProfileForm'
 import { Card, CardContent } from '@/components/ui/card'
-import { UserCircle, Camera, CreditCard } from 'lucide-react'
-import { GrowKycForm } from '@/components/payments/GrowKycForm'
+import { UserCircle, Camera } from 'lucide-react'
+import { CardcomTokenSection } from '@/components/payments/CardcomTokenSection'
 
-export default async function InstructorProfilePage() {
+export default async function InstructorProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string }>
+}) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/auth/login')
   if (user.user_metadata?.role !== 'instructor') redirect('/host-dashboard')
 
   const profile = await getCurrentUserProfile()
-
   if (!profile) redirect('/auth/login')
+
+  // Load Cardcom token fields (not in getCurrentUserProfile)
+  const { data: tokenData } = await supabase
+    .from('profiles')
+    .select('cardcom_token, cardcom_token_card_month, cardcom_token_card_year')
+    .eq('id', user.id)
+    .single()
+
+  const params = await searchParams
+  const tokenSuccess = params.token === 'success'
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -25,6 +36,12 @@ export default async function InstructorProfilePage() {
         <h1 className="text-2xl font-bold text-deep-ocean">הפרופיל שלי</h1>
         <p className="text-gray-500 text-sm mt-1">עדכני את פרטי הפרופיל שלך</p>
       </div>
+
+      {tokenSuccess && (
+        <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800 font-medium">
+          ✓ הכרטיס נרשם בהצלחה — העמלות ינוכו אוטומטית מעכשיו
+        </div>
+      )}
 
       {/* Avatar section */}
       <Card className="border-0 shadow-sm">
@@ -58,37 +75,34 @@ export default async function InstructorProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Edit form — client component */}
+      {/* Edit form */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6">
           <ProfileForm
             initialData={{
-              full_name: profile.full_name,
-              phone: profile.phone ?? '',
-              bio: profile.bio ?? '',
-              avatar_url: profile.avatar_url ?? '',
-              certification_url: profile.certification_url ?? '',
-              insurance_url: profile.insurance_url ?? '',
-              bit_phone: profile.bit_phone ?? '',
-              paybox_phone: profile.paybox_phone ?? '',
-              instagram: profile.instagram ?? '',
-              specialties: profile.specialties ?? [],
+              full_name:          profile.full_name,
+              phone:              profile.phone ?? '',
+              bio:                profile.bio ?? '',
+              avatar_url:         profile.avatar_url ?? '',
+              certification_url:  profile.certification_url ?? '',
+              insurance_url:      profile.insurance_url ?? '',
+              bit_phone:          profile.bit_phone ?? '',
+              paybox_phone:       profile.paybox_phone ?? '',
+              instagram:          profile.instagram ?? '',
+              specialties:        profile.specialties ?? [],
             }}
           />
         </CardContent>
       </Card>
 
-      {/* Grow KYC — payment onboarding */}
+      {/* Cardcom token registration — required for commission deduction */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <CreditCard className="w-5 h-5 text-ocean" />
-            <h2 className="text-base font-bold text-deep-ocean">קבלת תשלומים בכרטיס אשראי</h2>
-          </div>
-          <GrowKycForm
-            initialFullName={profile.full_name}
-            initialPhone={profile.phone ?? ''}
-            existingMerchantId={profile.grow_merchant_id}
+          <CardcomTokenSection
+            hasToken={!!tokenData?.cardcom_token}
+            cardMonth={tokenData?.cardcom_token_card_month}
+            cardYear={tokenData?.cardcom_token_card_year}
+            role="instructor"
           />
         </CardContent>
       </Card>

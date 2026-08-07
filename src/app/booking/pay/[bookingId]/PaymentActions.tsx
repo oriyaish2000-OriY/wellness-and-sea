@@ -88,6 +88,9 @@ export function PaymentActions({
       if (data.ok) {
         setReportDone(true)
         router.push(`/booking/confirm/${bookingId}`)
+      } else if (res.status === 402 && data.code === 'HOST_TOKEN_MISSING') {
+        setReportError('בעל החלל טרם השלים את תהליך ההרשמה לפלטפורמה. אנא צרי קשר עם התמיכה.')
+        setReportLoading(false)
       } else {
         setReportError(data.error ?? 'שגיאה. נסי שוב.')
         setReportLoading(false)

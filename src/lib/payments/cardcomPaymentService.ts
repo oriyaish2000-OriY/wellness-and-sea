@@ -7,14 +7,13 @@
  *   CARDCOM_TERMINAL_NUMBER  — integer terminal number (from Cardcom dashboard)
  *   CARDCOM_API_NAME         — API Name credential
  *   CARDCOM_API_PASSWORD     — API Password credential (used for refunds)
- *   CARDCOM_WEBHOOK_SECRET   — optional secret for webhook verification
  *   NEXT_PUBLIC_APP_URL      — canonical app URL for callbacks
  *
  * Split mechanism:
  *   AdvancedDefinition.SapakMutav = vendor sapak number
  *   Commission percentage configured in the Cardcom Meaged terminal dashboard.
  *
- * Docs: https://secure.cardcom.solutions/swagger/v11/swagger.json
+ * Spec: https://secure.cardcom.solutions/swagger/v11/swagger.json
  */
 
 const CARDCOM_BASE = 'https://secure.cardcom.solutions/api/v11'
@@ -38,9 +37,9 @@ export function isCardcomConfigured(): boolean {
 // ─── Shared LowProfile helper ─────────────────────────────────────────────────
 
 interface LowProfileResult {
-  checkoutUrl: string
+  checkoutUrl:  string
   lowProfileId: string
-  rawResponse: Record<string, unknown>
+  rawResponse:  Record<string, unknown>
 }
 
 async function createLowProfile(
@@ -61,7 +60,9 @@ async function createLowProfile(
   }
 
   if (json.ResponseCode !== 0) {
-    throw new Error(`Cardcom error ${json.ResponseCode}: ${json.Description ?? text}`)
+    const desc = json.Description ?? text
+    console.error(`[Cardcom] LowProfile/Create error ${json.ResponseCode}: ${desc}`)
+    throw new Error(`Cardcom error ${json.ResponseCode}: ${desc}`)
   }
 
   const url = json.Url as string | undefined
@@ -71,6 +72,70 @@ async function createLowProfile(
     checkoutUrl:  url,
     lowProfileId: (json.LowProfileId as string) ?? '',
     rawResponse:  json,
+  }
+}
+
+// ─── GetLpResult ─────────────────────────────────────────────────────────────
+
+export interface GetLpResultResponse {
+  ResponseCode:  number
+  Description:   string
+  TranzactionId: number | null
+  Operation:     string
+  DocumentInfo?: {
+    DocumentType?:   string
+    DocumentNumber?: number
+  } | null
+  TokenInfo?: {
+    Token?:                   string
+    CardYear?:                number
+    CardMonth?:               number
+    TokenApprovalNumber?:     string
+    CardOwnerIdentityNumber?: string
+  } | null
+}
+
+/**
+ * Calls CardCom GetLpResult to validate a webhook transaction.
+ * Retries once on HTTP error. 5-second timeout per attempt.
+ */
+export async function getLpResult(lowProfileId: string): Promise<GetLpResultResponse> {
+  const { terminalNumber, apiName } = cardcomEnv()
+
+  const payload = JSON.stringify({
+    TerminalNumber: terminalNumber,
+    ApiName:        apiName,
+    LowProfileId:   lowProfileId,
+  })
+
+  async function attempt(): Promise<GetLpResultResponse> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 5000)
+    try {
+      const res = await fetch(`${CARDCOM_BASE}/LowProfile/GetLpResult`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    payload,
+        signal:  controller.signal,
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const text = await res.text()
+      try {
+        return JSON.parse(text) as GetLpResultResponse
+      } catch {
+        throw new Error(`GetLpResult non-JSON: ${text}`)
+      }
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  try {
+    return await attempt()
+  } catch (err) {
+    // One retry on HTTP/network error
+    console.warn('[Cardcom] GetLpResult first attempt failed, retrying:', err instanceof Error ? err.message : err)
+    return await attempt()
   }
 }
 
@@ -90,17 +155,25 @@ export interface SpaceRentalParams {
   /** Host's Cardcom Sapak number (grow_merchant_id column) */
   hostSapakNumber:  string
   venueName:        string
+  /** Instructor (payer) details for Document */
+  customerName:     string
+  customerEmail:    string
+  customerPhone?:   string
 }
 
 export interface ClassBookingParams {
-  enrollmentId:            string
-  studentId:               string
+  enrollmentId:           string
+  studentId:              string
   /** What the student pays (base + 5%), ILS */
-  studentPaysILS:          number
+  studentPaysILS:         number
   /** Instructor's Cardcom Sapak number */
-  instructorSapakNumber:   string
-  className:               string
-  bookingDate:             string
+  instructorSapakNumber:  string
+  className:              string
+  bookingDate:            string
+  /** Student (payer) details for Document */
+  customerName:           string
+  customerEmail:          string
+  customerPhone?:         string
 }
 
 // ─── Flow 1: Space Rental ─────────────────────────────────────────────────────
@@ -111,7 +184,7 @@ export interface ClassBookingParams {
  * SapakMutav routes the charge through the host's Meaged sub-account.
  * The platform commission percentage is configured once in the Cardcom dashboard.
  *
- * ReturnValue encoded as "space_rental:{bookingId}" — echoed back in webhook.
+ * Returns checkoutUrl and lowProfileId — caller must save lowProfileId to DB.
  */
 export async function createSpaceRentalPayment(
   params: SpaceRentalParams
@@ -119,17 +192,36 @@ export async function createSpaceRentalPayment(
   const { terminalNumber, apiName, appUrl } = cardcomEnv()
 
   return createLowProfile({
-    TerminalNumber:       terminalNumber,
-    ApiName:              apiName,
-    Amount:               params.totalILS,
-    Language:             'he',
-    SuccessRedirectUrl:   `${appUrl}/booking/confirm/${params.bookingId}`,
-    FailedRedirectUrl:    `${appUrl}/booking/${params.bookingId}`,
-    CancelRedirectUrl:    `${appUrl}/booking/${params.bookingId}`,
-    WebHookUrl:           `${appUrl}/api/webhooks/payment`,
-    // Echoed back in webhook — encodes flow + ID
-    ReturnValue:          `space_rental:${params.bookingId}`,
-    ProductName:          `WELLNESS&SEA — הזמנת חלל: ${params.venueName}`,
+    TerminalNumber:     terminalNumber,
+    ApiName:            apiName,
+    Operation:          'ChargeOnly',
+    Amount:             params.totalILS,
+    ISOCoinId:          1,             // NIS (Israeli Shekel)
+    Language:           'he',
+    ReturnValue:        params.bookingId, // reference only — do NOT use for order matching
+    SuccessRedirectUrl: `${appUrl}/booking/confirm/${params.bookingId}`,
+    FailedRedirectUrl:  `${appUrl}/booking/pay/${params.bookingId}?error=1`,
+    WebHookUrl:         `${appUrl}/api/cardcom/webhook`,
+    UIDefinition: {
+      CardOwnerNameValue:  params.customerName  || undefined,
+      CardOwnerEmailValue: params.customerEmail || undefined,
+      CardOwnerPhoneValue: params.customerPhone || undefined,
+    },
+    Document: {
+      DocumentTypeToCreate: 'Auto',
+      IsAllowEditDocument:  true,
+      Name:                 params.customerName || 'לקוח',
+      Email:                params.customerEmail || undefined,
+      Mobile:               params.customerPhone || undefined,
+      Language:             'he',
+      Products: [
+        {
+          Description: `הזמנת חלל: ${params.venueName}`,
+          UnitCost:    params.totalILS,
+          Quantity:    1,
+        },
+      ],
+    },
     AdvancedDefinition: {
       // Routes payment through host's Meaged sub-account
       SapakMutav: params.hostSapakNumber,
@@ -145,7 +237,7 @@ export async function createSpaceRentalPayment(
  * SapakMutav routes the charge through the instructor's Meaged sub-account.
  * Student is charged base + 5%; instructor receives base − 5% (set in dashboard).
  *
- * ReturnValue encoded as "class_booking:{enrollmentId}".
+ * Returns checkoutUrl and lowProfileId — caller must save lowProfileId to DB.
  */
 export async function createClassBookingPayment(
   params: ClassBookingParams
@@ -153,20 +245,198 @@ export async function createClassBookingPayment(
   const { terminalNumber, apiName, appUrl } = cardcomEnv()
 
   return createLowProfile({
-    TerminalNumber:       terminalNumber,
-    ApiName:              apiName,
-    Amount:               params.studentPaysILS,
-    Language:             'he',
-    SuccessRedirectUrl:   `${appUrl}/classes/${params.enrollmentId}/success`,
-    FailedRedirectUrl:    `${appUrl}/classes`,
-    CancelRedirectUrl:    `${appUrl}/classes`,
-    WebHookUrl:           `${appUrl}/api/webhooks/payment`,
-    ReturnValue:          `class_booking:${params.enrollmentId}`,
-    ProductName:          `WELLNESS&SEA — שיעור: ${params.className} (${params.bookingDate})`,
+    TerminalNumber:     terminalNumber,
+    ApiName:            apiName,
+    Operation:          'ChargeOnly',
+    Amount:             params.studentPaysILS,
+    ISOCoinId:          1,             // NIS
+    Language:           'he',
+    ReturnValue:        params.enrollmentId, // reference only — do NOT use for order matching
+    SuccessRedirectUrl: `${appUrl}/classes/${params.enrollmentId}/success`,
+    FailedRedirectUrl:  `${appUrl}/classes?error=1`,
+    WebHookUrl:         `${appUrl}/api/cardcom/webhook`,
+    UIDefinition: {
+      CardOwnerNameValue:  params.customerName  || undefined,
+      CardOwnerEmailValue: params.customerEmail || undefined,
+      CardOwnerPhoneValue: params.customerPhone || undefined,
+    },
+    Document: {
+      DocumentTypeToCreate: 'Auto',
+      IsAllowEditDocument:  true,
+      Name:                 params.customerName || 'לקוח',
+      Email:                params.customerEmail || undefined,
+      Mobile:               params.customerPhone || undefined,
+      Language:             'he',
+      Products: [
+        {
+          Description: `${params.className} — ${params.bookingDate}`,
+          UnitCost:    params.studentPaysILS,
+          Quantity:    1,
+        },
+      ],
+    },
     AdvancedDefinition: {
       SapakMutav: params.instructorSapakNumber,
     },
   })
+}
+
+// ─── Token Registration (CreateTokenOnly) ────────────────────────────────────
+
+export interface TokenRegistrationResult {
+  registrationUrl: string
+  lowProfileId:    string
+}
+
+/**
+ * Creates a LowProfile page for an instructor or host to register their credit card.
+ * No charge is made — the card is tokenized for future commission deductions.
+ * The returned lowProfileId must be saved to profiles.cardcom_token_lp_id.
+ */
+export async function createTokenRegistration(params: {
+  userId:       string
+  fullName:     string
+  email?:       string
+  phone?:       string
+  successPath?: string
+}): Promise<TokenRegistrationResult> {
+  const { terminalNumber, apiName, appUrl } = cardcomEnv()
+  const successUrl = `${appUrl}${params.successPath ?? '/dashboard?token=registered'}`
+
+  const res = await fetch(`${CARDCOM_BASE}/LowProfile/Create`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      TerminalNumber:     terminalNumber,
+      ApiName:            apiName,
+      Operation:          'CreateTokenOnly',
+      Amount:             0,
+      ISOCoinId:          1,
+      Language:           'he',
+      ReturnValue:        params.userId,   // reference; order matching uses LowProfileId
+      SuccessRedirectUrl: successUrl,
+      FailedRedirectUrl:  `${appUrl}/dashboard?token=failed`,
+      WebHookUrl:         `${appUrl}/api/cardcom/webhook`,
+      UIDefinition: {
+        CardOwnerNameValue:  params.fullName  || undefined,
+        CardOwnerEmailValue: params.email     || undefined,
+        CardOwnerPhoneValue: params.phone     || undefined,
+      },
+      Document: {
+        DocumentTypeToCreate: 'Auto',
+        IsAllowEditDocument:  true,
+        Name:                 params.fullName || 'לקוח',
+        Email:                params.email    || undefined,
+        Language:             'he',
+        Products: [
+          { Description: 'רישום אמצעי תשלום לעמלות', UnitCost: 0, Quantity: 1 },
+        ],
+      },
+    }),
+  })
+
+  const text = await res.text()
+  let json: Record<string, unknown>
+  try { json = JSON.parse(text) as Record<string, unknown> }
+  catch { throw new Error(`Cardcom CreateTokenOnly non-JSON: ${text}`) }
+
+  if (json.ResponseCode !== 0) {
+    throw new Error(`Cardcom CreateTokenOnly error ${json.ResponseCode}: ${json.Description ?? text}`)
+  }
+
+  return {
+    registrationUrl: json.Url as string,
+    lowProfileId:    json.LowProfileId as string,
+  }
+}
+
+// ─── Token Commission Charge ──────────────────────────────────────────────────
+
+export interface ChargeTokenResult {
+  success:        boolean
+  transactionId:  number
+  responseCode:   number
+  description:    string
+  documentNumber: number | null
+  documentType:   string | null
+}
+
+/**
+ * Charges a provider's (instructor or host) stored Cardcom token for the
+ * platform commission. Called after a Bit/PayBox payment is self-reported.
+ *
+ * amount should be the platformRevenue value from commissionUtils
+ * (e.g. base ₪100 → charge ₪10).
+ */
+export async function chargeProviderToken(params: {
+  token:         string
+  cardMonth:     number
+  cardYear:      number
+  amountILS:     number
+  providerName:  string
+  providerEmail?: string
+  description:   string
+}): Promise<ChargeTokenResult> {
+  const { terminalNumber, apiName } = cardcomEnv()
+
+  // Format expiry: MM (zero-padded 2 digits) + YY (zero-padded 2 digits)
+  const mm = String(params.cardMonth).padStart(2, '0')
+  const yy = String(params.cardYear).padStart(2, '0')
+
+  const res = await fetch(`${CARDCOM_BASE}/Transactions/Transaction`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      TerminalNumber:        terminalNumber,
+      ApiName:               apiName,
+      Amount:                params.amountILS,
+      Token:                 params.token,
+      CardExpirationMMYY:    `${mm}${yy}`,
+      NumOfPayments:         1,
+      ISOCoinId:             1,
+      CardOwnerInformation: {
+        FullName:        params.providerName,
+        CardOwnerEmail:  params.providerEmail ?? '',
+      },
+      Document: {
+        DocumentTypeToCreate: 'Auto',
+        IsAllowEditDocument:  true,
+        Name:                 params.providerName,
+        Email:                params.providerEmail ?? undefined,
+        Language:             'he',
+        Products: [
+          {
+            Description: params.description,
+            UnitCost:    params.amountILS,
+            Quantity:    1,
+          },
+        ],
+      },
+    }),
+  })
+
+  const text = await res.text()
+  let json: Record<string, unknown>
+  try { json = JSON.parse(text) as Record<string, unknown> }
+  catch { throw new Error(`Cardcom Transactions/Transaction non-JSON: ${text}`) }
+
+  const responseCode = (json.ResponseCode as number) ?? -1
+
+  if (responseCode !== 0) {
+    console.error(
+      `[Cardcom] chargeProviderToken error ${responseCode}: ${json.Description} ` +
+      `(provider: ${params.providerName}, amount: ₪${params.amountILS})`
+    )
+  }
+
+  return {
+    success:        responseCode === 0,
+    transactionId:  (json.TranzactionId as number) ?? 0,
+    responseCode,
+    description:    (json.Description as string) ?? '',
+    documentNumber: (json.DocumentNumber as number) ?? null,
+    documentType:   (json.DocumentType as string)  ?? null,
+  }
 }
 
 // ─── Sub-merchant Registration (Meaged) ──────────────────────────────────────
@@ -196,7 +466,7 @@ export interface SubMerchantResult {
  * Requires CARDCOM_SUPPLIER_USERNAME + CARDCOM_SUPPLIER_SECRET env vars
  * (different credentials used only for company operations — get from Cardcom support).
  *
- * On success, stores the returned SapakNumber in profiles.grow_merchant_id.
+ * On success, store the returned SapakNumber in profiles.grow_merchant_id.
  */
 export async function registerSubMerchant(
   params: SubMerchantParams
@@ -229,7 +499,7 @@ export async function registerSubMerchant(
         IdentityNumber: params.idNumber,
       }],
       KycInfo: {
-        Mcc: '7941',   // Sports/recreation — update if Cardcom requires different MCC
+        Mcc: '7941',   // Sports/recreation
       },
       BankInfo: {
         BankCode:          params.bankCode,
@@ -258,33 +528,4 @@ export async function registerSubMerchant(
   }
 
   return { sapakNumber: String(sapakNumber), rawResponse: json }
-}
-
-// ─── Webhook payload parsing ──────────────────────────────────────────────────
-
-export interface CardcomWebhookPayload {
-  responseCode:    number
-  description:     string
-  returnValue:     string     // "space_rental:ID" or "class_booking:ID"
-  transactionId:   number | null
-  lowProfileId:    string
-  terminalNumber:  number
-}
-
-/**
- * Parse and validate a Cardcom webhook POST body.
- * Cardcom sends JSON with ResponseCode === 0 for success.
- */
-export function parseCardcomWebhook(
-  body: Record<string, unknown>
-): CardcomWebhookPayload {
-  const info = (body.TranzactionInfo ?? {}) as Record<string, unknown>
-  return {
-    responseCode:   (body.ResponseCode   as number)  ?? -1,
-    description:    (body.Description    as string)  ?? '',
-    returnValue:    (body.ReturnValue     as string)  ?? '',
-    transactionId:  (info.TranzactionId  as number   ?? body.TranzactionId as number) ?? null,
-    lowProfileId:   (body.LowProfileId   as string)  ?? '',
-    terminalNumber: (body.TerminalNumber as number)  ?? 0,
-  }
 }

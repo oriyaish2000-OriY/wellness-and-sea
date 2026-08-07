@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import {
   isCardcomConfigured,
   createClassBookingPayment,
@@ -73,27 +74,43 @@ export async function POST(request: NextRequest) {
 
     // ── Commission split ──────────────────────────────────────────────────────
     const split = calcClassBookingSplit(basePriceILS)
-    // split.studentPays      = base × 1.05  (charged to student)
-    // split.instructorPayout = base × 0.95  (configured in Cardcom dashboard)
-    // split.platformRevenue  = base × 0.10  (kept by platform)
-
-    // grow_merchant_id stores Cardcom Sapak number
     const instructorSapakNumber = booking?.instructor?.grow_merchant_id ?? ''
+
+    // Load student profile for Document customer info
+    const { data: studentProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
 
     // ── Cardcom + instructor has Sapak → LowProfile payment ──────────────────
     if (isCardcomConfigured() && instructorSapakNumber) {
       try {
-        const { checkoutUrl } = await createClassBookingPayment({
+        const { checkoutUrl, lowProfileId } = await createClassBookingPayment({
           enrollmentId,
           studentId:            user.id,
           studentPaysILS:       split.studentPays,
           instructorSapakNumber,
           className:            booking?.class_type ?? 'שיעור',
           bookingDate:          booking?.booking_date ?? '',
+          customerName:         studentProfile?.full_name ?? '',
+          customerEmail:        user.email ?? '',
         })
 
+        // Save LowProfileId to DB — must be done before redirecting buyer
+        if (lowProfileId) {
+          const serviceClient = createServiceClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          )
+          await serviceClient
+            .from('class_enrollments')
+            .update({ cardcom_low_profile_id: lowProfileId })
+            .eq('id', enrollmentId)
+        }
+
         console.log(
-          `[Cardcom Flow2] LowProfile created for enrollment ${enrollmentId}. ` +
+          `[Cardcom Flow2] LowProfile ${lowProfileId} created for enrollment ${enrollmentId}. ` +
           `Student pays ₪${split.studentPays}, ` +
           `Instructor gets ₪${split.instructorPayout}, ` +
           `Platform earns ₪${split.platformRevenue}`
