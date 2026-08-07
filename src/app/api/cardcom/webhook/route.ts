@@ -21,7 +21,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getLpResult } from '@/lib/payments/cardcomPaymentService'
+import { getLpResult, chargeProviderToken } from '@/lib/payments/cardcomPaymentService'
 import {
   sendBookingConfirmedEmailToInstructor,
   sendNewBookingEmailToHost,
@@ -99,7 +99,10 @@ async function confirmSpaceRentalBooking(
     .select(`
       *,
       venue:venues(title, location_address, location_city,
-        host:profiles!venues_host_id_fkey(id, full_name)),
+        host:profiles!venues_host_id_fkey(
+          id, full_name, grow_merchant_id,
+          cardcom_token, cardcom_token_card_month, cardcom_token_card_year
+        )),
       instructor:profiles!bookings_instructor_id_fkey(id, full_name)
     `)
     .eq('id', bookingId)
@@ -107,7 +110,7 @@ async function confirmSpaceRentalBooking(
 
   if (!booking) return
 
-  const venue      = booking.venue      as { title?: string; location_address?: string; location_city?: string; host?: { id?: string; full_name?: string } } | null
+  const venue      = booking.venue      as { title?: string; location_address?: string; location_city?: string; host?: { id?: string; full_name?: string; grow_merchant_id?: string; cardcom_token?: string; cardcom_token_card_month?: number; cardcom_token_card_year?: number } } | null
   const instructor = booking.instructor as { id?: string; full_name?: string } | null
 
   const [instructorEmail, hostEmail] = await Promise.all([
@@ -138,11 +141,41 @@ async function confirmSpaceRentalBooking(
     hostEmail       ? sendNewBookingEmailToHost(emailData)             : Promise.resolve(),
   ])
 
-  // Commission note: all credit card money lands on the platform's Cardcom terminal.
-  // Platform commission (10% of base) is embedded in the collected amount:
-  //   instructor paid base×1.05 → platform pays host base×0.95 → platform keeps base×0.10.
-  // No additional token charge is needed here.
-  console.log(`[webhook] Booking ${bookingId} confirmed. Platform holds full amount ₪${booking.total_price}.`)
+  // ── Commission charge via host's saved Cardcom token ─────────────────────
+  // When SapakMutav was used (host has grow_merchant_id), the full payment went
+  // directly to the host's Cardcom sub-account. Platform charges the host's saved
+  // token for the full 10% commission (payer's 5% markup + host's 5% deduction).
+  // If host has no Sapak, money landed on platform terminal — no token charge needed.
+  const host = venue?.host
+  if (host?.grow_merchant_id && host.cardcom_token && host.cardcom_token_card_month && host.cardcom_token_card_year) {
+    const { calcSpaceRentalSplit } = await import('@/lib/payments/commissionUtils')
+    const totalILS   = booking.total_price ?? 0
+    const baseILS    = Math.round(totalILS / 1.05)
+    const commission = calcSpaceRentalSplit(baseILS).platformRevenue  // 10% of base
+
+    chargeProviderToken({
+      token:         host.cardcom_token,
+      cardMonth:     host.cardcom_token_card_month,
+      cardYear:      host.cardcom_token_card_year,
+      amountILS:     commission,
+      providerName:  host.full_name ?? '',
+      providerEmail: hostEmail,
+      description:   `עמלת פלטפורמה — הזמנה ${bookingId.substring(0, 8)} (כרטיס אשראי)`,
+    }).then(result => {
+      if (result.success) {
+        console.log(`[webhook] Commission ₪${commission} charged from host ${host.id} — TxId ${result.transactionId}`)
+        supabase.from('bookings').update({
+          commission_charged_at: new Date().toISOString(),
+          commission_tx_id:      result.transactionId,
+        }).eq('id', bookingId).then(() => {}, e => console.error('[webhook] commission DB error:', e))
+      } else {
+        console.error(`[webhook] Commission charge FAILED for booking ${bookingId}: ${result.responseCode} — ${result.description}`)
+      }
+    }).catch(e => console.error('[webhook] commission charge error:', e))
+  } else {
+    // No SapakMutav: money is on platform terminal — commission already embedded in collected amount
+    console.log(`[webhook] Booking ${bookingId} confirmed (no SapakMutav). Platform holds ₪${booking.total_price}; will pay host ₪${booking.host_payout} manually.`)
+  }
 }
 
 // ─── A2. Space-rental booking — failed ───────────────────────────────────────
@@ -221,13 +254,22 @@ async function confirmClassEnrollment(
 ): Promise<void> {
   const { data: enrollment } = await supabase
     .from('class_enrollments')
-    .select('id, booking_id, booking:bookings(price_per_student)')
+    .select(`
+      id, booking_id,
+      booking:bookings(
+        price_per_student,
+        instructor:profiles!bookings_instructor_id_fkey(
+          id, full_name, grow_merchant_id,
+          cardcom_token, cardcom_token_card_month, cardcom_token_card_year
+        )
+      )
+    `)
     .eq('id', enrollmentId)
     .single()
 
   if (!enrollment) throw new Error(`Enrollment ${enrollmentId} not found`)
 
-  const booking    = enrollment.booking as { price_per_student?: number } | null
+  const booking    = enrollment.booking as { price_per_student?: number; instructor?: { id?: string; full_name?: string; grow_merchant_id?: string; cardcom_token?: string; cardcom_token_card_month?: number; cardcom_token_card_year?: number } } | null
   const basePrice  = booking?.price_per_student ?? 0
   const { calcClassBookingSplit } = await import('@/lib/payments/commissionUtils')
   const amountPaid = basePrice > 0 ? calcClassBookingSplit(basePrice).studentPays : 0
@@ -254,11 +296,38 @@ async function confirmClassEnrollment(
       .eq('id', enrollment.booking_id)
   }
 
-  // Commission note: all credit card money lands on the platform's Cardcom terminal.
-  // Platform commission (10% of base) is embedded in the collected amount:
-  //   student paid base×1.05 → platform pays instructor base×0.95 → platform keeps base×0.10.
-  // No additional token charge is needed here.
-  console.log(`[webhook] Enrollment ${enrollmentId} confirmed. Platform holds full amount ₪${amountPaid}.`)
+  // ── Commission charge via instructor's saved Cardcom token ────────────────
+  // When SapakMutav was used (instructor has grow_merchant_id), the full payment
+  // went directly to the instructor's Cardcom sub-account. Platform charges the
+  // instructor's saved token for the full 10% commission.
+  // If no Sapak, money landed on platform terminal — no token charge needed.
+  const instructor = booking?.instructor
+  if (instructor?.grow_merchant_id && instructor.cardcom_token && instructor.cardcom_token_card_month && instructor.cardcom_token_card_year && basePrice > 0) {
+    const commission      = calcClassBookingSplit(basePrice).platformRevenue  // 10% of base
+    const instructorEmail = instructor.id ? await getUserEmail(supabase, instructor.id) : ''
+
+    chargeProviderToken({
+      token:         instructor.cardcom_token,
+      cardMonth:     instructor.cardcom_token_card_month,
+      cardYear:      instructor.cardcom_token_card_year,
+      amountILS:     commission,
+      providerName:  instructor.full_name ?? '',
+      providerEmail: instructorEmail,
+      description:   `עמלת פלטפורמה — הרשמה ${enrollmentId.substring(0, 8)} (כרטיס אשראי)`,
+    }).then(result => {
+      if (result.success) {
+        console.log(`[webhook] Commission ₪${commission} charged from instructor ${instructor.id} — TxId ${result.transactionId}`)
+        supabase.from('class_enrollments').update({
+          commission_charged_at: new Date().toISOString(),
+          commission_tx_id:      result.transactionId,
+        }).eq('id', enrollmentId).then(() => {}, e => console.error('[webhook] commission DB error:', e))
+      } else {
+        console.error(`[webhook] Commission charge FAILED for enrollment ${enrollmentId}: ${result.responseCode} — ${result.description}`)
+      }
+    }).catch(e => console.error('[webhook] commission charge error:', e))
+  } else {
+    console.log(`[webhook] Enrollment ${enrollmentId} confirmed (no SapakMutav). Platform holds ₪${amountPaid}.`)
+  }
 }
 
 // ─── A4. Class enrollment — failed ───────────────────────────────────────────
