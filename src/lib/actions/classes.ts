@@ -178,32 +178,8 @@ export async function cancelEnrollment(enrollmentId: string) {
   return { success: true }
 }
 
-// ============================================================
-// INSTRUCTOR: mark a student as paid (after receiving direct payment)
-// ============================================================
-
-export async function markStudentPaid(enrollmentId: string, method: 'bit' | 'paybox' | 'cash') {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.user_metadata?.role !== 'instructor') return { error: 'גישה נדחתה.' }
-
-  // Verify the enrollment belongs to one of this instructor's bookings
-  const { data: enrollment } = await supabase
-    .from('class_enrollments')
-    .select('id, booking:bookings(instructor_id)')
-    .eq('id', enrollmentId)
-    .single()
-
-  if (!enrollment) return { error: 'לא נמצא.' }
-  const b = enrollment.booking as { instructor_id?: string } | null
-  if (b?.instructor_id !== user.id) return { error: 'גישה נדחתה.' }
-
-  const { error } = await supabase
-    .from('class_enrollments')
-    .update({ payment_status: 'paid', payment_method: method })
-    .eq('id', enrollmentId)
-
-  if (error) return { error: 'שגיאה.' }
-  revalidatePath('/instructor-dashboard/bookings')
-  return { success: true }
-}
+// NOTE: markStudentPaid was removed.
+// Student payment status is set exclusively through:
+//  - /api/enrollments/mark-paid (Bit/PayBox self-report, with token gate + commission charge)
+//  - /api/cardcom/webhook (credit card, with token commission charge)
+// Allowing instructors to mark enrollments as paid directly bypasses commission collection.

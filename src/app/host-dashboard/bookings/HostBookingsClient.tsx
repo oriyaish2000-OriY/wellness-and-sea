@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CalendarDays, Users, CheckCircle, XCircle, Loader2 } from 'lucide-react'
-import { hostConfirmBooking, hostCancelBooking } from '@/lib/actions/bookings'
+import { CalendarDays, Users, XCircle, Loader2 } from 'lucide-react'
+import { hostCancelBooking } from '@/lib/actions/bookings'
 import type { Booking } from '@/lib/supabase/types'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -39,18 +39,11 @@ function BookingActions({ booking, onUpdate }: {
   onUpdate: (id: string, status: string) => void
 }) {
   const [isPending, startTransition] = useTransition()
-  const [action, setAction] = useState<'confirm' | 'cancel' | null>(null)
+  const [action, setAction] = useState<'cancel' | null>(null)
 
+  // Pending bookings: show info that confirmation is automatic + cancel option
+  // Confirmed bookings: cancel only
   if (booking.status !== 'pending' && booking.status !== 'confirmed') return null
-
-  const handleConfirm = () => {
-    setAction('confirm')
-    startTransition(async () => {
-      const result = await hostConfirmBooking(booking.id)
-      if (!result?.error) onUpdate(booking.id, 'confirmed')
-      setAction(null)
-    })
-  }
 
   const handleCancel = () => {
     if (!confirm('לבטל את ההזמנה?')) return
@@ -65,18 +58,7 @@ function BookingActions({ booking, onUpdate }: {
   return (
     <div className="flex items-center gap-2">
       {booking.status === 'pending' && (
-        <Button
-          size="sm"
-          className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs px-3"
-          onClick={handleConfirm}
-          disabled={isPending}
-        >
-          {isPending && action === 'confirm' ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <><CheckCircle className="w-3 h-3 ml-1" />אשר</>
-          )}
-        </Button>
+        <span className="text-xs text-gray-400 whitespace-nowrap">ממתין לתשלום</span>
       )}
       {(booking.status === 'pending' || booking.status === 'confirmed') && (
         <Button

@@ -141,34 +141,15 @@ export async function cancelBooking(bookingId: string, reason?: string) {
   return { success: true }
 }
 
-export async function hostConfirmBooking(bookingId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'לא מחוברת.' }
-  if (user.user_metadata?.role !== 'host') return { error: 'גישה נדחתה.' }
-
-  // Verify the booking belongs to one of this host's venues
-  const { data: booking } = await supabase
-    .from('bookings')
-    .select('id, status, venue:venues(host_id)')
-    .eq('id', bookingId)
-    .single()
-
-  if (!booking) return { error: 'ההזמנה לא נמצאה.' }
-
-  const venue = booking.venue as { host_id?: string } | null
-  if (venue?.host_id !== user.id) return { error: 'גישה נדחתה.' }
-  if (booking.status !== 'pending') return { error: 'ניתן לאשר רק הזמנות ממתינות.' }
-
-  const { error } = await supabase
-    .from('bookings')
-    .update({ status: 'confirmed' })
-    .eq('id', bookingId)
-
-  if (error) return { error: 'שגיאה באישור ההזמנה.' }
-
-  revalidatePath('/host-dashboard/bookings')
-  return { success: true }
+/**
+ * @deprecated Manual booking confirmation is DISABLED.
+ * Bookings are confirmed automatically by the payment system (Cardcom webhook or mark-paid API).
+ * Allowing hosts to confirm manually bypasses payment verification and commission collection.
+ */
+export async function hostConfirmBooking(_bookingId: string) {
+  return {
+    error: 'הזמנות מאושרות אוטומטית לאחר קבלת התשלום — אין צורך באישור ידני.',
+  }
 }
 
 export async function hostCancelBooking(bookingId: string, reason?: string) {

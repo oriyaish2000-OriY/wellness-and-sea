@@ -52,7 +52,11 @@ interface CardcomWebhookBody {
 
 function verifyTerminal(payload: CardcomWebhookBody): boolean {
   const expected = parseInt(process.env.CARDCOM_TERMINAL_NUMBER ?? '0', 10)
-  if (expected <= 0) return true
+  if (expected <= 0) {
+    // Env var not configured — reject all webhooks to prevent spoofing
+    console.error('[cardcom/webhook] CARDCOM_TERMINAL_NUMBER not configured — rejecting webhook')
+    return false
+  }
   return payload.TerminalNumber === expected
 }
 
