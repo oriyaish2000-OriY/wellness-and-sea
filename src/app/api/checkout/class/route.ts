@@ -4,13 +4,18 @@
  * Flow 2 — Class Booking (Student → Instructor)
  *
  * Commission model (symmetric — platform earns 10% of base):
- *   Student pays:      base_price × 1.05  (5% service fee)
- *   Instructor gets:   base_price × 0.95  (5% deducted via Cardcom Meaged dashboard)
- *   Platform earns:    10% of base_price
+ *   Student pays:      base_price × 1.05  (5% markup — payer's commission)
+ *   Instructor gets:   base_price × 0.95  (5% deduction — provider's commission)
+ *   Platform earns:    10% of base_price total
+ *
+ * Credit card (no Meaged): all money lands on platform terminal.
+ *   Webhook then charges instructor's saved token 5% (their portion).
+ *   Platform already holds payer's 5% from the markup.
+ *
+ * Bit/PayBox: money goes directly to instructor → mark-paid charges instructor token 10%.
  *
  * Body: { enrollment_id: string }
- * Returns: { checkout_url: string } on success
- *          { checkout_url: null, fallback: 'direct', ... } when instructor has no Sapak
+ * Returns: { checkout_url: string } on success. Returns 4xx/5xx on failure — NO free confirmation fallback.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -72,9 +77,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid class price' }, { status: 400 })
     }
 
+    // ── Require Cardcom to be configured ─────────────────────────────────────
+    if (!isCardcomConfigured()) {
+      console.error('[checkout/class] Cardcom is not configured — cannot process payment')
+      return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
+    }
+
     // ── Commission split ──────────────────────────────────────────────────────
     const split = calcClassBookingSplit(basePriceILS)
-    const instructorSapakNumber = booking?.instructor?.grow_merchant_id ?? ''
+
+    // Sapak number is optional — if present, Meaged routes payment to instructor sub-account
+    const instructorSapakNumber = booking?.instructor?.grow_merchant_id || undefined
 
     // Load student profile for Document customer info
     const { data: studentProfile } = await supabase
@@ -83,63 +96,43 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // ── Cardcom + instructor has Sapak → LowProfile payment ──────────────────
-    if (isCardcomConfigured() && instructorSapakNumber) {
-      try {
-        const { checkoutUrl, lowProfileId } = await createClassBookingPayment({
-          enrollmentId,
-          studentId:            user.id,
-          studentPaysILS:       split.studentPays,
-          instructorSapakNumber,
-          className:            booking?.class_type ?? 'שיעור',
-          bookingDate:          booking?.booking_date ?? '',
-          customerName:         studentProfile?.full_name ?? '',
-          customerEmail:        user.email ?? '',
-        })
+    try {
+      const { checkoutUrl, lowProfileId } = await createClassBookingPayment({
+        enrollmentId,
+        studentId:            user.id,
+        studentPaysILS:       split.studentPays,
+        instructorSapakNumber,
+        className:            booking?.class_type ?? 'שיעור',
+        bookingDate:          booking?.booking_date ?? '',
+        customerName:         studentProfile?.full_name ?? '',
+        customerEmail:        user.email ?? '',
+      })
 
-        // Save LowProfileId to DB — must be done before redirecting buyer
-        if (lowProfileId) {
-          const serviceClient = createServiceClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-          )
-          await serviceClient
-            .from('class_enrollments')
-            .update({ cardcom_low_profile_id: lowProfileId })
-            .eq('id', enrollmentId)
-        }
-
-        console.log(
-          `[Cardcom Flow2] LowProfile ${lowProfileId} created for enrollment ${enrollmentId}. ` +
-          `Student pays ₪${split.studentPays}, ` +
-          `Instructor gets ₪${split.instructorPayout}, ` +
-          `Platform earns ₪${split.platformRevenue}`
+      // Save LowProfileId to DB — must be done before redirecting buyer
+      if (lowProfileId) {
+        const serviceClient = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
         )
-
-        return NextResponse.json({ checkout_url: checkoutUrl })
-      } catch (err) {
-        console.error('[Cardcom Flow2] createClassBookingPayment failed:', err)
-        // Fall through to direct fallback
+        await serviceClient
+          .from('class_enrollments')
+          .update({ cardcom_low_profile_id: lowProfileId })
+          .eq('id', enrollmentId)
       }
+
+      console.log(
+        `[Cardcom Flow2] LowProfile ${lowProfileId} created for enrollment ${enrollmentId}. ` +
+        `Student pays ₪${split.studentPays}, ` +
+        `Instructor gets ₪${split.instructorPayout}, ` +
+        `Platform earns ₪${split.platformRevenue}` +
+        (instructorSapakNumber ? ` (Meaged split via Sapak ${instructorSapakNumber})` : ' (platform terminal, instructor token charge pending)')
+      )
+
+      return NextResponse.json({ checkout_url: checkoutUrl })
+    } catch (err) {
+      console.error('[Cardcom Flow2] createClassBookingPayment failed:', err)
+      return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
     }
-
-    // ── Instructor not onboarded or Cardcom not configured → fallback ─────────
-    console.warn(
-      `[Cardcom Flow2] Instructor ${booking?.instructor?.id ?? 'unknown'} ` +
-      (instructorSapakNumber ? 'Cardcom call failed' : 'has no Sapak number') +
-      ' — returning direct payment fallback'
-    )
-
-    return NextResponse.json({
-      checkout_url:     null,
-      fallback:         'direct',
-      basePriceILS,
-      studentPays:      split.studentPays,
-      instructorPayout: split.instructorPayout,
-      platformRevenue:  split.platformRevenue,
-      className:        booking?.class_type,
-      bookingDate:      booking?.booking_date,
-    })
   } catch (e) {
     console.error('[checkout/class] Unhandled error:', e)
     return NextResponse.json({ error: 'Class checkout failed' }, { status: 500 })

@@ -148,32 +148,32 @@ export interface CardcomPaymentResult {
 }
 
 export interface SpaceRentalParams {
-  bookingId:        string
-  instructorId:     string
+  bookingId:         string
+  instructorId:      string
   /** What the instructor pays (base + 5%), ILS */
-  totalILS:         number
-  /** Host's Cardcom Sapak number (grow_merchant_id column) */
-  hostSapakNumber:  string
-  venueName:        string
+  totalILS:          number
+  /** Host's Cardcom Sapak number (grow_merchant_id column) — optional; omit when Meaged not activated */
+  hostSapakNumber?:  string
+  venueName:         string
   /** Instructor (payer) details for Document */
-  customerName:     string
-  customerEmail:    string
-  customerPhone?:   string
+  customerName:      string
+  customerEmail:     string
+  customerPhone?:    string
 }
 
 export interface ClassBookingParams {
-  enrollmentId:           string
-  studentId:              string
+  enrollmentId:            string
+  studentId:               string
   /** What the student pays (base + 5%), ILS */
-  studentPaysILS:         number
-  /** Instructor's Cardcom Sapak number */
-  instructorSapakNumber:  string
-  className:              string
-  bookingDate:            string
+  studentPaysILS:          number
+  /** Instructor's Cardcom Sapak number — optional; omit when Meaged not activated */
+  instructorSapakNumber?:  string
+  className:               string
+  bookingDate:             string
   /** Student (payer) details for Document */
-  customerName:           string
-  customerEmail:          string
-  customerPhone?:         string
+  customerName:            string
+  customerEmail:           string
+  customerPhone?:          string
 }
 
 // ─── Flow 1: Space Rental ─────────────────────────────────────────────────────
@@ -222,10 +222,10 @@ export async function createSpaceRentalPayment(
         },
       ],
     },
-    AdvancedDefinition: {
-      // Routes payment through host's Meaged sub-account
-      SapakMutav: params.hostSapakNumber,
-    },
+    // Only include Meaged split when host has a registered Sapak number
+    ...(params.hostSapakNumber ? {
+      AdvancedDefinition: { SapakMutav: params.hostSapakNumber },
+    } : {}),
   })
 }
 
@@ -275,9 +275,10 @@ export async function createClassBookingPayment(
         },
       ],
     },
-    AdvancedDefinition: {
-      SapakMutav: params.instructorSapakNumber,
-    },
+    // Only include Meaged split when instructor has a registered Sapak number
+    ...(params.instructorSapakNumber ? {
+      AdvancedDefinition: { SapakMutav: params.instructorSapakNumber },
+    } : {}),
   })
 }
 

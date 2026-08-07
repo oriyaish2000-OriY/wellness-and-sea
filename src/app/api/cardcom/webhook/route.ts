@@ -21,7 +21,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getLpResult } from '@/lib/payments/cardcomPaymentService'
+import { getLpResult, chargeProviderToken } from '@/lib/payments/cardcomPaymentService'
 import {
   sendBookingConfirmedEmailToInstructor,
   sendNewBookingEmailToHost,
@@ -95,7 +95,10 @@ async function confirmSpaceRentalBooking(
     .select(`
       *,
       venue:venues(title, location_address, location_city,
-        host:profiles!venues_host_id_fkey(id, full_name)),
+        host:profiles!venues_host_id_fkey(
+          id, full_name, grow_merchant_id,
+          cardcom_token, cardcom_token_card_month, cardcom_token_card_year
+        )),
       instructor:profiles!bookings_instructor_id_fkey(id, full_name)
     `)
     .eq('id', bookingId)
@@ -103,7 +106,7 @@ async function confirmSpaceRentalBooking(
 
   if (!booking) return
 
-  const venue      = booking.venue      as { title?: string; location_address?: string; location_city?: string; host?: { id?: string; full_name?: string } } | null
+  const venue      = booking.venue      as { title?: string; location_address?: string; location_city?: string; host?: { id?: string; full_name?: string; grow_merchant_id?: string; cardcom_token?: string; cardcom_token_card_month?: number; cardcom_token_card_year?: number } } | null
   const instructor = booking.instructor as { id?: string; full_name?: string } | null
 
   const [instructorEmail, hostEmail] = await Promise.all([
@@ -133,6 +136,50 @@ async function confirmSpaceRentalBooking(
     instructorEmail ? sendBookingConfirmedEmailToInstructor(emailData) : Promise.resolve(),
     hostEmail       ? sendNewBookingEmailToHost(emailData)             : Promise.resolve(),
   ])
+
+  // ── Charge host's 5% commission via token ─────────────────────────────────
+  // Credit card: platform has payer's 5% already (from the LowProfile markup).
+  // If no Meaged split (no grow_merchant_id), charge host token for their 5% portion.
+  // If Meaged is active, platform already received 10% from the split — no token charge.
+  const host = venue?.host
+  const hasMeaged = !!host?.grow_merchant_id
+
+  if (!hasMeaged && host?.cardcom_token && host.cardcom_token_card_month && host.cardcom_token_card_year) {
+    const { calcSpaceRentalSplit } = await import('@/lib/payments/commissionUtils')
+    const totalILS       = booking.total_price ?? 0
+    const baseILS        = Math.round(totalILS / 1.05)
+    // Platform has payer's 5% (from markup); charge host 5% (their portion) → total 10%
+    const hostCommission = Math.round(calcSpaceRentalSplit(baseILS).platformRevenue / 2)
+
+    chargeProviderToken({
+      token:         host.cardcom_token,
+      cardMonth:     host.cardcom_token_card_month,
+      cardYear:      host.cardcom_token_card_year,
+      amountILS:     hostCommission,
+      providerName:  host.full_name ?? '',
+      providerEmail: hostEmail,
+      description:   `עמלת פלטפורמה (כרטיס אשראי) — הזמנה ${bookingId.substring(0, 8)}`,
+    }).then(result => {
+      if (result.success) {
+        console.log(
+          `[webhook] Commission ₪${hostCommission} charged from host ${host.id} (credit card) — TxId ${result.transactionId}`
+        )
+        supabase
+          .from('bookings')
+          .update({
+            commission_charged_at: new Date().toISOString(),
+            commission_tx_id:      result.transactionId,
+          })
+          .eq('id', bookingId)
+          .then(() => {}, e => console.error('[webhook] commission DB error:', e))
+      } else {
+        console.error(
+          `[webhook] Commission charge FAILED for booking ${bookingId}: ` +
+          `ResponseCode=${result.responseCode} — ${result.description}`
+        )
+      }
+    }).catch(e => console.error('[webhook] commission charge error:', e))
+  }
 }
 
 // ─── A2. Space-rental booking — failed ───────────────────────────────────────
@@ -211,14 +258,23 @@ async function confirmClassEnrollment(
 ): Promise<void> {
   const { data: enrollment } = await supabase
     .from('class_enrollments')
-    .select('id, booking_id, booking:bookings(price_per_student)')
+    .select(`
+      id, booking_id,
+      booking:bookings(
+        price_per_student,
+        instructor:profiles!bookings_instructor_id_fkey(
+          id, full_name, grow_merchant_id,
+          cardcom_token, cardcom_token_card_month, cardcom_token_card_year
+        )
+      )
+    `)
     .eq('id', enrollmentId)
     .single()
 
   if (!enrollment) throw new Error(`Enrollment ${enrollmentId} not found`)
 
-  const booking   = enrollment.booking as { price_per_student?: number } | null
-  const basePrice = booking?.price_per_student ?? 0
+  const booking    = enrollment.booking as { price_per_student?: number; instructor?: { id?: string; full_name?: string; grow_merchant_id?: string; cardcom_token?: string; cardcom_token_card_month?: number; cardcom_token_card_year?: number } } | null
+  const basePrice  = booking?.price_per_student ?? 0
   const { calcClassBookingSplit } = await import('@/lib/payments/commissionUtils')
   const amountPaid = basePrice > 0 ? calcClassBookingSplit(basePrice).studentPays : 0
 
@@ -242,6 +298,47 @@ async function confirmClassEnrollment(
       .from('bookings')
       .update({ cardcom_transaction_id: txId })
       .eq('id', enrollment.booking_id)
+  }
+
+  // ── Charge instructor's 5% commission via token ───────────────────────────
+  // Credit card: platform has student's 5% already (from the LowProfile markup).
+  // If no Meaged split (no grow_merchant_id), charge instructor token for their 5% portion.
+  // If Meaged is active, platform already received 10% from the split — no token charge.
+  const instructor   = booking?.instructor
+  const hasMeaged    = !!instructor?.grow_merchant_id
+
+  if (!hasMeaged && instructor?.cardcom_token && instructor.cardcom_token_card_month && instructor.cardcom_token_card_year && basePrice > 0) {
+    const instructorCommission = Math.round(calcClassBookingSplit(basePrice).platformRevenue / 2)
+    const instructorEmail      = instructor.id ? await getUserEmail(supabase, instructor.id) : ''
+
+    chargeProviderToken({
+      token:         instructor.cardcom_token,
+      cardMonth:     instructor.cardcom_token_card_month,
+      cardYear:      instructor.cardcom_token_card_year,
+      amountILS:     instructorCommission,
+      providerName:  instructor.full_name ?? '',
+      providerEmail: instructorEmail,
+      description:   `עמלת פלטפורמה (כרטיס אשראי) — הרשמה ${enrollmentId.substring(0, 8)}`,
+    }).then(result => {
+      if (result.success) {
+        console.log(
+          `[webhook] Commission ₪${instructorCommission} charged from instructor ${instructor.id} (credit card) — TxId ${result.transactionId}`
+        )
+        supabase
+          .from('class_enrollments')
+          .update({
+            commission_charged_at: new Date().toISOString(),
+            commission_tx_id:      result.transactionId,
+          })
+          .eq('id', enrollmentId)
+          .then(() => {}, e => console.error('[webhook] commission DB error:', e))
+      } else {
+        console.error(
+          `[webhook] Commission charge FAILED for enrollment ${enrollmentId}: ` +
+          `ResponseCode=${result.responseCode} — ${result.description}`
+        )
+      }
+    }).catch(e => console.error('[webhook] commission charge error:', e))
   }
 }
 

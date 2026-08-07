@@ -4,14 +4,18 @@
  * Flow 1 — Space Rental (Instructor → Host)
  *
  * Commission model (symmetric — platform earns 10% of base):
- *   Instructor pays:  base_price × 1.05  (5% markup)
- *   Host receives:    base_price × 0.95  (5% deduction, via Cardcom Meaged dashboard config)
- *   Platform earns:   10% of base_price
+ *   Instructor pays:  base_price × 1.05  (5% markup — payer's commission)
+ *   Host receives:    base_price × 0.95  (5% deduction — provider's commission)
+ *   Platform earns:   10% of base_price total
+ *
+ * Credit card (no Meaged): all money lands on platform terminal.
+ *   Webhook then charges host's saved token 5% (their portion).
+ *   Platform already holds payer's 5% from the markup.
+ *
+ * Bit/PayBox: money goes directly to host → mark-paid charges host token 10%.
  *
  * Amounts (total_price / host_payout) are set during booking creation — never trusted from client.
- *
- * Returns { checkout_url } on success.
- * Falls back to direct confirmation when Cardcom is not configured or host has no Sapak number.
+ * Returns { checkout_url } on success. Returns 4xx/5xx on failure — NO free confirmation fallback.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -21,10 +25,6 @@ import {
   isCardcomConfigured,
   createSpaceRentalPayment,
 } from '@/lib/payments/cardcomPaymentService'
-import {
-  sendBookingConfirmedEmailToInstructor,
-  sendNewBookingEmailToHost,
-} from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +56,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Booking not found or already processed' }, { status: 404 })
     }
 
+    const venue = booking.venue as {
+      id?: string
+      title?: string
+      host?: { id?: string; full_name?: string; grow_merchant_id?: string }
+    } | null
+
+    const totalILS      = booking.total_price  // instructor pays (base + 5%)
+    const hostPayoutILS = booking.host_payout  // host receives  (base − 5%)
+
+    if (!totalILS || !hostPayoutILS) {
+      return NextResponse.json({ error: 'Invalid booking amounts' }, { status: 400 })
+    }
+
+    // ── Require Cardcom to be configured ─────────────────────────────────────
+    if (!isCardcomConfigured()) {
+      console.error('[checkout] Cardcom is not configured — cannot process payment')
+      return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
+    }
+
     // Load instructor profile for Document customer info
     const { data: instructorProfile } = await supabase
       .from('profiles')
@@ -63,125 +82,42 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const venue = booking.venue as {
-      id?: string
-      title?: string
-      host?: { id?: string; full_name?: string; grow_merchant_id?: string }
-    } | null
+    // Sapak number is optional — if present, Meaged routes payment to host sub-account
+    const hostSapakNumber = venue?.host?.grow_merchant_id || undefined
 
-    const totalILS        = booking.total_price  // instructor pays (base + 5%)
-    const hostPayoutILS   = booking.host_payout  // host receives  (base − 5%)
-    const hostSapakNumber = venue?.host?.grow_merchant_id ?? ''
+    try {
+      const { checkoutUrl, lowProfileId } = await createSpaceRentalPayment({
+        bookingId,
+        instructorId:    booking.instructor_id,
+        totalILS,
+        hostSapakNumber,
+        venueName:       venue?.title ?? 'חלל',
+        customerName:    instructorProfile?.full_name ?? '',
+        customerEmail:   user.email ?? '',
+      })
 
-    if (!totalILS || !hostPayoutILS) {
-      return NextResponse.json({ error: 'Invalid booking amounts' }, { status: 400 })
-    }
-
-    // ── Cardcom configured + host has Sapak → LowProfile payment ─────────────
-    if (isCardcomConfigured() && hostSapakNumber) {
-      try {
-        const { checkoutUrl, lowProfileId } = await createSpaceRentalPayment({
-          bookingId,
-          instructorId:    booking.instructor_id,
-          totalILS,
-          hostSapakNumber,
-          venueName:       venue?.title ?? 'חלל',
-          customerName:    instructorProfile?.full_name ?? '',
-          customerEmail:   user.email ?? '',
-        })
-
-        // Save LowProfileId to DB — must be done before redirecting buyer
-        if (lowProfileId) {
-          const serviceClient = createServiceClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-          )
-          await serviceClient
-            .from('bookings')
-            .update({ cardcom_low_profile_id: lowProfileId })
-            .eq('id', bookingId)
-        }
-
-        console.log(
-          `[Cardcom Flow1] LowProfile ${lowProfileId} created for booking ${bookingId}. ` +
-          `Instructor pays ₪${totalILS}, Host receives ₪${hostPayoutILS}`
+      // Save LowProfileId to DB — must be done before redirecting buyer
+      if (lowProfileId) {
+        const serviceClient = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
         )
-        return NextResponse.json({ checkout_url: checkoutUrl })
-      } catch (err) {
-        console.error('[Cardcom Flow1] createSpaceRentalPayment failed:', err)
-        // Fall through to direct fallback
+        await serviceClient
+          .from('bookings')
+          .update({ cardcom_low_profile_id: lowProfileId })
+          .eq('id', bookingId)
       }
-    }
 
-    if (isCardcomConfigured() && !hostSapakNumber) {
-      console.warn(
-        `[Cardcom Flow1] Host ${venue?.host?.id ?? 'unknown'} has no Sapak number — needs KYC registration`
+      console.log(
+        `[Cardcom Flow1] LowProfile ${lowProfileId} created for booking ${bookingId}. ` +
+        `Instructor pays ₪${totalILS}, Host receives ₪${hostPayoutILS}` +
+        (hostSapakNumber ? ` (Meaged split via Sapak ${hostSapakNumber})` : ' (platform terminal, host token charge pending)')
       )
+      return NextResponse.json({ checkout_url: checkoutUrl })
+    } catch (err) {
+      console.error('[Cardcom Flow1] createSpaceRentalPayment failed:', err)
+      return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
     }
-
-    // ── Fallback: confirm directly (host not onboarded / Cardcom not configured) ──
-    console.warn('[checkout] Falling back to direct confirmation')
-
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (serviceKey) {
-      const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
-
-      const { data: fullBooking } = await admin
-        .from('bookings')
-        .select(`
-          *,
-          venue:venues(title, location_address, location_city,
-            host:profiles!venues_host_id_fkey(id, full_name)),
-          instructor:profiles!bookings_instructor_id_fkey(id, full_name)
-        `)
-        .eq('id', bookingId)
-        .eq('instructor_id', user.id)
-        .single()
-
-      await admin
-        .from('bookings')
-        .update({ status: 'confirmed' })
-        .eq('id', bookingId)
-        .eq('instructor_id', user.id)
-        .eq('status', 'pending')
-
-      if (fullBooking) {
-        const fVenue      = fullBooking.venue      as { title?: string; location_address?: string; location_city?: string; host?: { id?: string; full_name?: string } } | null
-        const fInstructor = fullBooking.instructor as { id?: string; full_name?: string } | null
-
-        let hostEmail = ''
-        if (fVenue?.host?.id) {
-          const { data: hostUser } = await admin.auth.admin.getUserById(fVenue.host.id)
-          hostEmail = hostUser?.user?.email ?? ''
-        }
-
-        const emailData = {
-          instructorName:    fInstructor?.full_name ?? '',
-          instructorEmail:   user.email ?? '',
-          hostName:          fVenue?.host?.full_name ?? '',
-          hostEmail,
-          venueName:         fVenue?.title ?? '',
-          venueAddress:      fVenue?.location_address ?? '',
-          venueCity:         fVenue?.location_city ?? '',
-          bookingDate:       fullBooking.booking_date,
-          startTime:         fullBooking.start_time,
-          endTime:           fullBooking.end_time,
-          totalPrice:        fullBooking.total_price,
-          hostPayout:        fullBooking.host_payout,
-          classType:         fullBooking.class_type ?? undefined,
-          participantsCount: fullBooking.participants_count ?? undefined,
-          bookingId,
-        }
-
-        Promise.all([
-          user.email ? sendBookingConfirmedEmailToInstructor(emailData) : Promise.resolve(),
-          hostEmail  ? sendNewBookingEmailToHost(emailData)             : Promise.resolve(),
-        ]).catch(err => console.error('[checkout fallback] email error:', err))
-      }
-    }
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    return NextResponse.json({ checkout_url: `${appUrl}/booking/confirm/${bookingId}` })
   } catch (e) {
     console.error('[checkout] Unhandled error:', e)
     return NextResponse.json({ error: 'Checkout failed' }, { status: 500 })
