@@ -26,6 +26,10 @@ import {
   createClassBookingPayment,
 } from '@/lib/payments/cardcomPaymentService'
 import { calcClassBookingSplit } from '@/lib/payments/commissionUtils'
+import {
+  isSumitConfigured,
+  createClassBookingPaymentUrl,
+} from '@/lib/payments/SumitMarketplace'
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,24 +81,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid class price' }, { status: 400 })
     }
 
-    // ── Require Cardcom to be configured ─────────────────────────────────────
-    if (!isCardcomConfigured()) {
-      console.error('[checkout/class] Cardcom is not configured — cannot process payment')
-      return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
-    }
-
     // ── Commission split ──────────────────────────────────────────────────────
     const split = calcClassBookingSplit(basePriceILS)
 
-    // Sapak number is optional — if present, Meaged routes payment to instructor sub-account
-    const instructorSapakNumber = booking?.instructor?.grow_merchant_id || undefined
-
-    // Load student profile for Document customer info
+    // Load student profile for customer info
     const { data: studentProfile } = await supabase
       .from('profiles')
       .select('full_name')
       .eq('id', user.id)
       .single()
+
+    // ── SUMIT path (primary) ──────────────────────────────────────────────────
+    if (isSumitConfigured()) {
+      try {
+        const { checkoutUrl } = await createClassBookingPaymentUrl({
+          enrollmentId,
+          studentId:        user.id,
+          totalILS:         split.studentPays,
+          instructorPayout: split.instructorPayout,
+          className:        booking?.class_type ?? 'שיעור',
+          bookingDate:      booking?.booking_date ?? '',
+          customerName:     studentProfile?.full_name ?? '',
+          customerEmail:    user.email ?? '',
+        })
+        console.log(`[SUMIT Flow2] Payment URL created for enrollment ${enrollmentId}. Student pays ₪${split.studentPays}`)
+        return NextResponse.json({ checkout_url: checkoutUrl })
+      } catch (err) {
+        console.error('[SUMIT Flow2] createClassBookingPaymentUrl failed:', err)
+        return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
+      }
+    }
+
+    // ── Cardcom path (fallback) ───────────────────────────────────────────────
+    if (!isCardcomConfigured()) {
+      console.error('[checkout/class] Neither SUMIT nor Cardcom is configured — cannot process payment')
+      return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
+    }
+
+    // Sapak number is optional — if present, Meaged routes payment to instructor sub-account
+    const instructorSapakNumber = booking?.instructor?.grow_merchant_id || undefined
 
     try {
       const { checkoutUrl, lowProfileId } = await createClassBookingPayment({

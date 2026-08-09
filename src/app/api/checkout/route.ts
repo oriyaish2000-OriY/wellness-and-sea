@@ -25,6 +25,10 @@ import {
   isCardcomConfigured,
   createSpaceRentalPayment,
 } from '@/lib/payments/cardcomPaymentService'
+import {
+  isSumitConfigured,
+  createSpaceRentalPaymentUrl,
+} from '@/lib/payments/SumitMarketplace'
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,18 +73,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid booking amounts' }, { status: 400 })
     }
 
-    // ── Require Cardcom to be configured ─────────────────────────────────────
-    if (!isCardcomConfigured()) {
-      console.error('[checkout] Cardcom is not configured — cannot process payment')
-      return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
-    }
-
-    // Load instructor profile for Document customer info
+    // Load instructor profile for customer info
     const { data: instructorProfile } = await supabase
       .from('profiles')
       .select('full_name')
       .eq('id', user.id)
       .single()
+
+    // ── SUMIT path (primary) ──────────────────────────────────────────────────
+    if (isSumitConfigured()) {
+      try {
+        const { checkoutUrl } = await createSpaceRentalPaymentUrl({
+          bookingId,
+          instructorId:  booking.instructor_id,
+          totalILS,
+          hostPayout:    hostPayoutILS,
+          venueName:     venue?.title ?? 'חלל',
+          customerName:  instructorProfile?.full_name ?? '',
+          customerEmail: user.email ?? '',
+        })
+        console.log(`[SUMIT Flow1] Payment URL created for booking ${bookingId}. Instructor pays ₪${totalILS}`)
+        return NextResponse.json({ checkout_url: checkoutUrl })
+      } catch (err) {
+        console.error('[SUMIT Flow1] createSpaceRentalPaymentUrl failed:', err)
+        return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
+      }
+    }
+
+    // ── Cardcom path (fallback) ───────────────────────────────────────────────
+    if (!isCardcomConfigured()) {
+      console.error('[checkout] Neither SUMIT nor Cardcom is configured — cannot process payment')
+      return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
+    }
 
     // Sapak number is optional — if present, Meaged routes payment to host sub-account
     const hostSapakNumber = venue?.host?.grow_merchant_id || undefined
