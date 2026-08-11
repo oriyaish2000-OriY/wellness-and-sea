@@ -315,8 +315,8 @@ export async function getBookingById(id: string): Promise<Booking | null> {
     .from('bookings')
     .select(`
       *,
-      venue:venues(*, host:profiles!venues_host_id_fkey(id, full_name, phone, bit_phone, paybox_phone)),
-      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, phone, bit_phone, paybox_phone)
+      venue:venues(*, host:profiles!venues_host_id_fkey(id, full_name, phone)),
+      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, phone)
     `)
     .eq('id', id)
     .single()
@@ -564,7 +564,7 @@ export async function getOpenClasses(limit = 30) {
       id, booking_date, start_time, end_time, class_type,
       participants_count, max_students, price_per_student,
       venue:venues(id, title, location_city, location_address, images),
-      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, bio, instagram, bit_phone, paybox_phone)
+      instructor:profiles!bookings_instructor_id_fkey(id, full_name, avatar_url, bio, instagram)
     `)
     .eq('open_to_students', true)
     .eq('status', 'confirmed')

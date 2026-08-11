@@ -8,15 +8,13 @@ type InstructorCard = {
   avatar_url?: string | null
   bio?: string | null
   specialties?: string[] | null
-  bit_phone?: string | null
-  paybox_phone?: string | null
 }
 
 export default async function InstructorsPage() {
   const supabase = await createClient()
   const { data: instructors } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, bio, specialties, bit_phone, paybox_phone')
+    .select('id, full_name, avatar_url, bio, specialties')
     .eq('role', 'instructor')
     .order('created_at', { ascending: false })
 
@@ -81,12 +79,6 @@ export default async function InstructorsPage() {
                         {instructor.specialties.slice(0, 3).map((s: string) => (
                           <span key={s} className="text-xs px-2.5 py-1 rounded-full font-semibold" style={{ background: 'rgba(13,110,110,0.08)', color: '#0d6e6e' }}>{s}</span>
                         ))}
-                      </div>
-                    )}
-                    {(instructor.bit_phone || instructor.paybox_phone) && (
-                      <div className="flex items-center gap-2 text-xs" style={{ color: '#c8944a' }}>
-                        <span>💳</span>
-                        <span className="font-semibold">תשלום ישיר זמין</span>
                       </div>
                     )}
                     <div className="mt-4 text-center py-2 rounded-full text-sm font-bold" style={{ background: 'rgba(13,110,110,0.08)', color: '#0d6e6e' }}>

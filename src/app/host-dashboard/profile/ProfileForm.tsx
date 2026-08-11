@@ -15,8 +15,6 @@ interface ProfileFormProps {
     bio: string
     avatar_url: string
     bank_account?: string
-    bit_phone?: string
-    paybox_phone?: string
   }
 }
 
@@ -118,35 +116,6 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="bit_phone" className="text-sm font-medium text-gray-700">
-            מספר Bit
-          </Label>
-          <Input
-            id="bit_phone"
-            name="bit_phone"
-            type="tel"
-            defaultValue={initialData.bit_phone ?? ''}
-            placeholder="05X-XXXXXXX"
-            className="text-right"
-            dir="rtl"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="paybox_phone" className="text-sm font-medium text-gray-700">
-            מספר PayBox
-          </Label>
-          <Input
-            id="paybox_phone"
-            name="paybox_phone"
-            type="tel"
-            defaultValue={initialData.paybox_phone ?? ''}
-            placeholder="05X-XXXXXXX"
-            className="text-right"
-            dir="rtl"
-          />
-        </div>
       </div>
 
       <div className="pt-2">

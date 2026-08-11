@@ -186,7 +186,7 @@ export async function cancelBooking(bookingId: string, reason?: string) {
 
 /**
  * @deprecated Manual booking confirmation is DISABLED.
- * Bookings are confirmed automatically by the payment system (Cardcom webhook or mark-paid API).
+ * Bookings are confirmed automatically by the SUMIT payment webhook.
  * Allowing hosts to confirm manually bypasses payment verification and commission collection.
  */
 export async function hostConfirmBooking(_bookingId: string) {

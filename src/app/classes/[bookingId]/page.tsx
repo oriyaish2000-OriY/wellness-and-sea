@@ -38,7 +38,7 @@ export default async function ClassDetailPage({ params }: Props) {
   }
 
   const venue = cls.venue as { id?: string; title?: string; location_city?: string; location_address?: string; images?: string[] } | null
-  const instructor = cls.instructor as { id?: string; full_name?: string; avatar_url?: string; bio?: string; bit_phone?: string; paybox_phone?: string; instagram?: string } | null
+  const instructor = cls.instructor as { id?: string; full_name?: string; avatar_url?: string; bio?: string; instagram?: string } | null
   const dateObj = new Date(cls.booking_date)
   const dateStr = dateObj.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -140,33 +140,6 @@ export default async function ClassDetailPage({ params }: Props) {
                 </div>
               )}
             </div>
-
-            {/* Payment methods */}
-            {(instructor?.bit_phone || instructor?.paybox_phone) && (
-              <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(10,74,74,0.04)', border: '1px solid rgba(10,74,74,0.1)' }}>
-                <p className="text-xs font-semibold text-gray-600 mb-2">לאחר ההרשמה, שלחי את התשלום ישירות למדריכה:</p>
-                <div className="flex flex-wrap gap-2">
-                  {instructor.bit_phone && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(13,110,110,0.06)', border: '1px solid rgba(13,110,110,0.15)' }}>
-                      <span className="text-xl">💙</span>
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Bit</div>
-                        <div className="text-sm font-bold text-ocean">{instructor.bit_phone}</div>
-                      </div>
-                    </div>
-                  )}
-                  {instructor.paybox_phone && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(200,148,74,0.06)', border: '1px solid rgba(200,148,74,0.15)' }}>
-                      <span className="text-xl">💛</span>
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400">PayBox</div>
-                        <div className="text-sm font-bold" style={{ color: '#c8944a' }}>{instructor.paybox_phone}</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             <EnrollButton
               bookingId={bookingId}

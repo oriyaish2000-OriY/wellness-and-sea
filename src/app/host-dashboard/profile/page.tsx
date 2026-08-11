@@ -78,8 +78,6 @@ export default async function HostProfilePage({
               bio:          profile.bio ?? '',
               avatar_url:   profile.avatar_url ?? '',
               bank_account: profile.bank_account ?? '',
-              bit_phone:    profile.bit_phone ?? '',
-              paybox_phone: profile.paybox_phone ?? '',
             }}
           />
         </CardContent>

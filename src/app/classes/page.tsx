@@ -54,7 +54,7 @@ export default async function ClassesPage() {
               <p className="text-sm text-gray-500 mb-6">{openClasses.length} שיעורים זמינים</p>
               {openClasses.map((cls) => {
                 const venue = cls.venue as { id?: string; title?: string; location_city?: string; location_address?: string; images?: string[] } | null
-                const instructor = cls.instructor as { id?: string; full_name?: string; avatar_url?: string; bio?: string; bit_phone?: string; paybox_phone?: string } | null
+                const instructor = cls.instructor as { id?: string; full_name?: string; avatar_url?: string; bio?: string } | null
                 const dateObj = new Date(cls.booking_date)
 
                 return (
@@ -131,12 +131,6 @@ export default async function ClassesPage() {
                           >
                             הירשמי לשיעור
                           </Link>
-                          {instructor?.bit_phone && (
-                            <span className="text-xs text-gray-400">💙 Bit: {instructor.bit_phone}</span>
-                          )}
-                          {instructor?.paybox_phone && (
-                            <span className="text-xs text-gray-400">💛 PayBox: {instructor.paybox_phone}</span>
-                          )}
                         </div>
                       </div>
                     </div>

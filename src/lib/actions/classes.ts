@@ -210,7 +210,5 @@ export async function cancelEnrollment(enrollmentId: string) {
 }
 
 // NOTE: markStudentPaid was removed.
-// Student payment status is set exclusively through:
-//  - /api/enrollments/mark-paid (Bit/PayBox self-report, with token gate + commission charge)
-//  - /api/cardcom/webhook (credit card, with token commission charge)
+// Student payment status is set exclusively by /api/checkout/class/card (SUMIT multivendorcharge).
 // Allowing instructors to mark enrollments as paid directly bypasses commission collection.

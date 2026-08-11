@@ -114,38 +114,6 @@ export default async function InstructorProfilePage({ params }: { params: Promis
         </div>
 
         <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
-          {/* Payment info */}
-          {(instructor.bit_phone || instructor.paybox_phone) && (
-            <div className="rounded-2xl p-6" style={{ background: 'white', boxShadow: '0 2px 16px rgba(10,74,74,0.08)' }}>
-              <h2 className="font-bold text-lg mb-4" style={{ color: '#0a4a4a', fontFamily: "'Playfair Display', serif" }}>
-                תשלום ישיר למדריכה
-              </h2>
-              <p className="text-sm mb-4" style={{ color: '#6b7c7c' }}>
-                לאחר ההרשמה לשיעור, שלחי את התשלום ישירות למדריכה:
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {instructor.bit_phone && (
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(13,110,110,0.06)', border: '1px solid rgba(13,110,110,0.15)' }}>
-                    <span className="text-2xl">💙</span>
-                    <div>
-                      <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#6b7c7c' }}>Bit</div>
-                      <div className="font-bold" style={{ color: '#0d6e6e' }}>{instructor.bit_phone}</div>
-                    </div>
-                  </div>
-                )}
-                {instructor.paybox_phone && (
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: 'rgba(200,148,74,0.06)', border: '1px solid rgba(200,148,74,0.15)' }}>
-                    <span className="text-2xl">💛</span>
-                    <div>
-                      <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#6b7c7c' }}>PayBox</div>
-                      <div className="font-bold" style={{ color: '#c8944a' }}>{instructor.paybox_phone}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Upcoming classes */}
           <div>
             <h2 className="font-bold text-xl mb-5" style={{ color: '#0a4a4a', fontFamily: "'Playfair Display', serif" }}>

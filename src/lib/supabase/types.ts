@@ -13,13 +13,9 @@ export interface Profile {
   insurance_url?: string
   created_at: string
   updated_at?: string
-  bit_phone?: string
-  paybox_phone?: string
   bank_account?: string
   specialties?: string[]
   instagram?: string
-  /** Grow sub-merchant user ID — set after KYC via /api/grow/register-merchant */
-  grow_merchant_id?: string
 }
 
 export interface VenueAmenities {
