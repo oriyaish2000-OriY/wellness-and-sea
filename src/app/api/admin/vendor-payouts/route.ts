@@ -21,6 +21,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { checkRateLimitDB } from '@/lib/rate-limit'
+import { makeAdminSessionToken } from '@/app/api/admin/session/route'
 
 function adminClient() {
   return createClient(
@@ -34,10 +36,17 @@ function checkAdminAuth(request: NextRequest): boolean {
   if (!adminSecret) return false
   const authHeader = request.headers.get('Authorization')
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-  return token === adminSecret
+  return token === makeAdminSessionToken(adminSecret) || token === adminSecret
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Rate-limit by IP — 20 per hour
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const rl = await checkRateLimitDB(`admin_bearer:${ip}`, 20, 3600)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+  }
+
   if (!checkAdminAuth(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

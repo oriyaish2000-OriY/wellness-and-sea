@@ -64,6 +64,15 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // L-2: Security headers on every response
+  supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff')
+  supabaseResponse.headers.set('X-Frame-Options', 'DENY')
+  supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  if (process.env.NODE_ENV === 'production') {
+    supabaseResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+
   return supabaseResponse
 }
 

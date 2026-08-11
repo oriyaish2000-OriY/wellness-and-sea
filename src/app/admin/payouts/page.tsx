@@ -1,11 +1,10 @@
 /**
  * /admin/payouts — Vendor Payout Dashboard (Server Component)
  *
- * Auth flow (secret never reaches client-side JS):
- *   1. First visit: /admin/payouts?secret=<ADMIN_SECRET>
- *      → server redirects to /api/admin/session which sets an HttpOnly cookie
- *      → then redirects back here (no secret in URL)
- *   2. Subsequent visits: cookie-only auth (no secret in URL or props)
+ * Auth flow (secret never in URL):
+ *   1. First visit: /admin/payouts → no cookie → redirect to /admin/login
+ *   2. Login page POSTs secret to /api/admin/session → sets HttpOnly HMAC cookie
+ *   3. /admin/payouts checks cookie → grants access
  *
  * The mark-paid action is a Server Action (actions.ts) that re-checks the
  * cookie on the server — ADMIN_SECRET is never serialized into the HTML.
@@ -26,11 +25,7 @@ function adminClient() {
   )
 }
 
-export default async function AdminPayoutsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ secret?: string }>
-}) {
+export default async function AdminPayoutsPage() {
   const adminSecret = process.env.ADMIN_SECRET
   if (!adminSecret) {
     return (
@@ -40,30 +35,13 @@ export default async function AdminPayoutsPage({
     )
   }
 
-  // ── Auth: check HttpOnly session cookie first ──────────────────────────────
+  // ── Auth: check HttpOnly session cookie ───────────────────────────────────
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get('admin_session')?.value
-  // Compare against HMAC — raw secret is never stored in cookie (M-D)
   const hasCookie = sessionCookie === makeAdminSessionToken(adminSecret)
 
   if (!hasCookie) {
-    // Fall back to query param — redirect to session handler which sets cookie
-    const params = await searchParams
-    if (params.secret === adminSecret) {
-      redirect(`${APP_URL}/api/admin/session?secret=${encodeURIComponent(adminSecret)}&next=/admin/payouts`)
-    }
-
-    // Neither cookie nor valid secret → access denied
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-xl border shadow-sm p-8 max-w-sm w-full text-center">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">גישה מוגבלת</h1>
-          <p className="text-sm text-gray-500">
-            גש לדף זה עם <code className="bg-gray-100 px-1 rounded">?secret=...</code>
-          </p>
-        </div>
-      </div>
-    )
+    redirect(`${APP_URL}/admin/login?next=/admin/payouts`)
   }
 
   const db = adminClient()

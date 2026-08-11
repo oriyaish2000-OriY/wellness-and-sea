@@ -15,6 +15,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { checkRateLimitDB } from '@/lib/rate-limit'
+import { makeAdminSessionToken } from '@/app/api/admin/session/route'
 
 function adminClient() {
   return createClient(
@@ -24,7 +26,14 @@ function adminClient() {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  // ── Auth: Bearer token must match ADMIN_SECRET ────────────────────────────
+  // ── Rate-limit by IP — 20 per hour ───────────────────────────────────────
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const rl = await checkRateLimitDB(`admin_bearer:${ip}`, 20, 3600)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+  }
+
+  // ── Auth: Bearer token must match HMAC of ADMIN_SECRET ───────────────────
   const adminSecret = process.env.ADMIN_SECRET
   if (!adminSecret) {
     console.error('[admin/payout-failures] ADMIN_SECRET env var not configured')
@@ -34,7 +43,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const authHeader = request.headers.get('Authorization')
   const token      = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
 
-  if (token !== adminSecret) {
+  // Accept HMAC token (preferred) or raw secret (backward-compat for scripts)
+  const validHmac = token === makeAdminSessionToken(adminSecret)
+  const validRaw  = token === adminSecret
+  if (!validHmac && !validRaw) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

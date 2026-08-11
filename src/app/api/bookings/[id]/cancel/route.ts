@@ -106,12 +106,18 @@ export async function POST(
           // Load host's encrypted API key to refund their portion
           const { data: hostConfig } = await db
             .from('vendor_payment_config')
-            .select('sumit_api_key')
+            .select('sumit_api_key, sumit_company_id')
             .eq('profile_id', hostId)
             .eq('onboarding_status', 'verified')
             .maybeSingle()
 
-          if (hostConfig?.sumit_api_key && isEncrypted(hostConfig.sumit_api_key)) {
+          // M-6: Verify the stored CompanyID matches what the booking recorded
+          if (hostConfig?.sumit_company_id !== vendorCompanyId) {
+            console.error(
+              `[cancel] CompanyID mismatch for booking ${bookingId}: ` +
+              `booking has ${vendorCompanyId}, hostConfig has ${hostConfig?.sumit_company_id} — skipping refund`
+            )
+          } else if (hostConfig?.sumit_api_key && isEncrypted(hostConfig.sumit_api_key)) {
             let hostApiKey: string
             try {
               hostApiKey = decryptApiKey(hostConfig.sumit_api_key)
