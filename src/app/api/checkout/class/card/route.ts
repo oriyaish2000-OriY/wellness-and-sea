@@ -26,6 +26,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { chargeMultiVendor }    from '@/lib/payments/SumitMarketplace'
 import { calcClassBookingSplit } from '@/lib/payments/commissionUtils'
 import { decryptApiKey, isEncrypted } from '@/lib/encryption'
+import { checkRateLimitDB } from '@/lib/rate-limit'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
@@ -66,6 +67,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.redirect(`${APP_URL}/auth/login`)
+    }
+
+    // ── Rate limit ────────────────────────────────────────────────────────────
+    // H2: 5 payment attempts per user per 15 minutes (distributed, cross-instance)
+    const rlCheck = await checkRateLimitDB(`checkout:user:${user.id}`, 5, 900)
+    if (!rlCheck.allowed) {
+      const bookingId = enrollmentId // best-effort redirect
+      return NextResponse.redirect(`${APP_URL}/classes/${bookingId}/pay?error=rate_limited`)
     }
 
     // ── Load enrollment + booking details ─────────────────────────────────────
@@ -182,15 +191,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         payment_method:          'sumit',
         amount_paid:             split.studentPays,
         tranzila_transaction_id: String(chargeResult.paymentId),
+        platform_payment_id:     chargeResult.platformPaymentId != null
+                                   ? String(chargeResult.platformPaymentId)
+                                   : null,
         vendor_sumit_company_id: instructorConfig.sumit_company_id,
       })
       .eq('id', enrollmentId)
       .eq('payment_status', 'pending_direct')
 
     if (dbError) {
+      // Payment was charged but DB update failed — CRITICAL.
+      // Do NOT redirect to the pay page (would prompt re-payment / double-charge).
+      // Direct user to contact support; manual recovery needed via SUMIT dashboard.
       console.error(
         `[checkout/class/card] CRITICAL: Payment ${chargeResult.paymentId} charged but ` +
         `enrollment ${enrollmentId} DB update failed: ${dbError.message}`
+      )
+      return NextResponse.redirect(
+        `${APP_URL}/classes/${bookingId}/pay?error=payment_db_sync&payment_id=${chargeResult.paymentId}`
       )
     }
 

@@ -22,6 +22,8 @@ import { validateVendorCredentials } from '@/lib/payments/SumitMarketplace'
 import { encryptApiKey } from '@/lib/encryption'
 import { checkRateLimit } from './rate-limit'
 
+const WINDOW_SECONDS = 15 * 60  // 15 minutes
+
 function adminClient() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       request.headers.get('x-real-ip') ??
       'unknown'
 
-    const rateCheck = checkRateLimit(clientIp)
+    const rateCheck = await checkRateLimit(`vendor_connect:ip:${clientIp}`, 5, WINDOW_SECONDS)
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {
@@ -61,7 +63,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const role = user.user_metadata?.role
+    // M2: Read role from profiles table (source of truth) — not JWT user_metadata
+    // which can be stale if a role change was made after the token was issued.
+    const db = adminClient()
+    const { data: profile } = await db
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const role = profile?.role
     if (role !== 'instructor' && role !== 'host') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -90,7 +101,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // ── Guard: CompanyID must not already belong to a DIFFERENT user ─────────
     // Prevents an attacker from registering another vendor's stolen SUMIT credentials
     // under their own account and redirecting payments to that vendor's SUMIT account.
-    const db = adminClient()
     const { data: existingConfig } = await db
       .from('vendor_payment_config')
       .select('profile_id')

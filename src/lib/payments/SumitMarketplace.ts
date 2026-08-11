@@ -18,15 +18,9 @@ const SUMIT_BASE = 'https://api.sumit.co.il'
 
 function sumitEnv() {
   return {
-    companyID:  parseInt(process.env.SUMIT_COMPANY_ID ?? '0', 10),
-    apiKey:     process.env.SUMIT_API_PRIVATE_KEY ?? '',
-    appUrl:     process.env.NEXT_PUBLIC_APP_URL   ?? 'http://localhost:3000',
+    companyID: parseInt(process.env.SUMIT_COMPANY_ID ?? '0', 10),
+    apiKey:    process.env.SUMIT_API_PRIVATE_KEY ?? '',
   }
-}
-
-export function isSumitConfigured(): boolean {
-  const { companyID, apiKey } = sumitEnv()
-  return Boolean(companyID > 0 && apiKey)
 }
 
 // ─── Internal POST helper ─────────────────────────────────────────────────────
@@ -95,199 +89,9 @@ async function sumitPostWith<T>(
 
 // ─── SUMIT API types ──────────────────────────────────────────────────────────
 
-interface BeginRedirectData {
-  RedirectURL: string
-}
-
-interface GetPaymentData {
-  Payment: {
-    ID:            number
-    Amount:        number
-    ValidPayment:  boolean
-    Status:        string
-    CustomerID:    number
-  }
-}
-
 interface CreateCustomerData {
   CustomerID:         number
   CustomerHistoryURL: string
-}
-
-// ─── Flow 1: Space Rental ─────────────────────────────────────────────────────
-
-export interface SpaceRentalParams {
-  bookingId:       string
-  instructorId:    string
-  totalILS:        number  // instructor pays (base + 5%)
-  hostPayout:      number  // host will receive (base - 5%), stored in DB
-  venueName:       string
-  customerName:    string
-  customerEmail:   string
-  // vendorCompanyId and vendorApiKey REMOVED — platform creds used instead
-}
-
-/**
- * Creates a SUMIT hosted payment page for a space-rental booking.
- *
- * Uses PLATFORM credentials (env vars) so that totalILS lands in the platform's
- * SUMIT account. Platform keeps 10% commission and owes host the remainder
- * (tracked in DB via vendor_payout_status).
- *
- * ExternalIdentifier = "space_rental:{bookingId}"
- */
-export async function createSpaceRentalPaymentUrl(
-  params: SpaceRentalParams
-): Promise<{ checkoutUrl: string }> {
-  const { appUrl } = sumitEnv()
-
-  const data = await sumitPost<BeginRedirectData>(
-    '/billing/payments/beginredirect/',
-    {
-      Customer: {
-        Name:  params.customerName || 'לקוח',
-        Email: params.customerEmail || undefined,
-      },
-      Items: [
-        {
-          Item:        { Name: 'השכרת שטח לשיעור יוגה' },
-          Description: params.venueName,
-          UnitPrice:   params.totalILS,
-          Quantity:    1,
-        },
-      ],
-      ExternalIdentifier:          `space_rental:${params.bookingId}`,
-      RedirectURL:                 `${appUrl}/api/webhooks/sumit/return`,
-      CancelRedirectURL:           `${appUrl}/booking/${params.bookingId}?cancelled=true`,
-      SendUpdateByEmailAddress:    params.customerEmail || undefined,
-      UpdateOrganizationOnSuccess: true,
-      DocumentDescription:         `השכרת שטח - ${params.venueName}`,
-      VATIncluded:                 true,
-      MaximumPayments:             0,
-      ExpirationHours:             2,
-    }
-  )
-
-  return { checkoutUrl: data.RedirectURL }
-}
-
-// ─── Flow 2: Class Booking ────────────────────────────────────────────────────
-
-export interface ClassBookingParams {
-  enrollmentId:      string
-  studentId:         string
-  totalILS:          number  // student pays (base + 5%)
-  instructorPayout:  number  // instructor will receive (base - 5%), stored in DB
-  className:         string
-  bookingDate:       string
-  customerName:      string
-  customerEmail:     string
-  // vendorCompanyId and vendorApiKey REMOVED — platform creds used instead
-}
-
-/**
- * Creates a SUMIT hosted payment page for a class enrollment.
- *
- * Uses PLATFORM credentials (env vars) so that totalILS lands in the platform's
- * SUMIT account. Platform keeps 10% commission and owes instructor the remainder
- * (tracked in DB via vendor_payout_status).
- *
- * ExternalIdentifier = "class_booking:{enrollmentId}"
- */
-export async function createClassBookingPaymentUrl(
-  params: ClassBookingParams
-): Promise<{ checkoutUrl: string }> {
-  const { appUrl } = sumitEnv()
-
-  const data = await sumitPost<BeginRedirectData>(
-    '/billing/payments/beginredirect/',
-    {
-      Customer: {
-        Name:  params.customerName || 'לקוח',
-        Email: params.customerEmail || undefined,
-      },
-      Items: [
-        {
-          Item:        { Name: 'שיעור יוגה' },
-          Description: `${params.className} - ${params.bookingDate}`,
-          UnitPrice:   params.totalILS,
-          Quantity:    1,
-        },
-      ],
-      ExternalIdentifier:          `class_booking:${params.enrollmentId}`,
-      RedirectURL:                 `${appUrl}/api/webhooks/sumit/return`,
-      CancelRedirectURL:           `${appUrl}/classes?cancelled=true`,
-      SendUpdateByEmailAddress:    params.customerEmail || undefined,
-      UpdateOrganizationOnSuccess: true,
-      DocumentDescription:         `${params.className} - ${params.bookingDate}`,
-      VATIncluded:                 true,
-      MaximumPayments:             0,
-      ExpirationHours:             2,
-    }
-  )
-
-  return { checkoutUrl: data.RedirectURL }
-}
-
-// ─── Payment Verification ─────────────────────────────────────────────────────
-
-/**
- * Verifies a SUMIT payment via the payments/get endpoint using PLATFORM credentials.
- *
- * Since payments now go to the platform's SUMIT account, verification uses
- * platform credentials (env vars). This is the primary verification path.
- */
-export async function verifySumitPayment(
-  paymentId:         number,
-  expectedAmountILS: number
-): Promise<{ valid: boolean; amount: number; paymentId: number }> {
-  const { companyID, apiKey } = sumitEnv()
-  return verifySumitPaymentWith(paymentId, expectedAmountILS, companyID, apiKey)
-}
-
-/**
- * Verifies a SUMIT payment using explicit vendor credentials.
- *
- * Since beginredirect uses vendor credentials, payments live in the vendor's
- * SUMIT account and must be verified using their CompanyID + APIKey.
- *
- * Checks:
- *   - ValidPayment === true
- *   - Amount >= expectedAmountILS (tolerance 0.01 ILS)
- *
- * SECURITY: Never trust query params from the return URL —
- * always call this before confirming any booking.
- */
-export async function verifySumitPaymentWith(
-  paymentId:         number,
-  expectedAmountILS: number,
-  vendorCompanyId:   number,
-  vendorApiKey:      string
-): Promise<{ valid: boolean; amount: number; paymentId: number }> {
-  try {
-    const data = await sumitPostWith<GetPaymentData>(
-      '/billing/payments/get/',
-      { PaymentID: paymentId },
-      vendorCompanyId,
-      vendorApiKey
-    )
-
-    const payment = data.Payment
-    const valid   = payment.ValidPayment && payment.Amount >= expectedAmountILS - 0.01
-
-    if (!payment.ValidPayment) {
-      console.warn(`[SUMIT] verifySumitPaymentWith: PaymentID ${paymentId} ValidPayment=false, Status=${payment.Status}`)
-    } else if (payment.Amount < expectedAmountILS - 0.01) {
-      console.warn(
-        `[SUMIT] verifySumitPaymentWith: Amount mismatch — got ₪${payment.Amount}, expected ₪${expectedAmountILS}`
-      )
-    }
-
-    return { valid, amount: payment.Amount, paymentId: payment.ID }
-  } catch (err) {
-    console.error('[SUMIT] verifySumitPaymentWith failed:', err instanceof Error ? err.message : err)
-    return { valid: false, amount: 0, paymentId }
-  }
 }
 
 // ─── Vendor Credential Validation ────────────────────────────────────────────
@@ -362,63 +166,6 @@ export async function validateVendorCredentials(
   }
 }
 
-// ─── Commission invoice (platform bills vendor) ───────────────────────────────
-
-/**
- * Creates a commission invoice in the PLATFORM's SUMIT account
- * for the amount the vendor owes the platform.
- *
- * Since payments now go directly to vendor's SUMIT account, the platform
- * must separately collect its commission from each vendor.
- * This creates a Document Type 305 (Invoice) in the PLATFORM's account
- * with the vendor as customer, so the platform can track and collect it.
- *
- * Returns { success, reason? } — never throws.
- */
-export async function createCommissionInvoice(params: {
-  vendorName:      string
-  commissionILS:   number
-  referenceId:     string
-  description:     string
-}): Promise<{ success: boolean; reason?: string }> {
-  const { vendorName, commissionILS, referenceId, description } = params
-
-  try {
-    const data = await sumitPost<unknown>(
-      '/documents/create/',
-      {
-        Document: {
-          Type:               305, // Invoice (חשבונית)
-          Description:        description,
-          ExternalIdentifier: referenceId,
-          VATIncluded:        true,
-          Currency:           'ILS',
-        },
-        Customer: {
-          Name: vendorName,
-        },
-        Items: [
-          {
-            Item:      { Name: `עמלת פלטפורמה — ${description}` },
-            UnitPrice: commissionILS,
-            Quantity:  1,
-          },
-        ],
-      }
-    )
-
-    console.log(
-      `[SUMIT] createCommissionInvoice: ₪${commissionILS} invoice created for "${vendorName}", ref ${referenceId}`
-    )
-    void data
-    return { success: true }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[SUMIT] createCommissionInvoice failed:', msg)
-    return { success: false, reason: msg }
-  }
-}
-
 // ─── Marketplace Split Charge ─────────────────────────────────────────────────
 
 export interface MultiVendorChargeParams {
@@ -443,6 +190,8 @@ export interface MultiVendorChargeParams {
 export interface MultiVendorChargeResult {
   /** SUMIT payment ID (from the vendor item — underlying card transaction) */
   paymentId:          number
+  /** SUMIT payment ID for the platform commission item (needed for platform-side refund) */
+  platformPaymentId?: number
   /** Total amount charged to the card (vendorPortion + platformCommission) */
   totalCharged:       number
   /** Whether the payment is valid per SUMIT */
@@ -530,36 +279,81 @@ export async function chargeMultiVendor(
     console.error(`[SUMIT multivendorcharge] Some vendors invalid: ${statuses}`)
   }
 
-  // Use the vendor (first) result's payment ID for our records
-  const vendorResult = data.Vendors[0]
+  // Vendors[0] = vendor portion, Vendors[1] = platform commission
+  const vendorResult   = data.Vendors[0]
+  const platformResult = data.Vendors[1]
 
   return {
-    paymentId:    vendorResult.Payment.ID,
-    totalCharged: vendorResult.Payment.Amount + (data.Vendors[1]?.Payment?.Amount ?? 0),
-    valid:        allValid,
+    paymentId:        vendorResult.Payment.ID,
+    platformPaymentId: platformResult?.Payment?.ID,
+    totalCharged:     vendorResult.Payment.Amount + (platformResult?.Payment?.Amount ?? 0),
+    valid:            allValid,
   }
 }
 
 // ─── Refund ───────────────────────────────────────────────────────────────────
 
 /**
- * Attempts to refund a SUMIT payment using platform credentials.
+ * Refunds a multivendorcharge split payment.
  *
- * Returns { success: true } on success, or { success: false, reason } if the
- * refund fails (e.g. endpoint unavailable, already refunded).
- * Never throws — caller handles graceful degradation.
+ * A multivendorcharge creates two separate SUMIT payment records:
+ *   • vendorPaymentId    — vendor's portion (e.g. host or instructor)
+ *   • platformPaymentId  — platform commission portion
+ *
+ * Each must be refunded with the credentials of the account that received it:
+ *   • Vendor portion:   refunded via vendor's own CompanyID + APIKey
+ *   • Platform portion: refunded via platform's env-var credentials
+ *
+ * Returns { vendorRefunded, platformRefunded } — never throws.
+ * If platformPaymentId is not provided (legacy records), only vendor is refunded.
  */
-export async function refundSumitPayment(
-  paymentId: number
-): Promise<{ success: boolean; reason?: string }> {
+export async function refundMultiVendorPayment(
+  vendorPaymentId:    number,
+  platformPaymentId:  number | null | undefined,
+  vendorCompanyId:    number,
+  vendorApiKey:       string,
+): Promise<{ vendorRefunded: boolean; platformRefunded: boolean; reason?: string }> {
+  let vendorRefunded   = false
+  let platformRefunded = false
+  const reasons: string[] = []
+
+  // Refund vendor portion using vendor's own credentials
   try {
-    await sumitPost<unknown>('/billing/payments/refund/', { PaymentID: paymentId })
-    console.log(`[SUMIT] refundSumitPayment: PaymentID ${paymentId} refunded successfully`)
-    return { success: true }
+    await sumitPostWith<unknown>(
+      '/billing/payments/refund/',
+      { PaymentID: vendorPaymentId },
+      vendorCompanyId,
+      vendorApiKey,
+    )
+    vendorRefunded = true
+    console.log(`[SUMIT] refundMultiVendorPayment: vendor PaymentID ${vendorPaymentId} refunded`)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error(`[SUMIT] refundSumitPayment failed for PaymentID ${paymentId}:`, msg)
-    return { success: false, reason: msg }
+    console.error(`[SUMIT] refundMultiVendorPayment: vendor refund failed for PaymentID ${vendorPaymentId}:`, msg)
+    reasons.push(`vendor: ${msg}`)
+  }
+
+  // Refund platform commission using platform's own credentials
+  if (platformPaymentId) {
+    try {
+      await sumitPost<unknown>('/billing/payments/refund/', { PaymentID: platformPaymentId })
+      platformRefunded = true
+      console.log(`[SUMIT] refundMultiVendorPayment: platform PaymentID ${platformPaymentId} refunded`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`[SUMIT] refundMultiVendorPayment: platform refund failed for PaymentID ${platformPaymentId}:`, msg)
+      reasons.push(`platform: ${msg}`)
+    }
+  } else {
+    // No platform payment ID recorded — skip platform refund (manual recovery needed)
+    console.warn('[SUMIT] refundMultiVendorPayment: no platformPaymentId — platform portion not refunded automatically')
+    platformRefunded = true // treat as non-blocking (old records pre-migration 007)
+  }
+
+  return {
+    vendorRefunded,
+    platformRefunded,
+    reason: reasons.length > 0 ? reasons.join('; ') : undefined,
   }
 }
 

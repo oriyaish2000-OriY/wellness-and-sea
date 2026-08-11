@@ -26,6 +26,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { chargeMultiVendor }   from '@/lib/payments/SumitMarketplace'
 import { calcSpaceRentalSplit } from '@/lib/payments/commissionUtils'
 import { decryptApiKey, isEncrypted } from '@/lib/encryption'
+import { checkRateLimitDB } from '@/lib/rate-limit'
 import {
   sendBookingConfirmedEmailToInstructor,
   sendNewBookingEmailToHost,
@@ -73,6 +74,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.redirect(`${APP_URL}/auth/login?next=/booking/pay/${bookingId}`)
+    }
+
+    // ── Rate limit ────────────────────────────────────────────────────────────
+    // H2: 5 payment attempts per user per 15 minutes (distributed, cross-instance)
+    const rlCheck = await checkRateLimitDB(`checkout:user:${user.id}`, 5, 900)
+    if (!rlCheck.allowed) {
+      return NextResponse.redirect(`${payPageBase}/${bookingId}?error=rate_limited`)
     }
 
     // ── Load booking (server-side amounts only) ────────────────────────────────
@@ -192,6 +200,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .update({
         status:                  'confirmed',
         tranzila_transaction_id: String(chargeResult.paymentId),
+        platform_payment_id:     chargeResult.platformPaymentId != null
+                                   ? String(chargeResult.platformPaymentId)
+                                   : null,
         confirmed_at:            new Date().toISOString(),
         vendor_sumit_company_id: hostConfig.sumit_company_id,
       })
