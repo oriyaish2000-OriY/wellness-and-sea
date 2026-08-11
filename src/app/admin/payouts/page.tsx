@@ -100,8 +100,8 @@ export default async function AdminPayoutsPage({
     <main className="min-h-screen bg-gray-50 py-8">
       <PayoutsClient
         summary={summary}
-        bookings={(bookings ?? []) as Parameters<typeof PayoutsClient>[0]['bookings']}
-        enrollments={(enrollments ?? []) as Parameters<typeof PayoutsClient>[0]['enrollments']}
+        bookings={(bookings ?? []) as unknown as Parameters<typeof PayoutsClient>[0]['bookings']}
+        enrollments={(enrollments ?? []) as unknown as Parameters<typeof PayoutsClient>[0]['enrollments']}
         adminSecret={adminSecret}
       />
     </main>
