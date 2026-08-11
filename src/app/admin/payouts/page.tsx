@@ -1,15 +1,23 @@
 /**
  * /admin/payouts — Vendor Payout Dashboard (Server Component)
  *
- * Protected by ADMIN_SECRET cookie or query param for browser access.
- * Shows all confirmed bookings/enrollments where vendor payment is pending.
+ * Auth flow (secret never reaches client-side JS):
+ *   1. First visit: /admin/payouts?secret=<ADMIN_SECRET>
+ *      → server redirects to /api/admin/session which sets an HttpOnly cookie
+ *      → then redirects back here (no secret in URL)
+ *   2. Subsequent visits: cookie-only auth (no secret in URL or props)
  *
- * Access: /admin/payouts?secret=<ADMIN_SECRET>
- * The secret is stored in a session cookie on first valid access.
+ * The mark-paid action is a Server Action (actions.ts) that re-checks the
+ * cookie on the server — ADMIN_SECRET is never serialized into the HTML.
  */
 
+import { redirect } from 'next/navigation'
+import { cookies }  from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
 import { PayoutsClient } from './PayoutsClient'
+import { makeAdminSessionToken } from '@/app/api/admin/session/route'
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 function adminClient() {
   return createClient(
@@ -32,9 +40,20 @@ export default async function AdminPayoutsPage({
     )
   }
 
-  const params = await searchParams
+  // ── Auth: check HttpOnly session cookie first ──────────────────────────────
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get('admin_session')?.value
+  // Compare against HMAC — raw secret is never stored in cookie (M-D)
+  const hasCookie = sessionCookie === makeAdminSessionToken(adminSecret)
 
-  if (params.secret !== adminSecret) {
+  if (!hasCookie) {
+    // Fall back to query param — redirect to session handler which sets cookie
+    const params = await searchParams
+    if (params.secret === adminSecret) {
+      redirect(`${APP_URL}/api/admin/session?secret=${encodeURIComponent(adminSecret)}&next=/admin/payouts`)
+    }
+
+    // Neither cookie nor valid secret → access denied
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white rounded-xl border shadow-sm p-8 max-w-sm w-full text-center">
@@ -82,7 +101,6 @@ export default async function AdminPayoutsPage({
     .eq('vendor_payout_status', 'pending')
     .order('created_at', { ascending: false })
 
-  // Commission owed to platform (platform_fee for bookings, ~10% of base for enrollments)
   const totalBookingsAmount    = (bookings ?? []).reduce(
     (s, b) => s + ((b.platform_fee as number | null) ?? ((b.total_price as number ?? 0) - (b.host_payout as number ?? 0))), 0
   )
@@ -102,7 +120,6 @@ export default async function AdminPayoutsPage({
         summary={summary}
         bookings={(bookings ?? []) as unknown as Parameters<typeof PayoutsClient>[0]['bookings']}
         enrollments={(enrollments ?? []) as unknown as Parameters<typeof PayoutsClient>[0]['enrollments']}
-        adminSecret={adminSecret}
       />
     </main>
   )

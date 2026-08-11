@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { markVendorPayoutPaid } from './actions'
 
 interface BookingPayout {
   id: string
@@ -42,7 +43,6 @@ interface Props {
   summary:     Summary
   bookings:    BookingPayout[]
   enrollments: EnrollmentPayout[]
-  adminSecret: string
 }
 
 function formatILS(amount: number) {
@@ -56,7 +56,7 @@ function formatDate(dateStr: string | null) {
   })
 }
 
-export function PayoutsClient({ summary, bookings, enrollments, adminSecret }: Props) {
+export function PayoutsClient({ summary, bookings, enrollments }: Props) {
   const [localBookings, setLocalBookings]       = useState(bookings)
   const [localEnrollments, setLocalEnrollments] = useState(enrollments)
   const [markingId, setMarkingId]               = useState<string | null>(null)
@@ -76,26 +76,15 @@ export function PayoutsClient({ summary, bookings, enrollments, adminSecret }: P
     setErrors(prev => ({ ...prev, [entityId]: '' }))
 
     try {
-      const res = await fetch('/api/admin/vendor-payouts/mark-paid', {
-        method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${adminSecret}`,
-        },
-        body: JSON.stringify({
-          entity_type: entityType,
-          entity_id:   entityId,
-          notes:       noteInputs[entityId] ?? '',
-        }),
-      })
+      // Server action — ADMIN_SECRET stays server-side, never in browser
+      const result = await markVendorPayoutPaid(entityType, entityId, noteInputs[entityId] ?? '')
 
-      if (!res.ok) {
-        const data = await res.json()
-        setErrors(prev => ({ ...prev, [entityId]: data.error ?? 'שגיאה' }))
+      if (result.error) {
+        setErrors(prev => ({ ...prev, [entityId]: result.error ?? 'שגיאה' }))
         return
       }
 
-      // Remove from list
+      // Remove from list on success
       if (entityType === 'booking') {
         setLocalBookings(prev => prev.filter(b => b.id !== entityId))
       } else {

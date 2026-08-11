@@ -20,12 +20,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createTokenRegistration } from '@/lib/payments/cardcomPaymentService'
+import { checkRateLimitDB } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // M-G: Rate limit — 5 token registrations per user per hour
+    const rl = await checkRateLimitDB(`register-token:user:${user.id}`, 5, 3600)
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: { 'Retry-After': String(rl.retryAfter ?? 3600) },
+      })
+    }
 
     // Load profile
     const { data: profile } = await supabase

@@ -10,6 +10,11 @@ export async function GET(
   const { searchParams } = new URL(request.url)
   const date = searchParams.get('date') // YYYY-MM-DD
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!UUID_RE.test(venueId)) {
+    return NextResponse.json({ slots: [] })
+  }
+
   if (!date) {
     return NextResponse.json({ error: 'date is required' }, { status: 400 })
   }

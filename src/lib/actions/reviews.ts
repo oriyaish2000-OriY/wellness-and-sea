@@ -8,7 +8,9 @@ export async function submitReview(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return { error: 'לא מחוברת. אנא התחברי שוב.' }
-  if (user.user_metadata?.role !== 'instructor') return { error: 'רק מדריכות יכולות לכתוב ביקורת.' }
+  // M2: Read role from profiles table (source of truth)
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (profile?.role !== 'instructor') return { error: 'רק מדריכות יכולות לכתוב ביקורת.' }
 
   const venueId = formData.get('venue_id') as string
   const bookingId = formData.get('booking_id') as string

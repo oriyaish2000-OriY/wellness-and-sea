@@ -18,6 +18,7 @@ const PAYMENT_ERRORS: Record<string, string> = {
   payment_failed:                'התשלום נדחה — אנא בדקי את פרטי הכרטיס ונסי שוב.',
   payment_invalid:               'אימות התשלום נכשל — אנא נסי שוב.',
   instructor_sumit_unverified:   'המדריכה טרם חיברה חשבון SUMIT מאומת. אנא צרי קשר עם התמיכה.',
+  payment_db_sync:               'התשלום עבר בהצלחה אך אירעה שגיאה טכנית בעדכון המערכת — אנא צרי קשר עם התמיכה עם מספר העסקה.',
   internal:                      'שגיאה פנימית — אנא נסי שוב.',
 }
 

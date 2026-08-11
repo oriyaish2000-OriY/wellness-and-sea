@@ -5,6 +5,16 @@
 const FROM_EMAIL = 'Wellness&Sea <noreply@wellness-sea.co.il>'
 const RESEND_API = 'https://api.resend.com/emails'
 
+/** Escape user-supplied strings before embedding in HTML email templates. (M5) */
+function esc(str: string | undefined | null): string {
+  return (str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
@@ -100,14 +110,14 @@ export async function sendBookingConfirmedEmailToInstructor(data: BookingEmailDa
 
   const html = baseLayout(`
     <h2 style="color:#1a2e3b;margin-top:0">ההזמנה שלך אושרה! ✅</h2>
-    <p style="color:#555">שלום ${data.instructorName},</p>
+    <p style="color:#555">שלום ${esc(data.instructorName)},</p>
     <p style="color:#555">אנחנו שמחים לאשר שההזמנה שלך אושרה בהצלחה.</p>
     <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:20px 0">
-      <div class="detail-row"><span class="detail-label">מקום</span><span class="detail-value">${data.venueName}</span></div>
-      <div class="detail-row"><span class="detail-label">כתובת</span><span class="detail-value">${data.venueAddress}, ${data.venueCity}</span></div>
+      <div class="detail-row"><span class="detail-label">מקום</span><span class="detail-value">${esc(data.venueName)}</span></div>
+      <div class="detail-row"><span class="detail-label">כתובת</span><span class="detail-value">${esc(data.venueAddress)}, ${esc(data.venueCity)}</span></div>
       <div class="detail-row"><span class="detail-label">תאריך</span><span class="detail-value">${dateStr}</span></div>
       <div class="detail-row"><span class="detail-label">שעות</span><span class="detail-value">${data.startTime.slice(0,5)} – ${data.endTime.slice(0,5)}</span></div>
-      ${data.classType ? `<div class="detail-row"><span class="detail-label">סוג שיעור</span><span class="detail-value">${data.classType}</span></div>` : ''}
+      ${data.classType ? `<div class="detail-row"><span class="detail-label">סוג שיעור</span><span class="detail-value">${esc(data.classType)}</span></div>` : ''}
       ${data.participantsCount ? `<div class="detail-row"><span class="detail-label">משתתפים</span><span class="detail-value">${data.participantsCount}</span></div>` : ''}
       <div class="detail-row" style="border:0"><span class="detail-label">סה"כ שולם</span><span class="detail-value" style="color:#1a5f7a;font-size:18px">₪${data.totalPrice}</span></div>
     </div>
@@ -120,7 +130,7 @@ export async function sendBookingConfirmedEmailToInstructor(data: BookingEmailDa
     <a href="${appUrl}/instructor-dashboard/bookings" class="cta">לצפייה בהזמנות שלי</a>
   `)
 
-  await sendEmail(data.instructorEmail, `ההזמנה ב${data.venueName} אושרה! ✅`, html)
+  await sendEmail(data.instructorEmail, `ההזמנה ב${esc(data.venueName)} אושרה! ✅`, html)
 }
 
 export async function sendNewBookingEmailToHost(data: BookingEmailData) {
@@ -134,20 +144,20 @@ export async function sendNewBookingEmailToHost(data: BookingEmailData) {
 
   const html = baseLayout(`
     <h2 style="color:#1a2e3b;margin-top:0">הזמנה חדשה התקבלה! 🎉</h2>
-    <p style="color:#555">שלום ${data.hostName},</p>
-    <p style="color:#555">התקבלה הזמנה חדשה עבור <strong>${data.venueName}</strong>.</p>
+    <p style="color:#555">שלום ${esc(data.hostName)},</p>
+    <p style="color:#555">התקבלה הזמנה חדשה עבור <strong>${esc(data.venueName)}</strong>.</p>
     <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:20px 0">
-      <div class="detail-row"><span class="detail-label">מדריכה</span><span class="detail-value">${data.instructorName}</span></div>
+      <div class="detail-row"><span class="detail-label">מדריכה</span><span class="detail-value">${esc(data.instructorName)}</span></div>
       <div class="detail-row"><span class="detail-label">תאריך</span><span class="detail-value">${dateStr}</span></div>
       <div class="detail-row"><span class="detail-label">שעות</span><span class="detail-value">${data.startTime.slice(0,5)} – ${data.endTime.slice(0,5)}</span></div>
-      ${data.classType ? `<div class="detail-row"><span class="detail-label">סוג שיעור</span><span class="detail-value">${data.classType}</span></div>` : ''}
+      ${data.classType ? `<div class="detail-row"><span class="detail-label">סוג שיעור</span><span class="detail-value">${esc(data.classType)}</span></div>` : ''}
       ${data.participantsCount ? `<div class="detail-row"><span class="detail-label">משתתפים</span><span class="detail-value">${data.participantsCount}</span></div>` : ''}
       <div class="detail-row" style="border:0"><span class="detail-label">תשלום שלך</span><span class="detail-value" style="color:#059669;font-size:18px">₪${data.hostPayout}</span></div>
     </div>
     <a href="${appUrl}/host-dashboard/bookings" class="cta">לניהול ההזמנות</a>
   `)
 
-  await sendEmail(data.hostEmail, `הזמנה חדשה ל${data.venueName}! 🎉`, html)
+  await sendEmail(data.hostEmail, `הזמנה חדשה ל${esc(data.venueName)}! 🎉`, html)
 }
 
 // ============================================================
@@ -176,12 +186,12 @@ export async function sendEnrollmentConfirmationEmail(data: EnrollmentEmailData)
 
   const html = baseLayout(`
     <h2 style="color:#1a2e3b;margin-top:0">נרשמת לשיעור! 🌊</h2>
-    <p style="color:#555">שלום ${data.studentName},</p>
+    <p style="color:#555">שלום ${esc(data.studentName)},</p>
     <p style="color:#555">ההרשמה שלך אושרה. כל שנותר הוא לשלוח את התשלום ישירות למדריכה.</p>
     <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:20px 0">
-      <div class="detail-row"><span class="detail-label">שיעור</span><span class="detail-value">${data.classType ?? 'שיעור'}</span></div>
-      <div class="detail-row"><span class="detail-label">מדריכה</span><span class="detail-value">${data.instructorName}</span></div>
-      <div class="detail-row"><span class="detail-label">מיקום</span><span class="detail-value">${data.venueName} · ${data.venueCity}</span></div>
+      <div class="detail-row"><span class="detail-label">שיעור</span><span class="detail-value">${esc(data.classType) || 'שיעור'}</span></div>
+      <div class="detail-row"><span class="detail-label">מדריכה</span><span class="detail-value">${esc(data.instructorName)}</span></div>
+      <div class="detail-row"><span class="detail-label">מיקום</span><span class="detail-value">${esc(data.venueName)} · ${esc(data.venueCity)}</span></div>
       <div class="detail-row"><span class="detail-label">תאריך</span><span class="detail-value">${dateStr}</span></div>
       <div class="detail-row"><span class="detail-label">שעות</span><span class="detail-value">${data.startTime.slice(0,5)} – ${data.endTime.slice(0,5)}</span></div>
       <div class="detail-row" style="border:0"><span class="detail-label">לתשלום</span><span class="detail-value" style="color:#1a5f7a;font-size:18px">₪${data.pricePerStudent}</span></div>
@@ -197,7 +207,7 @@ export async function sendEnrollmentConfirmationEmail(data: EnrollmentEmailData)
 
   await sendEmail(
     data.studentEmail,
-    `נרשמת לשיעור ${data.classType ?? ''} עם ${data.instructorName}! 🌊`,
+    `נרשמת לשיעור ${esc(data.classType) || ''} עם ${esc(data.instructorName)}! 🌊`,
     html
   )
 }
@@ -213,17 +223,17 @@ export async function sendBookingCancelledEmailToInstructor(data: BookingEmailDa
 
   const html = baseLayout(`
     <h2 style="color:#1a2e3b;margin-top:0">ההזמנה בוטלה</h2>
-    <p style="color:#555">שלום ${data.instructorName},</p>
-    <p style="color:#555">ההזמנה הבאה בוטלה${reason ? ` (${reason})` : ''}.</p>
+    <p style="color:#555">שלום ${esc(data.instructorName)},</p>
+    <p style="color:#555">ההזמנה הבאה בוטלה${reason ? ` (${esc(reason)})` : ''}.</p>
     <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:20px 0">
-      <div class="detail-row"><span class="detail-label">מקום</span><span class="detail-value">${data.venueName}</span></div>
+      <div class="detail-row"><span class="detail-label">מקום</span><span class="detail-value">${esc(data.venueName)}</span></div>
       <div class="detail-row"><span class="detail-label">תאריך</span><span class="detail-value">${dateStr}</span></div>
       <div class="detail-row" style="border:0"><span class="detail-label">שעות</span><span class="detail-value">${data.startTime.slice(0,5)} – ${data.endTime.slice(0,5)}</span></div>
     </div>
     <a href="${appUrl}/venues" class="cta">חפש חלל חלופי</a>
   `)
 
-  await sendEmail(data.instructorEmail, `ביטול הזמנה - ${data.venueName}`, html)
+  await sendEmail(data.instructorEmail, `ביטול הזמנה - ${esc(data.venueName)}`, html)
 }
 
 export async function sendBookingCancelledEmailToHost(data: BookingEmailData, reason?: string) {
@@ -237,15 +247,15 @@ export async function sendBookingCancelledEmailToHost(data: BookingEmailData, re
 
   const html = baseLayout(`
     <h2 style="color:#1a2e3b;margin-top:0">הזמנה בוטלה</h2>
-    <p style="color:#555">שלום ${data.hostName},</p>
-    <p style="color:#555">הזמנה ב<strong>${data.venueName}</strong> בוטלה${reason ? ` (${reason})` : ''}.</p>
+    <p style="color:#555">שלום ${esc(data.hostName)},</p>
+    <p style="color:#555">הזמנה ב<strong>${esc(data.venueName)}</strong> בוטלה${reason ? ` (${esc(reason)})` : ''}.</p>
     <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:20px 0">
-      <div class="detail-row"><span class="detail-label">מדריכה</span><span class="detail-value">${data.instructorName}</span></div>
+      <div class="detail-row"><span class="detail-label">מדריכה</span><span class="detail-value">${esc(data.instructorName)}</span></div>
       <div class="detail-row"><span class="detail-label">תאריך</span><span class="detail-value">${dateStr}</span></div>
       <div class="detail-row" style="border:0"><span class="detail-label">שעות</span><span class="detail-value">${data.startTime.slice(0,5)} – ${data.endTime.slice(0,5)}</span></div>
     </div>
     <a href="${appUrl}/host-dashboard/bookings" class="cta">לניהול ההזמנות</a>
   `)
 
-  await sendEmail(data.hostEmail, `ביטול הזמנה ב${data.venueName}`, html)
+  await sendEmail(data.hostEmail, `ביטול הזמנה ב${esc(data.venueName)}`, html)
 }

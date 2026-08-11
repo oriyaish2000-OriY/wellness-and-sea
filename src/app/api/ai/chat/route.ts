@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getVenues, getHappeningNowVenues, getInstructorBookings, getRecentlyVisitedVenues } from '@/lib/supabase/queries'
+import { checkRateLimitDB } from '@/lib/rate-limit'
 import type { Venue } from '@/lib/supabase/types'
 
 export const runtime = 'nodejs'
@@ -195,6 +196,15 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // M-G: Rate limit — 30 AI chat requests per user per hour
+  const rl = await checkRateLimitDB(`ai-chat:user:${user.id}`, 30, 3600)
+  if (!rl.allowed) {
+    return Response.json({ error: 'Too many requests' }, {
+      status: 429,
+      headers: { 'Retry-After': String(rl.retryAfter ?? 3600) },
+    })
   }
 
   const body = await req.json()

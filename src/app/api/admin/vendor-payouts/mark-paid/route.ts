@@ -48,8 +48,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (entity_type !== 'booking' && entity_type !== 'enrollment') {
     return NextResponse.json({ error: 'entity_type must be "booking" or "enrollment"' }, { status: 400 })
   }
-  if (typeof entity_id !== 'string' || !entity_id.trim()) {
-    return NextResponse.json({ error: 'entity_id is required' }, { status: 400 })
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (typeof entity_id !== 'string' || !UUID_RE.test(entity_id)) {
+    return NextResponse.json({ error: 'entity_id must be a valid UUID v4' }, { status: 400 })
   }
 
   const db = adminClient()

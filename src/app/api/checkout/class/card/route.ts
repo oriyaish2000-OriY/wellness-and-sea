@@ -207,8 +207,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         `[checkout/class/card] CRITICAL: Payment ${chargeResult.paymentId} charged but ` +
         `enrollment ${enrollmentId} DB update failed: ${dbError.message}`
       )
+      // Do NOT include paymentId in the URL — it's an internal SUMIT reference (M-C)
       return NextResponse.redirect(
-        `${APP_URL}/classes/${bookingId}/pay?error=payment_db_sync&payment_id=${chargeResult.paymentId}`
+        `${APP_URL}/classes/${bookingId}/pay?error=payment_db_sync`
       )
     }
 

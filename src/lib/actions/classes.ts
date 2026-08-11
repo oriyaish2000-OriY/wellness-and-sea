@@ -24,7 +24,9 @@ export async function openClassToStudents(
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return { error: 'לא מחוברת.' }
-  if (user.user_metadata?.role !== 'instructor') return { error: 'גישה נדחתה.' }
+  // M2: Read role from profiles table (source of truth)
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (profile?.role !== 'instructor') return { error: 'גישה נדחתה.' }
 
   const bookingId = formData.get('booking_id') as string
   const maxStudents = parseInt(formData.get('max_students') as string)
@@ -67,7 +69,10 @@ export async function closeClassToStudents(bookingId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user || user.user_metadata?.role !== 'instructor') return { error: 'גישה נדחתה.' }
+  if (!user) return { error: 'גישה נדחתה.' }
+  // M2: Read role from profiles table (source of truth)
+  const { data: closeProfile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (closeProfile?.role !== 'instructor') return { error: 'גישה נדחתה.' }
 
   const { error } = await supabase
     .from('bookings')

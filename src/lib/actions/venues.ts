@@ -37,11 +37,11 @@ function parseVenueFormData(formData: FormData): VenueFormData {
     hourly_price: parseInt(formData.get('hourly_price') as string) || 0,
     capacity: parseInt(formData.get('capacity') as string) || 0,
     space_size_sqm: parseInt(formData.get('space_size_sqm') as string) || 0,
-    amenities: amenitiesRaw ? JSON.parse(amenitiesRaw) : {},
-    images: imagesRaw ? JSON.parse(imagesRaw) : [],
+    amenities: (() => { try { return amenitiesRaw ? JSON.parse(amenitiesRaw) : {} } catch { return {} } })(),
+    images: (() => { try { return imagesRaw ? JSON.parse(imagesRaw) : [] } catch { return [] } })(),
     bonus_offer: (formData.get('bonus_offer') as string)?.trim() || undefined,
     accessibility_info: (formData.get('accessibility_info') as string)?.trim() || undefined,
-    availabilities: availabilitiesRaw ? JSON.parse(availabilitiesRaw) : [],
+    availabilities: (() => { try { return availabilitiesRaw ? JSON.parse(availabilitiesRaw) : [] } catch { return [] } })(),
   }
 }
 
@@ -80,8 +80,9 @@ export async function createVenue(formData: FormData) {
 
   if (!user) return { error: 'לא מחוברת. אנא התחברי שוב.' }
 
-  const role = user.user_metadata?.role
-  if (role !== 'host') return { error: 'רק בעלי עסקים יכולים לפרסם חללים.' }
+  // M2: Read role from profiles table (source of truth)
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (profile?.role !== 'host') return { error: 'רק בעלי עסקים יכולים לפרסם חללים.' }
 
   const venueData = parseVenueFormData(formData)
   const validationError = validateVenueData(venueData)
@@ -249,7 +250,9 @@ export async function updateVenueImages(venueId: string, images: string[]): Prom
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'לא מחוברת.' }
-  if (user.user_metadata?.role !== 'host') return { error: 'גישה נדחתה.' }
+  // M2: Read role from profiles table (source of truth)
+  const { data: imgProfile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (imgProfile?.role !== 'host') return { error: 'גישה נדחתה.' }
   if (!Array.isArray(images) || images.length > 20) return { error: 'נתונים לא תקינים.' }
 
   const { error } = await supabase

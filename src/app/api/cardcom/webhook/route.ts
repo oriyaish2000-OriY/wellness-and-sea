@@ -22,6 +22,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getLpResult, chargeProviderToken } from '@/lib/payments/cardcomPaymentService'
+import { encryptApiKey, decryptApiKey, isEncrypted } from '@/lib/encryption'
 import {
   sendBookingConfirmedEmailToInstructor,
   sendNewBookingEmailToHost,
@@ -90,10 +91,12 @@ function verifyWebhookToken(
 ): boolean {
   const expectedToken = process.env.CARDCOM_WEBHOOK_TOKEN
   if (!expectedToken) {
-    // CARDCOM_WEBHOOK_TOKEN not set: anyone who knows the terminal number can forge a webhook.
-    // Set this env var in the Cardcom dashboard webhook URL and in your deployment.
-    console.warn('[cardcom/webhook] SECURITY: CARDCOM_WEBHOOK_TOKEN not configured — webhook token check skipped')
-    return true
+    // M-A: CARDCOM_WEBHOOK_TOKEN is MANDATORY. Without it, anyone who knows the terminal
+    // number can forge webhook payloads and confirm bookings without payment.
+    // Set CARDCOM_WEBHOOK_TOKEN in Vercel env vars AND append ?token=<value> to the
+    // Cardcom dashboard webhook URL.
+    console.error('[cardcom/webhook] SECURITY: CARDCOM_WEBHOOK_TOKEN not configured — rejecting all webhooks')
+    return false
   }
 
   // Accept token from query param (?token=...) or from POST body field "token"
@@ -212,8 +215,13 @@ async function confirmSpaceRentalBooking(
       return
     }
 
+    // M-E: Decrypt token if encrypted (new tokens); use as-is if legacy plaintext
+    const rawHostToken = isEncrypted(host.cardcom_token)
+      ? (() => { try { return decryptApiKey(host.cardcom_token!) } catch { return host.cardcom_token! } })()
+      : host.cardcom_token
+
     chargeProviderToken({
-      token:         host.cardcom_token,
+      token:         rawHostToken,
       cardMonth:     host.cardcom_token_card_month,
       cardYear:      host.cardcom_token_card_year,
       amountILS:     commission,
@@ -375,8 +383,13 @@ async function confirmClassEnrollment(
 
     const instructorEmail = instructor.id ? await getUserEmail(supabase, instructor.id) : ''
 
+    // M-E: Decrypt token if encrypted (new tokens); use as-is if legacy plaintext
+    const rawInstructorToken = isEncrypted(instructor.cardcom_token!)
+      ? (() => { try { return decryptApiKey(instructor.cardcom_token!) } catch { return instructor.cardcom_token! } })()
+      : instructor.cardcom_token!
+
     chargeProviderToken({
-      token:         instructor.cardcom_token,
+      token:         rawInstructorToken,
       cardMonth:     instructor.cardcom_token_card_month,
       cardYear:      instructor.cardcom_token_card_year,
       amountILS:     commission,
@@ -447,10 +460,13 @@ async function handleTokenRegistration(
     return
   }
 
+  // M-E: Encrypt token before storing — protects against DB breach
+  const encryptedToken = encryptApiKey(token)
+
   await supabase
     .from('profiles')
     .update({
-      cardcom_token:            token,
+      cardcom_token:            encryptedToken,
       cardcom_token_card_month: lpResult.TokenInfo?.CardMonth   ?? null,
       cardcom_token_card_year:  lpResult.TokenInfo?.CardYear    ?? null,
       cardcom_token_approval:   lpResult.TokenInfo?.TokenApprovalNumber ?? null,
@@ -458,7 +474,7 @@ async function handleTokenRegistration(
     })
     .eq('id', profileId)
 
-  console.log(`[cardcom/webhook] Token registered for profile ${profileId} — token: ${token.substring(0, 8)}...`)
+  console.log(`[cardcom/webhook] Token registered for profile ${profileId} (encrypted at rest)`)
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────────

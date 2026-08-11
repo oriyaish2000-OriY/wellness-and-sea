@@ -25,6 +25,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { registerSubMerchant, isCardcomConfigured } from '@/lib/payments/cardcomPaymentService'
+import { checkRateLimitDB } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,8 +34,23 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const role = user.user_metadata?.role as string | undefined
-    if (!['host', 'instructor'].includes(role ?? '')) {
+    // M-G: Rate limit — 3 merchant registration attempts per user per hour
+    const rl = await checkRateLimitDB(`register-merchant:user:${user.id}`, 3, 3600)
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: { 'Retry-After': String(rl.retryAfter ?? 3600) },
+      })
+    }
+
+    // M2: Read role from profiles table (source of truth — JWT metadata can be stale)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, grow_merchant_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['host', 'instructor'].includes(profile.role ?? '')) {
       return NextResponse.json({ error: 'Only hosts and instructors can register as merchants' }, { status: 403 })
     }
 
@@ -53,12 +69,6 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Already registered? ───────────────────────────────────────────────────
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('grow_merchant_id')
-      .eq('id', user.id)
-      .single()
-
     if (profile?.grow_merchant_id) {
       return NextResponse.json({
         ok: true,

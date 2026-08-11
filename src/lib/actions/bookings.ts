@@ -27,8 +27,9 @@ export async function createPendingBooking(formData: FormData): Promise<{ error:
 
   if (!user) return { error: 'לא מחוברת. אנא התחברי שוב.' }
 
-  const role = user.user_metadata?.role
-  if (role !== 'instructor') return { error: 'רק מדריכות יכולות לבצע הזמנות.' }
+  // M2: Read role from profiles table (source of truth — JWT metadata can be stale)
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (profile?.role !== 'instructor') return { error: 'רק מדריכות יכולות לבצע הזמנות.' }
 
   const venueId = formData.get('venue_id') as string
   const bookingDate = formData.get('booking_date') as string
@@ -229,7 +230,9 @@ export async function completeBooking(bookingId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'לא מחוברת.' }
-  if (user.user_metadata?.role !== 'host') return { error: 'גישה נדחתה.' }
+  // M2: Read role from profiles table (source of truth)
+  const { data: roleProfile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  if (roleProfile?.role !== 'host') return { error: 'גישה נדחתה.' }
 
   // Verify the booking belongs to one of this host's venues
   const { data: booking } = await supabase
