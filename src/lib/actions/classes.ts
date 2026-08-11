@@ -2,7 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { sendEnrollmentConfirmationEmail } from '@/lib/email'
+
+function adminClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // ============================================================
 // INSTRUCTOR: open a confirmed booking to student enrollment
@@ -107,6 +115,24 @@ export async function enrollInClass(
 
   // Instructors cannot enroll in their own class
   if (booking.instructor_id === user.id) return { error: 'לא ניתן להירשם לשיעור שלך.' }
+
+  // ── SUMIT verification: instructor must have a verified payment account ────
+  {
+    const db = adminClient()
+    const { data: instructorConfig } = await db
+      .from('vendor_payment_config')
+      .select('onboarding_status')
+      .eq('profile_id', booking.instructor_id)
+      .maybeSingle()
+
+    if (!instructorConfig || instructorConfig.onboarding_status !== 'verified') {
+      return {
+        error:
+          'לא ניתן להירשם לשיעור זה כרגע — המדריכה טרם הגדירה חשבון תשלומים מאומת. ' +
+          'אנא נסי שיעור אחר או צרי קשר עם התמיכה.',
+      }
+    }
+  }
 
   // Check not already enrolled
   // (capacity is enforced atomically at the DB layer via trigger — no TOCTOU here)

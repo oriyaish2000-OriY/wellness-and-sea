@@ -5,16 +5,26 @@ import { getOpenClassById } from '@/lib/supabase/queries'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { Card } from '@/components/ui/card'
-import { MapPin, Clock, Calendar, CheckCircle, ArrowRight, ShieldCheck } from 'lucide-react'
+import { MapPin, Clock, Calendar, CheckCircle, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react'
 import { GrowPayButton } from './GrowPayButton'
 import { calcClassBookingSplit } from '@/lib/payments/commissionUtils'
 
 interface Props {
-  params: Promise<{ bookingId: string }>
+  params:       Promise<{ bookingId: string }>
+  searchParams: Promise<Record<string, string | undefined>>
 }
 
-export default async function ClassPayPage({ params }: Props) {
-  const { bookingId } = await params
+const PAYMENT_ERRORS: Record<string, string> = {
+  payment_failed:                'התשלום נדחה — אנא בדקי את פרטי הכרטיס ונסי שוב.',
+  payment_invalid:               'אימות התשלום נכשל — אנא נסי שוב.',
+  instructor_sumit_unverified:   'המדריכה טרם חיברה חשבון SUMIT מאומת. אנא צרי קשר עם התמיכה.',
+  internal:                      'שגיאה פנימית — אנא נסי שוב.',
+}
+
+export default async function ClassPayPage({ params, searchParams }: Props) {
+  const { bookingId }  = await params
+  const { error }      = await searchParams
+  const errorMsg       = error ? (PAYMENT_ERRORS[error] ?? 'שגיאה בתשלום — אנא נסי שוב.') : null
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -114,6 +124,13 @@ export default async function ClassPayPage({ params }: Props) {
                 <span>₪{studentPays.toLocaleString('he-IL')}</span>
               </div>
             </Card>
+
+            {errorMsg && (
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 mb-4">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
 
             {/* Payment */}
             <div className="space-y-3">

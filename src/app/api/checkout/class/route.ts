@@ -8,11 +8,8 @@
  *   Instructor gets:   base_price × 0.95  (5% deduction — provider's commission)
  *   Platform earns:    10% of base_price total
  *
- * Credit card (no Meaged): all money lands on platform terminal.
- *   Webhook then charges instructor's saved token 5% (their portion).
- *   Platform already holds payer's 5% from the markup.
- *
- * Bit/PayBox: money goes directly to instructor → mark-paid charges instructor token 10%.
+ * All money lands on PLATFORM's SUMIT account. Platform owes instructor base×0.95
+ * (tracked in DB via vendor_payout_status = 'pending').
  *
  * Body: { enrollment_id: string }
  * Returns: { checkout_url: string } on success. Returns 4xx/5xx on failure — NO free confirmation fallback.
@@ -21,15 +18,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import {
-  isCardcomConfigured,
-  createClassBookingPayment,
-} from '@/lib/payments/cardcomPaymentService'
 import { calcClassBookingSplit } from '@/lib/payments/commissionUtils'
 import {
   isSumitConfigured,
   createClassBookingPaymentUrl,
 } from '@/lib/payments/SumitMarketplace'
+
+// Service client for vendor_payment_config lookups (bypasses RLS)
+function makeServiceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
         booking:bookings(
           id, booking_date, class_type, price_per_student,
           instructor:profiles!bookings_instructor_id_fkey(
-            id, full_name, grow_merchant_id
+            id, full_name
           )
         )
       `)
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       booking_date: string
       class_type?: string
       price_per_student?: number
-      instructor?: { id?: string; full_name?: string; grow_merchant_id?: string }
+      instructor?: { id?: string; full_name?: string }
     } | null
 
     const basePriceILS = booking?.price_per_student ?? 0
@@ -91,71 +92,61 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // ── SUMIT path (primary) ──────────────────────────────────────────────────
-    if (isSumitConfigured()) {
-      try {
-        const { checkoutUrl } = await createClassBookingPaymentUrl({
-          enrollmentId,
-          studentId:        user.id,
-          totalILS:         split.studentPays,
-          instructorPayout: split.instructorPayout,
-          className:        booking?.class_type ?? 'שיעור',
-          bookingDate:      booking?.booking_date ?? '',
-          customerName:     studentProfile?.full_name ?? '',
-          customerEmail:    user.email ?? '',
-        })
-        console.log(`[SUMIT Flow2] Payment URL created for enrollment ${enrollmentId}. Student pays ₪${split.studentPays}`)
-        return NextResponse.json({ checkout_url: checkoutUrl })
-      } catch (err) {
-        console.error('[SUMIT Flow2] createClassBookingPaymentUrl failed:', err)
-        return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
-      }
-    }
-
-    // ── Cardcom path (fallback) ───────────────────────────────────────────────
-    if (!isCardcomConfigured()) {
-      console.error('[checkout/class] Neither SUMIT nor Cardcom is configured — cannot process payment')
+    // ── SUMIT check ───────────────────────────────────────────────────────────
+    if (!isSumitConfigured()) {
+      console.error('[checkout/class] SUMIT is not configured — cannot process payment')
       return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
     }
 
-    // Sapak number is optional — if present, Meaged routes payment to instructor sub-account
-    const instructorSapakNumber = booking?.instructor?.grow_merchant_id || undefined
+    // ── Check instructor has a verified SUMIT account (trust check) ───────────
+    const instructorId = booking?.instructor?.id
+    if (!instructorId) {
+      return NextResponse.json({ error: 'לא נמצאה המדריכה.' }, { status: 400 })
+    }
+
+    const svcClient = makeServiceClient()
+    const { data: instructorPaymentConfig } = await svcClient
+      .from('vendor_payment_config')
+      .select('onboarding_status, sumit_company_id')
+      .eq('profile_id', instructorId)
+      .maybeSingle()
+
+    if (!instructorPaymentConfig || instructorPaymentConfig.onboarding_status !== 'verified') {
+      return NextResponse.json(
+        {
+          error:
+            'המדריכה טרם חיברה חשבון SUMIT מאומת. ' +
+            'לא ניתן להירשם לשיעור עד שהמדריכה תשלים את תהליך ההצטרפות.',
+          code: 'INSTRUCTOR_SUMIT_NOT_VERIFIED',
+        },
+        { status: 422 }
+      )
+    }
 
     try {
-      const { checkoutUrl, lowProfileId } = await createClassBookingPayment({
+      // Payment goes to PLATFORM's SUMIT account via platform credentials
+      const { checkoutUrl } = await createClassBookingPaymentUrl({
         enrollmentId,
-        studentId:            user.id,
-        studentPaysILS:       split.studentPays,
-        instructorSapakNumber,
-        className:            booking?.class_type ?? 'שיעור',
-        bookingDate:          booking?.booking_date ?? '',
-        customerName:         studentProfile?.full_name ?? '',
-        customerEmail:        user.email ?? '',
+        studentId:        user.id,
+        totalILS:         split.studentPays,
+        instructorPayout: split.instructorPayout,
+        className:        booking?.class_type ?? 'שיעור',
+        bookingDate:      booking?.booking_date ?? '',
+        customerName:     studentProfile?.full_name ?? '',
+        customerEmail:    user.email ?? '',
       })
-
-      // Save LowProfileId to DB — must be done before redirecting buyer
-      if (lowProfileId) {
-        const serviceClient = createServiceClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
-        await serviceClient
-          .from('class_enrollments')
-          .update({ cardcom_low_profile_id: lowProfileId })
-          .eq('id', enrollmentId)
-      }
-
+      // Store vendor SUMIT company ID on the enrollment for payout tracking
+      await svcClient
+        .from('class_enrollments')
+        .update({ vendor_sumit_company_id: instructorPaymentConfig.sumit_company_id })
+        .eq('id', enrollmentId)
       console.log(
-        `[Cardcom Flow2] LowProfile ${lowProfileId} created for enrollment ${enrollmentId}. ` +
-        `Student pays ₪${split.studentPays}, ` +
-        `Instructor gets ₪${split.instructorPayout}, ` +
-        `Platform earns ₪${split.platformRevenue}` +
-        (instructorSapakNumber ? ` (Meaged split via Sapak ${instructorSapakNumber})` : ' (platform terminal, instructor token charge pending)')
+        `[SUMIT Flow2] Payment URL created for enrollment ${enrollmentId}. ` +
+        `Student pays ₪${split.studentPays} to PLATFORM account. Instructor (CompanyID ${instructorPaymentConfig.sumit_company_id}) payout pending.`
       )
-
       return NextResponse.json({ checkout_url: checkoutUrl })
     } catch (err) {
-      console.error('[Cardcom Flow2] createClassBookingPayment failed:', err)
+      console.error('[SUMIT Flow2] createClassBookingPaymentUrl failed:', err)
       return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
     }
   } catch (e) {

@@ -8,11 +8,8 @@
  *   Host receives:    base_price × 0.95  (5% deduction — provider's commission)
  *   Platform earns:   10% of base_price total
  *
- * Credit card (no Meaged): all money lands on platform terminal.
- *   Webhook then charges host's saved token 5% (their portion).
- *   Platform already holds payer's 5% from the markup.
- *
- * Bit/PayBox: money goes directly to host → mark-paid charges host token 10%.
+ * All money lands on PLATFORM's SUMIT account. Platform owes host base×0.95
+ * (tracked in DB via vendor_payout_status = 'pending').
  *
  * Amounts (total_price / host_payout) are set during booking creation — never trusted from client.
  * Returns { checkout_url } on success. Returns 4xx/5xx on failure — NO free confirmation fallback.
@@ -22,13 +19,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import {
-  isCardcomConfigured,
-  createSpaceRentalPayment,
-} from '@/lib/payments/cardcomPaymentService'
-import {
   isSumitConfigured,
   createSpaceRentalPaymentUrl,
 } from '@/lib/payments/SumitMarketplace'
+
+// Service client for vendor_payment_config lookups (bypasses RLS)
+function makeServiceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
         id, total_price, host_payout, platform_fee, instructor_id,
         venue:venues(
           id, title,
-          host:profiles!venues_host_id_fkey(id, full_name, grow_merchant_id)
+          host:profiles!venues_host_id_fkey(id, full_name)
         )
       `)
       .eq('id', bookingId)
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     const venue = booking.venue as {
       id?: string
       title?: string
-      host?: { id?: string; full_name?: string; grow_merchant_id?: string }
+      host?: { id?: string; full_name?: string }
     } | null
 
     const totalILS      = booking.total_price  // instructor pays (base + 5%)
@@ -80,66 +81,60 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // ── SUMIT path (primary) ──────────────────────────────────────────────────
-    if (isSumitConfigured()) {
-      try {
-        const { checkoutUrl } = await createSpaceRentalPaymentUrl({
-          bookingId,
-          instructorId:  booking.instructor_id,
-          totalILS,
-          hostPayout:    hostPayoutILS,
-          venueName:     venue?.title ?? 'חלל',
-          customerName:  instructorProfile?.full_name ?? '',
-          customerEmail: user.email ?? '',
-        })
-        console.log(`[SUMIT Flow1] Payment URL created for booking ${bookingId}. Instructor pays ₪${totalILS}`)
-        return NextResponse.json({ checkout_url: checkoutUrl })
-      } catch (err) {
-        console.error('[SUMIT Flow1] createSpaceRentalPaymentUrl failed:', err)
-        return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
-      }
-    }
-
-    // ── Cardcom path (fallback) ───────────────────────────────────────────────
-    if (!isCardcomConfigured()) {
-      console.error('[checkout] Neither SUMIT nor Cardcom is configured — cannot process payment')
+    // ── SUMIT check ───────────────────────────────────────────────────────────
+    if (!isSumitConfigured()) {
+      console.error('[checkout] SUMIT is not configured — cannot process payment')
       return NextResponse.json({ error: 'מערכת התשלומים אינה זמינה. אנא נסי שוב מאוחר יותר.' }, { status: 503 })
     }
 
-    // Sapak number is optional — if present, Meaged routes payment to host sub-account
-    const hostSapakNumber = venue?.host?.grow_merchant_id || undefined
+    // ── Check host has a verified SUMIT account (trust check) ─────────────────
+    const hostId = venue?.host?.id
+    if (!hostId) {
+      return NextResponse.json({ error: 'לא נמצא בעל החלל.' }, { status: 400 })
+    }
+
+    const svcClient = makeServiceClient()
+    const { data: hostPaymentConfig } = await svcClient
+      .from('vendor_payment_config')
+      .select('onboarding_status, sumit_company_id')
+      .eq('profile_id', hostId)
+      .maybeSingle()
+
+    if (!hostPaymentConfig || hostPaymentConfig.onboarding_status !== 'verified') {
+      return NextResponse.json(
+        {
+          error:
+            'בעל החלל טרם חיבר חשבון SUMIT מאומת. ' +
+            'לא ניתן לאשר הזמנה עד שהמארח ישלים את תהליך ההצטרפות.',
+          code: 'HOST_SUMIT_NOT_VERIFIED',
+        },
+        { status: 422 }
+      )
+    }
 
     try {
-      const { checkoutUrl, lowProfileId } = await createSpaceRentalPayment({
+      // Payment goes to PLATFORM's SUMIT account via platform credentials
+      const { checkoutUrl } = await createSpaceRentalPaymentUrl({
         bookingId,
-        instructorId:    booking.instructor_id,
+        instructorId:  booking.instructor_id,
         totalILS,
-        hostSapakNumber,
-        venueName:       venue?.title ?? 'חלל',
-        customerName:    instructorProfile?.full_name ?? '',
-        customerEmail:   user.email ?? '',
+        hostPayout:    hostPayoutILS,
+        venueName:     venue?.title ?? 'חלל',
+        customerName:  instructorProfile?.full_name ?? '',
+        customerEmail: user.email ?? '',
       })
-
-      // Save LowProfileId to DB — must be done before redirecting buyer
-      if (lowProfileId) {
-        const serviceClient = createServiceClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
-        await serviceClient
-          .from('bookings')
-          .update({ cardcom_low_profile_id: lowProfileId })
-          .eq('id', bookingId)
-      }
-
+      // Store vendor SUMIT company ID on the booking for payout tracking
+      await svcClient
+        .from('bookings')
+        .update({ vendor_sumit_company_id: hostPaymentConfig.sumit_company_id })
+        .eq('id', bookingId)
       console.log(
-        `[Cardcom Flow1] LowProfile ${lowProfileId} created for booking ${bookingId}. ` +
-        `Instructor pays ₪${totalILS}, Host receives ₪${hostPayoutILS}` +
-        (hostSapakNumber ? ` (Meaged split via Sapak ${hostSapakNumber})` : ' (platform terminal, host token charge pending)')
+        `[SUMIT Flow1] Payment URL created for booking ${bookingId}. ` +
+        `Instructor pays ₪${totalILS} to PLATFORM account. Host (CompanyID ${hostPaymentConfig.sumit_company_id}) payout pending.`
       )
       return NextResponse.json({ checkout_url: checkoutUrl })
     } catch (err) {
-      console.error('[Cardcom Flow1] createSpaceRentalPayment failed:', err)
+      console.error('[SUMIT Flow1] createSpaceRentalPaymentUrl failed:', err)
       return NextResponse.json({ error: 'שגיאה ביצירת דף התשלום. אנא נסי שוב.' }, { status: 502 })
     }
   } catch (e) {

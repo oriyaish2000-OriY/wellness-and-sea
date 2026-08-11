@@ -1,0 +1,37 @@
+{
+  "yogaInstructor": {
+    "label": "Yoga Instructor",
+    "envKey": "SUMIT_VENDOR_INSTRUCTOR_ID",
+    "Details": {
+      "Name": "דניאל כהן יוגה",
+      "Phone": "0521234567",
+      "EmailAddress": "daniel.cohen.yoga@gmail.com",
+      "City": "תל אביב",
+      "Address": "רחוב דיזנגוף 85",
+      "CompanyNumber": "315678901",
+      "ExternalIdentifier": "vendor-instructor-001"
+    },
+    "sumitId": {
+      "CustomerID": 2234029540,
+      "CustomerHistoryURL": "https://pay.sumit.co.il/10vensh/a/history/10y3084-7e187b3ea2/"
+    }
+  },
+  "restaurantOwner": {
+    "label": "Restaurant Space Owner",
+    "envKey": "SUMIT_VENDOR_RESTAURANT_ID",
+    "Details": {
+      "Name": "מסעדת הים הכחול",
+      "Phone": "0529876543",
+      "EmailAddress": "hayam.hakachol@restaurant.co.il",
+      "City": "תל אביב",
+      "Address": "טיילת תל אביב 12",
+      "CompanyNumber": "512345678",
+      "ExternalIdentifier": "vendor-restaurant-001"
+    },
+    "sumitId": {
+      "CustomerID": 2234029616,
+      "CustomerHistoryURL": "https://pay.sumit.co.il/10vensh/a/history/10y30a8-8872a8b2f1/"
+    }
+  },
+  "createdAt": "2026-08-09T15:40:27.653Z"
+}

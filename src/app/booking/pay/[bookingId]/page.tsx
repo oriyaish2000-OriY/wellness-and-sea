@@ -4,15 +4,27 @@ import { createClient } from '@/lib/supabase/server'
 import { getBookingById } from '@/lib/supabase/queries'
 import { Navbar } from '@/components/layout/navbar'
 import { Card } from '@/components/ui/card'
-import { MapPin, Calendar, Clock, ArrowRight, ShieldCheck } from 'lucide-react'
+import { MapPin, Calendar, Clock, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react'
 import { PaymentActions } from './PaymentActions'
 
 interface Props {
-  params: Promise<{ bookingId: string }>
+  params:      Promise<{ bookingId: string }>
+  searchParams: Promise<Record<string, string | undefined>>
 }
 
-export default async function BookingPayPage({ params }: Props) {
+const PAYMENT_ERRORS: Record<string, string> = {
+  payment_failed:           'התשלום נדחה — אנא בדקי את פרטי הכרטיס ונסי שוב.',
+  payment_invalid:          'אימות התשלום נכשל — אנא נסי שוב.',
+  host_sumit_unverified:    'בעל החלל טרם חיבר חשבון SUMIT מאומת. אנא צרי קשר עם התמיכה.',
+  host_key_missing:         'שגיאת הגדרה — אנא צרי קשר עם התמיכה.',
+  invalid_amounts:          'שגיאה בסכום ההזמנה — אנא רעננו את הדף.',
+  internal:                 'שגיאה פנימית — אנא נסי שוב.',
+}
+
+export default async function BookingPayPage({ params, searchParams }: Props) {
   const { bookingId } = await params
+  const { error }     = await searchParams
+  const errorMsg      = error ? (PAYMENT_ERRORS[error] ?? 'שגיאה בתשלום — אנא נסי שוב.') : null
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -93,6 +105,13 @@ export default async function BookingPayPage({ params }: Props) {
             <span>₪{booking.total_price.toLocaleString('he-IL')}</span>
           </div>
         </Card>
+
+        {errorMsg && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 mb-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
 
         <div className="space-y-3">
           <PaymentActions

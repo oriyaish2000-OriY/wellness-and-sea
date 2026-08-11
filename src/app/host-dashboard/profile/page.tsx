@@ -4,7 +4,7 @@ import { getCurrentUserProfile } from '@/lib/supabase/queries'
 import { Card, CardContent } from '@/components/ui/card'
 import { UserCircle, Camera } from 'lucide-react'
 import { ProfileForm } from './ProfileForm'
-import { CardcomTokenSection } from '@/components/payments/CardcomTokenSection'
+import { SumitOnboardingSection } from '@/components/payments/SumitOnboardingSection'
 
 export default async function HostProfilePage({
   searchParams,
@@ -19,13 +19,6 @@ export default async function HostProfilePage({
 
   const profile = await getCurrentUserProfile()
   if (!profile) redirect('/auth/login')
-
-  // Load Cardcom token fields
-  const { data: tokenData } = await supabase
-    .from('profiles')
-    .select('cardcom_token, cardcom_token_card_month, cardcom_token_card_year')
-    .eq('id', user.id)
-    .single()
 
   const params = await searchParams
   const tokenSuccess = params.token === 'success'
@@ -92,15 +85,10 @@ export default async function HostProfilePage({
         </CardContent>
       </Card>
 
-      {/* Cardcom token registration — required for commission deduction */}
+      {/* SUMIT — קבלת תשלומים מהמדריכות */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6">
-          <CardcomTokenSection
-            hasToken={!!tokenData?.cardcom_token}
-            cardMonth={tokenData?.cardcom_token_card_month}
-            cardYear={tokenData?.cardcom_token_card_year}
-            role="host"
-          />
+          <SumitOnboardingSection role="host" />
         </CardContent>
       </Card>
     </div>

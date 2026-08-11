@@ -3,7 +3,15 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { calculatePlatformFee } from '@/lib/constants'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { calcSpaceRentalSplit } from '@/lib/payments/commissionUtils'
+
+function adminClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // useActionState-compatible wrapper
 export async function createPendingBookingAction(
@@ -50,10 +58,10 @@ export async function createPendingBooking(formData: FormData): Promise<{ error:
     return { error: 'הזמן שנבחר כבר תפוס. אנא בחרי זמן אחר.' }
   }
 
-  // Get venue for pricing
+  // Get venue for pricing (include host_id for SUMIT verification)
   const { data: venue } = await supabase
     .from('venues')
-    .select('hourly_price, space_size_sqm, capacity, is_active, title')
+    .select('hourly_price, space_size_sqm, capacity, is_active, title, host_id')
     .eq('id', venueId)
     .single()
 
@@ -61,17 +69,51 @@ export async function createPendingBooking(formData: FormData): Promise<{ error:
     return { error: 'החלל אינו זמין להזמנה.' }
   }
 
+  // ── SUMIT verification: host must have a verified payment account ─────────
+  if (venue.host_id) {
+    const db = adminClient()
+    const { data: hostConfig } = await db
+      .from('vendor_payment_config')
+      .select('onboarding_status')
+      .eq('profile_id', venue.host_id)
+      .maybeSingle()
+
+    if (!hostConfig || hostConfig.onboarding_status !== 'verified') {
+      return {
+        error:
+          'לא ניתן להזמין חלל זה כרגע — בעל החלל טרם הגדיר חשבון תשלומים מאומת. ' +
+          'אנא נסי חלל אחר או צרי קשר עם התמיכה.',
+      }
+    }
+  }
+
   if (participantsCount && participantsCount > venue.capacity) {
     return { error: `מספר המשתתפים (${participantsCount}) עולה על קיבולת החלל (${venue.capacity}).` }
   }
 
-  // Calculate pricing
+  // Validate booking date is not in the past
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const bDate = new Date(bookingDate)
+  if (bDate < today) {
+    return { error: 'לא ניתן ליצור הזמנה לתאריך שעבר.' }
+  }
+
+  // Calculate pricing — enforce minimum 30-minute duration
   const [startH, startM] = startTime.split(':').map(Number)
   const [endH, endM] = endTime.split(':').map(Number)
-  const durationHours = (endH * 60 + endM - (startH * 60 + startM)) / 60
-  const totalPrice = Math.round(venue.hourly_price * durationHours)
-  const platformFee = calculatePlatformFee(venue.space_size_sqm ?? 60)
-  const hostPayout = totalPrice - platformFee
+  const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM)
+
+  if (durationMinutes < 30) {
+    return { error: 'משך ההזמנה המינימלי הוא 30 דקות.' }
+  }
+
+  const durationHours = durationMinutes / 60
+  const basePriceILS = Math.round(venue.hourly_price * durationHours)
+  const split = calcSpaceRentalSplit(basePriceILS)
+  const totalPrice = split.instructorPays   // instructor pays (base + 5%)
+  const platformFee = split.platformRevenue // 10% commission
+  const hostPayout = split.hostPayout       // host receives (base - 5%)
 
   // Create pending booking
   const { data: booking, error: bookingError } = await supabase

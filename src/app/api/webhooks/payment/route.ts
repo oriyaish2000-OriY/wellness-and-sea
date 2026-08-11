@@ -36,7 +36,31 @@ function adminClient() {
   )
 }
 
+// ─── Security constants ───────────────────────────────────────────────────────
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const ALLOWED_FLOW_TYPES = new Set(['space_rental', 'class_booking'])
+
+function isValidUUID(value: string): boolean {
+  return UUID_RE.test(value)
+}
+
 // ─── Webhook verification ─────────────────────────────────────────────────────
+//
+// Cardcom does NOT use HMAC-SHA256 header signatures like Stripe.
+// Instead, Cardcom webhooks are validated via two mechanisms:
+//
+//  1. TerminalNumber in the JSON payload must match CARDCOM_TERMINAL_NUMBER.
+//     This is the primary guard against spoofed payloads.
+//
+//  2. Optional shared-secret token (CARDCOM_WEBHOOK_TOKEN).
+//     Set the WebHookUrl in Cardcom dashboard (or LowProfile/Create) to include
+//     this token: /api/webhooks/payment?token=CARDCOM_WEBHOOK_TOKEN
+//     If the env var is set, the token must appear in the query string.
+//     This provides replay-attack protection without HMAC overhead.
+//
+// If CARDCOM_WEBHOOK_TOKEN is not set, the token check is skipped (backwards
+// compatible — safe to enable incrementally without breaking existing setups).
 
 function verifyWebhook(
   request:  NextRequest,
@@ -50,10 +74,16 @@ function verifyWebhook(
     return { ok: false, reason: `Terminal mismatch: got ${payloadTerminal}, expected ${expectedTerminal}` }
   }
 
-  // 2. Optional URL token check
+  // 2. Optional URL token check (CARDCOM_WEBHOOK_TOKEN)
+  // Accept token from query param (?token=...) or from POST body field "token"
   const expectedToken = process.env.CARDCOM_WEBHOOK_TOKEN
+  if (!expectedToken) {
+    console.warn('[webhook] SECURITY: CARDCOM_WEBHOOK_TOKEN not configured — webhook token check skipped')
+  }
   if (expectedToken) {
-    const receivedToken = request.nextUrl.searchParams.get('token')
+    const queryToken = request.nextUrl.searchParams.get('token')
+    const bodyToken  = typeof payload['token'] === 'string' ? payload['token'] : undefined
+    const receivedToken = queryToken ?? bodyToken
     if (receivedToken !== expectedToken) {
       return { ok: false, reason: 'Invalid webhook token' }
     }
@@ -274,17 +304,23 @@ export async function POST(request: NextRequest) {
     const transactionId = rawTxId != null ? String(rawTxId) : null
 
     // ── Parse ReturnValue: "flowType:entityId" ───────────────────────────────
+    // Strict validation: flowType must be a known enum, entityId must be UUID v4.
     const colonIdx = returnValue.indexOf(':')
     if (colonIdx === -1) {
-      console.warn('[webhook] ReturnValue format invalid:', returnValue)
+      console.warn('[webhook] ReturnValue format invalid — missing colon separator')
       return NextResponse.json({ ok: true })
     }
 
     const flowType = returnValue.substring(0, colonIdx)
     const entityId = returnValue.substring(colonIdx + 1)
 
-    if (!entityId) {
-      console.warn('[webhook] Empty entityId in ReturnValue')
+    if (!ALLOWED_FLOW_TYPES.has(flowType)) {
+      console.warn('[webhook] Unknown or disallowed flowType in ReturnValue:', flowType)
+      return NextResponse.json({ ok: true })
+    }
+
+    if (!entityId || !isValidUUID(entityId)) {
+      console.warn('[webhook] entityId in ReturnValue is not a valid UUID v4:', entityId)
       return NextResponse.json({ ok: true })
     }
 

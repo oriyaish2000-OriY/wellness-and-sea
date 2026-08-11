@@ -38,6 +38,15 @@ function adminClient() {
   )
 }
 
+// ─── Security constants ───────────────────────────────────────────────────────
+
+/**
+ * Maximum commission amount (ILS) that can be charged via a saved token in one webhook call.
+ * Guard against corrupted DB data causing runaway charges.
+ * A booking total above ₪50,000 is operationally impossible for this platform.
+ */
+const MAX_COMMISSION_ILS = 5000
+
 // ─── Webhook body ─────────────────────────────────────────────────────────────
 
 interface CardcomWebhookBody {
@@ -48,7 +57,22 @@ interface CardcomWebhookBody {
   Operation:      string
 }
 
-// ─── Terminal verification ────────────────────────────────────────────────────
+// ─── Webhook verification ────────────────────────────────────────────────────
+//
+// Cardcom does NOT use HMAC-SHA256 header signatures like Stripe.
+// Instead, Cardcom webhooks are validated via two mechanisms:
+//
+//  1. TerminalNumber in the JSON payload must match CARDCOM_TERMINAL_NUMBER.
+//     This is the primary guard against spoofed payloads.
+//
+//  2. Optional shared-secret token (CARDCOM_WEBHOOK_TOKEN).
+//     Set the WebHookUrl in Cardcom dashboard to include this token:
+//       https://<your-domain>/api/cardcom/webhook?token=CARDCOM_WEBHOOK_TOKEN
+//     If the env var is set, we require it to appear in the query string or
+//     in the POST body (key: "token"). This provides replay-attack protection.
+//
+// If CARDCOM_WEBHOOK_TOKEN is not set, the token check is skipped (backwards
+// compatible — safe to enable incrementally without breaking existing setups).
 
 function verifyTerminal(payload: CardcomWebhookBody): boolean {
   const expected = parseInt(process.env.CARDCOM_TERMINAL_NUMBER ?? '0', 10)
@@ -58,6 +82,31 @@ function verifyTerminal(payload: CardcomWebhookBody): boolean {
     return false
   }
   return payload.TerminalNumber === expected
+}
+
+function verifyWebhookToken(
+  request: NextRequest,
+  payload: CardcomWebhookBody & Record<string, unknown>
+): boolean {
+  const expectedToken = process.env.CARDCOM_WEBHOOK_TOKEN
+  if (!expectedToken) {
+    // CARDCOM_WEBHOOK_TOKEN not set: anyone who knows the terminal number can forge a webhook.
+    // Set this env var in the Cardcom dashboard webhook URL and in your deployment.
+    console.warn('[cardcom/webhook] SECURITY: CARDCOM_WEBHOOK_TOKEN not configured — webhook token check skipped')
+    return true
+  }
+
+  // Accept token from query param (?token=...) or from POST body field "token"
+  const queryToken = request.nextUrl.searchParams.get('token')
+  const bodyToken  = typeof payload['token'] === 'string' ? payload['token'] : undefined
+  const receivedToken = queryToken ?? bodyToken
+
+  if (receivedToken !== expectedToken) {
+    console.warn('[cardcom/webhook] Invalid CARDCOM_WEBHOOK_TOKEN — rejecting webhook')
+    return false
+  }
+
+  return true
 }
 
 // ─── Email helper ─────────────────────────────────────────────────────────────
@@ -152,6 +201,16 @@ async function confirmSpaceRentalBooking(
     const totalILS   = booking.total_price ?? 0
     const baseILS    = Math.round(totalILS / 1.05)
     const commission = calcSpaceRentalSplit(baseILS).platformRevenue  // 10% of base
+
+    // Bounds check: never charge more than MAX_COMMISSION_ILS.
+    // Guards against corrupted DB data causing runaway token charges.
+    if (commission <= 0 || commission > MAX_COMMISSION_ILS) {
+      console.error(
+        `[webhook] Commission amount ₪${commission} out of bounds for booking ${bookingId} — ` +
+        `skipping token charge. Investigate immediately.`
+      )
+      return
+    }
 
     chargeProviderToken({
       token:         host.cardcom_token,
@@ -304,6 +363,16 @@ async function confirmClassEnrollment(
   const instructor = booking?.instructor
   if (instructor?.grow_merchant_id && instructor.cardcom_token && instructor.cardcom_token_card_month && instructor.cardcom_token_card_year && basePrice > 0) {
     const commission      = calcClassBookingSplit(basePrice).platformRevenue  // 10% of base
+
+    // Bounds check: never charge more than MAX_COMMISSION_ILS.
+    if (commission <= 0 || commission > MAX_COMMISSION_ILS) {
+      console.error(
+        `[webhook] Commission amount ₪${commission} out of bounds for enrollment ${enrollmentId} — ` +
+        `skipping token charge. Investigate immediately.`
+      )
+      return
+    }
+
     const instructorEmail = instructor.id ? await getUserEmail(supabase, instructor.id) : ''
 
     chargeProviderToken({
@@ -400,12 +469,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as CardcomWebhookBody
     lowProfileId = body.LowProfileId ?? ''
 
-    // ── 1. Verify terminal ───────────────────────────────────────────────────
+    // ── 1. Verify terminal + optional webhook token ──────────────────────────
     if (!verifyTerminal(body)) {
-      console.error(
-        `[cardcom/webhook] Terminal mismatch: got ${body.TerminalNumber}, ` +
-        `expected ${process.env.CARDCOM_TERMINAL_NUMBER}`
-      )
+      // Do NOT log the expected terminal number — that would expose the env var in logs.
+      console.error(`[cardcom/webhook] Terminal mismatch: got ${body.TerminalNumber} — rejecting`)
+      return NextResponse.json({ ok: false }, { status: 200 })
+    }
+
+    if (!verifyWebhookToken(request, body as CardcomWebhookBody & Record<string, unknown>)) {
+      // Return 200 to Cardcom — don't reveal rejection reason externally
       return NextResponse.json({ ok: false }, { status: 200 })
     }
 

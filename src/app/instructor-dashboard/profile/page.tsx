@@ -4,7 +4,7 @@ import { getCurrentUserProfile } from '@/lib/supabase/queries'
 import { ProfileForm } from './ProfileForm'
 import { Card, CardContent } from '@/components/ui/card'
 import { UserCircle, Camera } from 'lucide-react'
-import { CardcomTokenSection } from '@/components/payments/CardcomTokenSection'
+import { SumitOnboardingSection } from '@/components/payments/SumitOnboardingSection'
 
 export default async function InstructorProfilePage({
   searchParams,
@@ -19,13 +19,6 @@ export default async function InstructorProfilePage({
 
   const profile = await getCurrentUserProfile()
   if (!profile) redirect('/auth/login')
-
-  // Load Cardcom token fields (not in getCurrentUserProfile)
-  const { data: tokenData } = await supabase
-    .from('profiles')
-    .select('cardcom_token, cardcom_token_card_month, cardcom_token_card_year')
-    .eq('id', user.id)
-    .single()
 
   const params = await searchParams
   const tokenSuccess = params.token === 'success'
@@ -95,15 +88,10 @@ export default async function InstructorProfilePage({
         </CardContent>
       </Card>
 
-      {/* Cardcom token registration — required for commission deduction */}
+      {/* SUMIT payment account — required to receive split payments */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6">
-          <CardcomTokenSection
-            hasToken={!!tokenData?.cardcom_token}
-            cardMonth={tokenData?.cardcom_token_card_month}
-            cardYear={tokenData?.cardcom_token_card_year}
-            role="instructor"
-          />
+          <SumitOnboardingSection role="instructor" />
         </CardContent>
       </Card>
     </div>

@@ -1,0 +1,91 @@
+{
+  "split": {
+    "chargeAmount": 210,
+    "vendorAmount": 190,
+    "platformFee": 20
+  },
+  "payload": {
+    "Customer": {
+      "Name": "יעל לוי",
+      "EmailAddress": "yael.levi.instructor@gmail.com",
+      "Phone": "0543331234",
+      "ExternalIdentifier": "payer-instructor-test-001"
+    },
+    "PaymentMethod": "[REDACTED]",
+    "Items": [
+      {
+        "Item": {
+          "Name": "השכרת שטח לשיעור יוגה"
+        },
+        "Description": "השכרת שטח לשיעור יוגה — מסעדת הים הכחול",
+        "Quantity": 1,
+        "UnitPrice": 190,
+        "CompanyID": 2229534449,
+        "APIKey": "t9Ey0duJR3Rng820eHlv3RCvaGuu3U3faKIFyW6E32C9BDx99f"
+      },
+      {
+        "Item": {
+          "Name": "עמלת פלטפורמה"
+        },
+        "Description": "עמלת פלטפורמה Wellness & Sea",
+        "Quantity": 1,
+        "UnitPrice": 20,
+        "CompanyID": 2229534449,
+        "APIKey": "t9Ey0duJR3Rng820eHlv3RCvaGuu3U3faKIFyW6E32C9BDx99f"
+      }
+    ],
+    "VATIncluded": true,
+    "SendDocumentByEmail": true,
+    "UpdateCustomerByEmail": true,
+    "DocumentDescription": "הזמנת שטח לשיעור יוגה — בסיס 200 ₪",
+    "AuthoriseOnly": true
+  },
+  "result": {
+    "Data": {
+      "Vendors": [
+        {
+          "Payment": {
+            "ID": 2234033309,
+            "CustomerID": 2234033305,
+            "Date": "2026-08-09T18:42:41.0708039+03:00",
+            "ValidPayment": true,
+            "Status": "000",
+            "StatusDescription": " (קוד 000)",
+            "Amount": 210,
+            "Currency": 0,
+            "PaymentMethod": {
+              "ID": 2234033306,
+              "CustomerID": null,
+              "CreditCard_Number": null,
+              "CreditCard_LastDigits": "1333",
+              "CreditCard_ExpirationMonth": 5,
+              "CreditCard_ExpirationYear": 2031,
+              "CreditCard_CVV": null,
+              "CreditCard_Track2": null,
+              "CreditCard_CitizenID": "123456789",
+              "CreditCard_CardMask": "XXXXXXXXXXXX1333",
+              "CreditCard_Token": "f5a7a5a7-13b9-4a0b-99d2-251d61a5e0c3",
+              "DirectDebit_Bank": null,
+              "DirectDebit_Branch": null,
+              "DirectDebit_Account": null,
+              "DirectDebit_ExpirationDate": null,
+              "DirectDebit_MaximumAmount": null,
+              "Type": 1
+            },
+            "AuthNumber": null,
+            "FirstPaymentAmount": null,
+            "NonFirstPaymentAmount": null,
+            "RecurringCustomerItemIDs": null
+          },
+          "DocumentID": 2234033312,
+          "DocumentNumber": null,
+          "CustomerID": 2234033305,
+          "DocumentDownloadURL": "https://pay.sumit.co.il/10vensh/a/history/10y334p-1a8654f500/?download=2234033312&downloadkey=10y334w&original=true"
+        }
+      ]
+    },
+    "Status": 0,
+    "UserErrorMessage": null,
+    "TechnicalErrorDetails": null
+  }
+}
