@@ -80,7 +80,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   if (bookingsError) {
     console.error('[admin/vendor-payouts] bookings query error:', bookingsError.message)
-    return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    return NextResponse.json({ error: 'Database error', detail: bookingsError.message }, { status: 500 })
   }
 
   // Confirmed class enrollments with pending vendor payout
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   if (enrollmentsError) {
     console.error('[admin/vendor-payouts] enrollments query error:', enrollmentsError.message)
-    return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    return NextResponse.json({ error: 'Database error', detail: enrollmentsError.message }, { status: 500 })
   }
 
   const totalBookingsAmount = (bookings ?? []).reduce((sum, b) => sum + (b.host_payout ?? 0), 0)
