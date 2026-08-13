@@ -11,7 +11,7 @@
 CREATE TABLE IF NOT EXISTS vendor_payment_config (
   id                UUID        DEFAULT uuid_generate_v4() PRIMARY KEY,
   profile_id        UUID        REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  sumit_company_id  INTEGER     NOT NULL CHECK (sumit_company_id > 0),
+  sumit_company_id  BIGINT      NOT NULL CHECK (sumit_company_id > 0),
   -- API key stored server-side; never returned to client via RLS policy
   sumit_api_key     TEXT        NOT NULL DEFAULT '',
   onboarding_status TEXT        NOT NULL DEFAULT 'pending'
