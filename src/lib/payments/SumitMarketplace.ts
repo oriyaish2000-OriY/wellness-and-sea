@@ -100,9 +100,12 @@ interface CreateCustomerData {
  * Validates vendor-supplied SUMIT credentials by making a read-only API call
  * with their CompanyID + APIKey.
  *
- * Strategy: Call /accounting/customers/search/ with the vendor's credentials.
- * - Status === 0 → credentials are valid (may return empty list — that's fine)
+ * Strategy: Call /accounting/documents/list/ with the vendor's credentials.
+ * - Status === 0 → credentials are valid (returns empty list on new accounts — that's fine)
  * - Status !== 0 → credentials invalid or account issues
+ *
+ * Note: /accounting/customers/search/ redirects to help.sumit.co.il (blocked endpoint).
+ * /accounting/documents/list/ is confirmed to return proper JSON from Vercel servers.
  *
  * Returns { valid, companyName?, reason? } — never throws.
  */
@@ -113,11 +116,11 @@ export async function validateVendorCredentials(
   try {
     const payload = {
       Credentials: { CompanyID: companyId, APIKey: apiKey },
-      // Minimal search — returns fast even on empty account
+      // Minimal filter — returns fast even on empty account
       Filter: { PageSize: 1 },
     }
 
-    const res = await fetch(`${SUMIT_BASE}/accounting/customers/search/`, {
+    const res = await fetch(`${SUMIT_BASE}/accounting/documents/list/`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload),
