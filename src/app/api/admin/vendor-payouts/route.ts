@@ -80,7 +80,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   if (bookingsError) {
     console.error('[admin/vendor-payouts] bookings query error:', bookingsError.message)
-    return NextResponse.json({ error: 'Database error', detail: bookingsError.message }, { status: 500 })
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
   // Confirmed class enrollments with pending vendor payout
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       vendor_payout_notes,
       vendor_sumit_company_id,
       tranzila_transaction_id,
-      created_at,
+      enrolled_at,
       booking:bookings (
         id, price_per_student, class_type,
         instructor:profiles!bookings_instructor_id_fkey ( id, full_name )
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     `)
     .eq('payment_status', 'paid')
     .eq('vendor_payout_status', 'pending')
-    .order('created_at', { ascending: false })
+    .order('enrolled_at', { ascending: false })
 
   if (enrollmentsError) {
     console.error('[admin/vendor-payouts] enrollments query error:', enrollmentsError.message)
