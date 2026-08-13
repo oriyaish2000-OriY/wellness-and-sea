@@ -96,9 +96,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       vendor_sumit_company_id,
       tranzila_transaction_id,
       created_at,
-      booking:bookings ( id, price_per_student ),
-      class:instructor_classes ( id, title, instructor_id,
-        instructor:profiles!instructor_classes_instructor_id_fkey ( id, full_name )
+      booking:bookings (
+        id, price_per_student, class_type,
+        instructor:profiles!bookings_instructor_id_fkey ( id, full_name )
       ),
       student:profiles!class_enrollments_student_id_fkey ( id, full_name )
     `)
