@@ -116,12 +116,12 @@ export default async function HomePage() {
 
           <div className="flex flex-wrap justify-center gap-12">
             {[
-              { value: '120+', label: 'חללים ברשת' },
-              { value: '300+', label: 'מדריכים רשומים' },
-              { value: '₪2,400', label: 'הכנסה ממוצעת לחודש' },
+              { value: null, label: 'חללים ברשת' },
+              { value: null, label: 'מדריכים רשומים' },
+              { value: '₪16,000', label: 'הכנסה ממוצעת לחודש' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="font-black text-white" style={{ fontSize: 30 }}>{stat.value}</div>
+                {stat.value && <div className="font-black text-white" style={{ fontSize: 30 }}>{stat.value}</div>}
                 <div className="text-white/60 text-xs mt-1">{stat.label}</div>
               </div>
             ))}
@@ -169,14 +169,14 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { icon: '🌊', value: '120+', label: 'חללים על קו החוף' },
-              { icon: '🧘', value: '300+', label: 'מדריכים רשומים' },
+              { icon: '🌊', value: null, label: 'חללים על קו החוף' },
+              { icon: '🧘', value: null, label: 'מדריכים רשומים' },
               { icon: '⭐', value: '4.9', label: 'דירוג ממוצע' },
-              { icon: '💰', value: '₪2,400', label: 'הכנסה ממוצעת לחודש' },
+              { icon: '💰', value: '₪16,000', label: 'הכנסה ממוצעת לחודש' },
             ].map(item => (
               <div key={item.label} className="text-center">
                 <div className="text-4xl mb-2">{item.icon}</div>
-                <div className="font-black text-white text-2xl">{item.value}</div>
+                {item.value && <div className="font-black text-white text-2xl">{item.value}</div>}
                 <div className="text-white/60 text-xs mt-1">{item.label}</div>
               </div>
             ))}
@@ -236,7 +236,7 @@ export default async function HomePage() {
             </div>
             <div className="relative z-10 hidden md:flex flex-col gap-5">
               {[
-                { icon: '💰', value: '₪2,400', label: 'הכנסה ממוצעת לחודש' },
+                { icon: '💰', value: '₪16,000', label: 'הכנסה ממוצעת לחודש' },
                 { icon: '📅', value: '8-12', label: 'הזמנות בחודש הראשון' },
                 { icon: '⭐', value: '4.9★', label: 'שביעות רצון מדריכים' },
               ].map(stat => (
